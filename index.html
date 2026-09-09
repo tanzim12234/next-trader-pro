@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>NEXT TRADER AI</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+body{
+  min-height:100vh;
+  background:#050914;
+  color:#fff;
+  font-family:Arial,Helvetica,sans-serif;
+  display:flex;
+  justify-content:center;
+  padding:30px 15px;
+}
+
+.container{
+  width:100%;
+  max-width:720px;
+}
+
+.header{
+  text-align:center;
+  margin-bottom:25px;
+}
+
+.logo{
+  font-size:32px;
+  font-weight:900;
+  letter-spacing:2px;
+}
+
+.subtitle{
+  color:#8994a8;
+  margin-top:7px;
+  font-size:14px;
+}
+
+.card{
+  background:#0b1220;
+  border:1px solid #1b2940;
+  border-radius:16px;
+  padding:20px;
+  box-shadow:0 10px 40px rgba(0,0,0,.35);
+}
+
+.upload{
+  border:2px dashed #263a58;
+  border-radius:12px;
+  padding:25px 15px;
+  text-align:center;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.upload:hover{
+  border-color:#4d8dff;
+  background:#0d1728;
+}
+
+.upload input{
+  display:none;
+}
+
+.upload-title{
+  font-size:17px;
+  font-weight:bold;
+}
+
+.upload-sub{
+  color:#77849a;
+  font-size:13px;
+  margin-top:7px;
+}
+
+#preview{
+  width:100%;
+  max-height:500px;
+  object-fit:contain;
+  display:none;
+  margin-top:18px;
+  border-radius:10px;
+  border:1px solid #26364e;
+}
+
+button{
+  width:100%;
+  margin-top:18px;
+  padding:14px;
+  border:0;
+  border-radius:10px;
+  background:#2477ff;
+  color:white;
+  font-size:15px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#3b87ff;
+}
+
+button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+#status{
+  text-align:center;
+  color:#8793a7;
+  margin-top:15px;
+  font-size:14px;
+}
+
+.result{
+  display:none;
+  margin-top:20px;
+}
+
+.signal{
+  text-align:center;
+  font-size:40px;
+  font-weight:900;
+  padding:20px;
+  border-radius:12px;
+  background:#101a2b;
+}
+
+.call{
+  color:#22c55e;
+}
+
+.put{
+  color:#ef4444;
+}
+
+.no-trade{
+  color:#facc15;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:12px;
+}
+
+.box{
+  background:#101a2b;
+  border:1px solid #1c2b43;
+  border-radius:10px;
+  padding:13px;
+}
+
+.label{
+  color:#718097;
+  font-size:11px;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+
+.value{
+  font-size:15px;
+  font-weight:bold;
+}
+
+.section{
+  margin-top:15px;
+  background:#101a2b;
+  border:1px solid #1c2b43;
+  border-radius:10px;
+  padding:15px;
+}
+
+.section-title{
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+ul{
+  padding-left:20px;
+}
+
+li{
+  margin:7px 0;
+  color:#c5cedc;
+}
+
+.disclaimer{
+  margin-top:15px;
+  color:#68758a;
+  font-size:11px;
+  text-align:center;
+  line-height:1.5;
+}
+
+@media(max-width:500px){
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .logo{
+    font-size:26px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="logo">NEXT TRADER AI</div>
+    <div class="subtitle">
+      Screenshot-based Chart Analysis • CALL / PUT / NO TRADE
+    </div>
+  </div>
+
+  <div class="card">
+
+    <label class="upload">
+      <input
+        type="file"
+        id="file"
+        accept="image/png,image/jpeg,image/webp"
+      >
+
+      <div class="upload-title">
+        📷 Upload Trading Chart
+      </div>
+
+      <div class="upload-sub">
+        PNG / JPG / WEBP
+      </div>
+    </label>
+
+    <img id="preview">
+
+    <button id="analyze" disabled>
+      ANALYZE CHART
+    </button>
+
+    <div id="status">
+      Select a chart screenshot first.
+    </div>
+
+    <div class="result" id="result">
+
+      <div class="signal" id="signal">
+        NO TRADE
+      </div>
+
+      <div class="grid">
+
+        <div class="box">
+          <div class="label">Confidence</div>
+          <div class="value" id="confidence">--</div>
+        </div>
+
+        <div class="box">
+          <div class="label">Trend</div>
+          <div class="value" id="trend">--</div>
+        </div>
+
+        <div class="box">
+          <div class="label">Expiry</div>
+          <div class="value" id="expiry">--</div>
+        </div>
+
+        <div class="box">
+          <div class="label">Risk</div>
+          <div class="value" id="risk">--</div>
+        </div>
+
+      </div>
+
+      <div class="section">
+        <div class="section-title">🎯 Setup</div>
+        <div id="setup">--</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">🧠 Analysis Reasons</div>
+        <ul id="reasons"></ul>
+      </div>
+
+      <div class="disclaimer">
+        AI chart analysis is probabilistic. No signal can guarantee profit.
+        Always manage risk and confirm the market yourself.
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+const fileInput = document.getElementById("file");
+const preview = document.getElementById("preview");
+const analyzeBtn = document.getElementById("analyze");
+const statusBox = document.getElementById("status");
+const result = document.getElementById("result");
+
+let selectedFile = null;
+
+fileInput.addEventListener("change", function(){
+
+  const file = this.files[0];
+
+  if(!file){
+    return;
+  }
+
+  if(!file.type.startsWith("image/")){
+    statusBox.textContent = "Please select an image.";
+    return;
+  }
+
+  selectedFile = file;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e){
+
+    preview.src = e.target.result;
+    preview.style.display = "block";
+
+    analyzeBtn.disabled = false;
+
+    statusBox.textContent =
+      "Chart ready. Click ANALYZE CHART.";
+
+    result.style.display = "none";
+  };
+
+  reader.readAsDataURL(file);
+
+});
+
+
+function resizeImage(file){
+
+  return new Promise((resolve,reject)=>{
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+
+      const img = new Image();
+
+      img.onload = function(){
+
+        const maxWidth = 1600;
+
+        let width = img.width;
+        let height = img.height;
+
+        if(width > maxWidth){
+
+          height =
+            Math.round(height * maxWidth / width);
+
+          width = maxWidth;
+        }
+
+        const canvas =
+          document.createElement("canvas");
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx =
+          canvas.getContext("2d");
+
+        ctx.drawImage(
+          img,
+          0,
+          0,
+          width,
+          height
+        );
+
+        resolve(
+          canvas.toDataURL("image/jpeg",0.85)
+        );
+
+      };
+
+      img.onerror = reject;
+
+      img.src = e.target.result;
+
+    };
+
+    reader.onerror = reject;
+
+    reader.readAsDataURL(file);
+
+  });
+
+}
+
+
+analyzeBtn.addEventListener("click", async function(){
+
+  if(!selectedFile){
+    return;
+  }
+
+  analyzeBtn.disabled = true;
+
+  result.style.display = "none";
+
+  statusBox.textContent =
+    "🔍 AI is analyzing the chart...";
+
+  try{
+
+    const image =
+      await resizeImage(selectedFile);
+
+    const response =
+      await fetch("/api/analyze",{
+
+        method:"POST",
+
+        headers:{
+          "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+          image:image
+        })
+
+      });
+
+    const data =
+      await response.json();
+
+    if(!response.ok){
+
+      throw new Error(
+        data.error || "Analysis failed."
+      );
+    }
+
+    if(data.error){
+
+      throw new Error(data.error);
+    }
+
+    showResult(data);
+
+  }
+
+  catch(error){
+
+    console.error(error);
+
+    statusBox.textContent =
+      "❌ " + error.message;
+
+  }
+
+  finally{
+
+    analyzeBtn.disabled = false;
+
+  }
+
+});
+
+
+function showResult(data){
+
+  result.style.display = "block";
+
+  const signal =
+    String(data.signal || "NO TRADE").toUpperCase();
+
+  const signalBox =
+    document.getElementById("signal");
+
+  signalBox.textContent = signal;
+
+  signalBox.className = "signal";
+
+  if(signal === "CALL"){
+    signalBox.classList.add("call");
+  }
+
+  else if(signal === "PUT"){
+    signalBox.classList.add("put");
+  }
+
+  else{
+    signalBox.classList.add("no-trade");
+  }
+
+
+  document.getElementById("confidence").textContent =
+    data.confidence != null
+      ? data.confidence + "%"
+      : "--";
+
+  document.getElementById("trend").textContent =
+    data.trend || "--";
+
+  document.getElementById("expiry").textContent =
+    data.expiry || "--";
+
+  document.getElementById("risk").textContent =
+    data.risk || "--";
+
+  document.getElementById("setup").textContent =
+    data.setup || "--";
+
+
+  const reasons =
+    document.getElementById("reasons");
+
+  reasons.innerHTML = "";
+
+  if(Array.isArray(data.reasons)){
+
+    data.reasons.forEach(reason=>{
+
+      const li =
+        document.createElement("li");
+
+      li.textContent = reason;
+
+      reasons.appendChild(li);
+
+    });
+
+  }
+
+  statusBox.textContent =
+    "✅ Analysis complete.";
+
+}
+
+</script>
+
+</body>
+</html>
