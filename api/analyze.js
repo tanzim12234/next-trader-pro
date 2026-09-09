@@ -1,9 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-const MODEL = "gemini-3.5-flash-lite";
-
 export default async function handler(req, res) {
-
   if (req.method !== "POST") {
     return res.status(405).json({
       error: "Method Not Allowed"
@@ -19,10 +16,9 @@ export default async function handler(req, res) {
   }
 
   try {
-
     const { image } = req.body || {};
 
-    if (!image || typeof image !== "string") {
+    if (!image) {
       return res.status(400).json({
         error: "Chart image is required."
       });
@@ -42,15 +38,21 @@ export default async function handler(req, res) {
     const base64Image = match[2];
 
     const ai = new GoogleGenAI({
-      apiKey: apiKey
+      apiKey
     });
 
-    const prompt = `
+    const interaction = await ai.interactions.create({
+      model: "gemini-3.5-flash-lite",
+
+      input: [
+        {
+          type: "text",
+          text: `
 You are NEXT TRADER AI.
 
-Analyze the provided trading chart screenshot.
+Analyze this trading chart screenshot.
 
-Return ONLY valid JSON in exactly this format:
+Return ONLY JSON:
 
 {
   "signal": "CALL",
@@ -76,28 +78,12 @@ BULLISH, BEARISH, SIDEWAYS, UNCLEAR
 Allowed risk:
 LOW, MEDIUM, HIGH
 
-Rules:
-1. Analyze candle structure.
-2. Analyze market trend.
-3. Identify visible support and resistance.
-4. Analyze momentum.
-5. Look for confirmation.
-6. Avoid guessing.
-7. If the chart is unclear or signals conflict, return NO TRADE.
-8. Never guarantee profit.
-9. Never claim certainty.
-10. Confidence must be between 0 and 100.
-`;
+If the chart is unclear or signals conflict, use NO TRADE.
 
-    const interaction = await ai.interactions.create({
-
-      model: MODEL,
-
-      input: [
-
-        {
-          type: "text",
-          text: prompt
+Never guarantee profit.
+Never claim certainty.
+Confidence must be 0-100.
+`
         },
 
         {
@@ -105,47 +91,40 @@ Rules:
           data: base64Image,
           mime_type: mimeType
         }
+      ],
 
-      ]
-
+      response_format: {
+        type: "text",
+        mime_type: "application/json"
+      }
     });
 
-    const text = interaction.output_text?.trim();
+    const text = interaction.output_text;
 
     if (!text) {
       return res.status(500).json({
-        error: "Gemini returned an empty response."
+        error: "Gemini returned no analysis."
       });
     }
 
+    let result;
+
     try {
-
-      const result = JSON.parse(text);
-
-      return res.status(200).json(result);
-
+      result = JSON.parse(text);
     } catch {
-
       return res.status(200).json({
         raw_analysis: text
       });
-
     }
+
+    return res.status(200).json(result);
 
   } catch (error) {
 
-    console.error(
-      "NEXT_TRADER_AI_ERROR:",
-      error
-    );
+    console.error("GEMINI ERROR:", error);
 
     return res.status(500).json({
-      error:
-        error?.message ||
-        "Gemini AI analysis failed."
+      error: error?.message || "Gemini API failed."
     });
-
   }
-
 }
-
