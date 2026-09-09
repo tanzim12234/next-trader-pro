@@ -1,4 +1,6 @@
-const MODEL = "gemini-2.5-flash-lite";
+import { GoogleGenAI } from "@google/genai";
+
+const MODEL = "gemini-3.5-flash-lite";
 
 export default async function handler(req, res) {
 
@@ -26,7 +28,9 @@ export default async function handler(req, res) {
       });
     }
 
-    const match = image.match(/^data:(image\/[^;]+);base64,(.+)$/);
+    const match = image.match(
+      /^data:(image\/[^;]+);base64,(.+)$/
+    );
 
     if (!match) {
       return res.status(400).json({
@@ -35,14 +39,18 @@ export default async function handler(req, res) {
     }
 
     const mimeType = match[1];
-    const base64Data = match[2];
+    const base64Image = match[2];
+
+    const ai = new GoogleGenAI({
+      apiKey: apiKey
+    });
 
     const prompt = `
-You are NEXT TRADER AI, a screenshot-based chart analyzer.
+You are NEXT TRADER AI.
 
-Analyze this trading chart screenshot carefully.
+Analyze the provided trading chart screenshot.
 
-Return ONLY valid JSON:
+Return ONLY valid JSON in exactly this format:
 
 {
   "signal": "CALL",
@@ -69,65 +77,40 @@ Allowed risk:
 LOW, MEDIUM, HIGH
 
 Rules:
-- Analyze candle structure.
-- Analyze trend.
-- Analyze support/resistance.
-- Analyze momentum.
-- Look for confirmation.
-- If the chart is unclear or conflicting, return NO TRADE.
-- Never guarantee profit.
-- Never claim certainty.
-- Confidence must be between 0 and 100.
+1. Analyze candle structure.
+2. Analyze market trend.
+3. Identify visible support and resistance.
+4. Analyze momentum.
+5. Look for confirmation.
+6. Avoid guessing.
+7. If the chart is unclear or signals conflict, return NO TRADE.
+8. Never guarantee profit.
+9. Never claim certainty.
+10. Confidence must be between 0 and 100.
 `;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
+    const interaction = await ai.interactions.create({
 
-        headers: {
-          "Content-Type": "application/json"
+      model: MODEL,
+
+      input: [
+
+        {
+          type: "text",
+          text: prompt
         },
 
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                },
-                {
-                  inline_data: {
-                    mime_type: mimeType,
-                    data: base64Data
-                  }
-                }
-              ]
-            }
-          ],
+        {
+          type: "image",
+          data: base64Image,
+          mime_type: mimeType
+        }
 
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: "application/json"
-          }
-        })
-      }
-    );
+      ]
 
-    const data = await response.json();
+    });
 
-    if (!response.ok) {
-      console.error("GEMINI ERROR:", data);
-
-      return res.status(response.status).json({
-        error:
-          data?.error?.message ||
-          "Gemini API request failed."
-      });
-    }
-
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = interaction.output_text?.trim();
 
     if (!text) {
       return res.status(500).json({
@@ -136,20 +119,33 @@ Rules:
     }
 
     try {
-      return res.status(200).json(JSON.parse(text));
+
+      const result = JSON.parse(text);
+
+      return res.status(200).json(result);
+
     } catch {
+
       return res.status(200).json({
         raw_analysis: text
       });
+
     }
 
   } catch (error) {
 
-    console.error("NEXT TRADER AI ERROR:", error);
+    console.error(
+      "NEXT_TRADER_AI_ERROR:",
+      error
+    );
 
     return res.status(500).json({
-      error: error?.message || "AI analysis failed."
+      error:
+        error?.message ||
+        "Gemini AI analysis failed."
     });
 
   }
+
 }
+
