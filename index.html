@@ -1,1063 +1,1669 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEXT TRADER AI</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXT TRADER AI</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<style>
+*{box-sizing:border-box}
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #080808;
-      color: #fff;
-    }
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:
+    radial-gradient(circle at 50% 0%,#260000 0%,#080808 45%,#000 100%);
+  color:#fff;
+}
 
-    .hidden {
-      display: none !important;
-    }
+.hidden{display:none!important}
 
-    .app {
-      max-width: 1100px;
-      margin: auto;
-      padding: 20px;
-    }
+.app{
+  max-width:1100px;
+  margin:auto;
+  padding:20px;
+}
 
-    h1 {
-      text-align: center;
-      margin-bottom: 5px;
-    }
+h1{text-align:center;margin-bottom:5px}
 
-    .subtitle {
-      text-align: center;
-      color: #aaa;
-      margin-bottom: 25px;
-    }
+.subtitle{
+  text-align:center;
+  color:#aaa;
+  margin-bottom:25px;
+}
 
-    .card {
-      background: #111;
-      border: 1px solid #292929;
-      border-radius: 14px;
-      padding: 18px;
-      margin-bottom: 18px;
-    }
+.card{
+  background:rgba(17,17,17,.94);
+  border:1px solid #292929;
+  border-radius:14px;
+  padding:18px;
+  margin-bottom:18px;
+  box-shadow:0 0 20px rgba(255,0,0,.04);
+}
 
-    label {
-      display: block;
-      margin: 10px 0 6px;
-      color: #bbb;
-    }
+label{
+  display:block;
+  margin:10px 0 6px;
+  color:#bbb;
+}
 
-    input,
-    select,
-    button {
-      width: 100%;
-      padding: 12px;
-      border-radius: 9px;
-      border: 1px solid #333;
-      background: #181818;
-      color: white;
-      font-size: 15px;
-    }
+input,select,button{
+  width:100%;
+  padding:12px;
+  border-radius:9px;
+  border:1px solid #333;
+  background:#181818;
+  color:white;
+  font-size:15px;
+}
 
-    button {
-      cursor: pointer;
-      font-weight: bold;
-      background: #222;
-    }
+button{
+  cursor:pointer;
+  font-weight:bold;
+  background:#222;
+}
 
-    button:hover {
-      background: #303030;
-    }
+button:hover{background:#303030}
 
-    .primary {
-      margin-top: 15px;
-      background: #fff;
-      color: #000;
-    }
+button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
 
-    .primary:hover {
-      background: #ddd;
-    }
+.primary{
+  margin-top:15px;
+  background:#fff;
+  color:#000;
+}
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
+.primary:hover{background:#ddd}
 
-    @media(max-width:700px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
+.danger{
+  background:#300;
+  border-color:#600;
+}
 
-    #preview {
-      width: 100%;
-      max-height: 500px;
-      object-fit: contain;
-      margin-top: 15px;
-      border-radius: 10px;
-      background: #000;
-    }
+.live-btn{
+  background:#240000;
+  border:1px solid #700;
+}
 
-    #camera {
-      width: 100%;
-      max-height: 500px;
-      background: #000;
-      border-radius: 10px;
-      margin-top: 15px;
-    }
+.live-active{
+  background:#3a0000;
+  border-color:#f33;
+  box-shadow:0 0 18px rgba(255,0,0,.25);
+}
 
-    .result {
-      text-align: center;
-    }
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
 
-    .signal {
-      font-size: 42px;
-      font-weight: bold;
-      margin: 15px 0;
-    }
+@media(max-width:700px){
+  .grid{grid-template-columns:1fr}
+}
 
-    .call {
-      color: #35e38a;
-    }
+#preview,#camera,#screenPreview{
+  width:100%;
+  max-height:500px;
+  object-fit:contain;
+  margin-top:15px;
+  border-radius:10px;
+  background:#000;
+}
 
-    .put {
-      color: #ff5f5f;
-    }
+.result{text-align:center}
 
-    .no-trade {
-      color: #ffc857;
-    }
+.signal{
+  font-size:42px;
+  font-weight:bold;
+  margin:15px 0;
+}
 
-    .confidence {
-      font-size: 25px;
-      margin-bottom: 15px;
-    }
+.call{color:#35e38a}
+.put{color:#ff5f5f}
+.no-trade{color:#ffc857}
 
-    .row {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 8px 0;
-      border-bottom: 1px solid #222;
-    }
+.confidence{
+  font-size:25px;
+  margin-bottom:15px;
+}
 
-    .row span:first-child {
-      color: #999;
-    }
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding:8px 0;
+  border-bottom:1px solid #222;
+}
 
-    .reason {
-      text-align: left;
-      padding: 8px 0;
-      color: #ddd;
-    }
+.row span:first-child{color:#999}
 
-    .status {
-      margin-top: 10px;
-      color: #aaa;
-      min-height: 20px;
-    }
+.reason{
+  text-align:left;
+  padding:8px 0;
+  color:#ddd;
+}
 
-    .warning {
-      color: #ffb84d;
-      font-size: 13px;
-      line-height: 1.5;
-    }
+.status{
+  margin-top:10px;
+  color:#aaa;
+  min-height:20px;
+}
 
-    .login-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.95);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      padding: 20px;
-    }
+.warning{
+  color:#ffb84d;
+  font-size:13px;
+  line-height:1.5;
+}
 
-    .login-box {
-      width: 100%;
-      max-width: 400px;
-      background: #111;
-      border: 1px solid #333;
-      border-radius: 15px;
-      padding: 25px;
-    }
+.login-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.96);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  padding:20px;
+}
 
-    .login-box h2 {
-      text-align: center;
-    }
+.login-box{
+  width:100%;
+  max-width:400px;
+  background:#111;
+  border:1px solid #333;
+  border-radius:15px;
+  padding:25px;
+}
 
-    .camera-buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
-    }
-  </style>
+.login-box h2{text-align:center}
+
+.camera-buttons,
+.live-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:10px;
+}
+
+.live-status{
+  margin-top:12px;
+  padding:12px;
+  border-radius:9px;
+  background:#090909;
+  border:1px solid #222;
+  color:#aaa;
+}
+
+.live-dot{
+  display:inline-block;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#555;
+  margin-right:7px;
+}
+
+.live-dot.on{
+  background:#f22;
+  box-shadow:0 0 10px #f22;
+}
+
+.mode-badge{
+  display:inline-block;
+  padding:5px 10px;
+  border-radius:20px;
+  background:#1b1b1b;
+  border:1px solid #333;
+  font-size:12px;
+  color:#aaa;
+}
+</style>
 </head>
 
 <body>
 
-  <!-- LOGIN -->
-  <div id="login" class="login-overlay">
-    <div class="login-box">
-      <h2>NEXT TRADER AI</h2>
+<!-- LOGIN -->
+<div id="login" class="login-overlay">
+  <div class="login-box">
+    <h2>NEXT TRADER AI</h2>
 
-      <label for="password">Password</label>
-      <input
-        id="password"
-        type="password"
-        placeholder="Enter password"
-        autocomplete="current-password"
-      >
+    <label for="password">Password</label>
 
-      <button id="loginBtn" class="primary" type="button">
-        LOGIN
-      </button>
+    <input
+      id="password"
+      type="password"
+      placeholder="Enter password"
+      autocomplete="current-password"
+    >
 
-      <div id="loginStatus" class="status"></div>
-    </div>
+    <button id="loginBtn" class="primary" type="button">
+      LOGIN
+    </button>
+
+    <div id="loginStatus" class="status"></div>
   </div>
+</div>
+
+
+<main class="app">
 
+<h1>☠ NEXT TRADER AI ☠</h1>
+
+<div class="subtitle">
+  AI Chart Screenshot Analyzer
+</div>
+
+
+<!-- SETTINGS -->
+<section class="card">
+
+<h2>Analysis Settings</h2>
+
+<div class="grid">
+
+<div>
+<label for="market">Market</label>
+<select id="market">
+<option value="OTC">OTC</option>
+<option value="FOREX">FOREX</option>
+<option value="GENERAL">GENERAL</option>
+</select>
+</div>
+
+<div>
+<label for="timeframe">Timeframe</label>
+<select id="timeframe">
+<option value="1 minute">1 Minute</option>
+<option value="2 minutes">2 Minutes</option>
+<option value="5 minutes">5 Minutes</option>
+<option value="15 minutes">15 Minutes</option>
+</select>
+</div>
 
-  <!-- MAIN APP -->
-  <main class="app">
+<div>
+<label for="mode">Analysis Mode</label>
+<select id="mode">
+<option value="STRICT SMC">STRICT SMC</option>
+<option value="PRICE ACTION">PRICE ACTION</option>
+<option value="SCALPING">SCALPING</option>
+<option value="CONSERVATIVE">CONSERVATIVE</option>
+</select>
+</div>
 
-    <h1>NEXT TRADER AI</h1>
-    <div class="subtitle">
-      AI Chart Screenshot Analyzer
-    </div>
-
-
-    <!-- SETTINGS -->
-    <section class="card">
-
-      <h2>Analysis Settings</h2>
+<div>
+<label for="minConfidence">Minimum Confidence</label>
 
-      <div class="grid">
-
-        <div>
-          <label for="market">Market</label>
-          <select id="market">
-            <option value="OTC">OTC</option>
-            <option value="FOREX">FOREX</option>
-            <option value="GENERAL">GENERAL</option>
-          </select>
-        </div>
+<select id="minConfidence">
+<option value="50">50%</option>
+<option value="60" selected>60%</option>
+<option value="70">70%</option>
+<option value="80">80%</option>
+</select>
+</div>
 
-        <div>
-          <label for="timeframe">Timeframe</label>
-          <select id="timeframe">
-            <option value="1 minute">1 Minute</option>
-            <option value="2 minutes">2 Minutes</option>
-            <option value="5 minutes">5 Minutes</option>
-            <option value="15 minutes">15 Minutes</option>
-          </select>
-        </div>
+</div>
+</section>
 
-        <div>
-          <label for="mode">Analysis Mode</label>
-          <select id="mode">
-            <option value="STRICT SMC">STRICT SMC</option>
-            <option value="PRICE ACTION">PRICE ACTION</option>
-            <option value="SCALPING">SCALPING</option>
-            <option value="CONSERVATIVE">CONSERVATIVE</option>
-          </select>
-        </div>
 
-        <div>
-          <label for="minConfidence">
-            Minimum Confidence
-          </label>
+<!-- LIVE VISION -->
+<section class="card">
 
-          <select id="minConfidence">
-            <option value="50">50%</option>
-            <option value="60" selected>60%</option>
-            <option value="70">70%</option>
-            <option value="80">80%</option>
-          </select>
-        </div>
+<h2>👁 LIVE VISION MODE</h2>
 
-      </div>
+<div class="warning">
+Share your broker/chart window. The AI will periodically capture
+visible frames and analyze them. This is screen-based vision,
+not a direct broker/WebSocket price feed.
+</div>
 
-    </section>
+<div style="margin-top:12px">
+<span class="mode-badge">
+SCREEN VISION
+</span>
+</div>
 
+<video
+id="screenPreview"
+class="hidden"
+autoplay
+playsinline
+muted
+></video>
 
-    <!-- SCREENSHOT -->
-    <section class="card">
+<div class="live-buttons">
 
-      <h2>Chart Screenshot</h2>
+<button id="startLive" class="live-btn" type="button">
+🔴 START LIVE VISION
+</button>
 
-      <input
-        id="imageInput"
-        type="file"
-        accept="image/*"
-      >
+<button id="stopLive" class="danger" type="button">
+⛔ STOP LIVE VISION
+</button>
 
-      <img
-        id="preview"
-        class="hidden"
-        alt="Chart preview"
-      >
+</div>
 
-      <button
-        id="analyzeBtn"
-        class="primary"
-        type="button"
-      >
-        ANALYZE CHART
-      </button>
+<label for="liveInterval">
+Live Scan Interval
+</label>
 
-      <div id="status" class="status"></div>
+<select id="liveInterval">
+<option value="2">2 Seconds</option>
+<option value="3" selected>3 Seconds</option>
+<option value="5">5 Seconds</option>
+<option value="8">8 Seconds</option>
+</select>
 
-    </section>
+<label for="voiceEnabled">
+AI Voice
+</label>
 
+<select id="voiceEnabled">
+<option value="ON" selected>VOICE ON</option>
+<option value="OFF">VOICE OFF</option>
+</select>
 
-    <!-- CAMERA -->
-    <section class="card">
+<div class="live-status">
 
-      <h2>Camera Scanner</h2>
+<span id="liveDot" class="live-dot"></span>
 
-      <div class="warning">
-        Camera mode periodically captures chart frames and sends them
-        for analysis. It is not a direct broker/WebSocket feed.
-      </div>
+<span id="liveStatus">
+LIVE VISION OFF
+</span>
 
-      <video
-        id="camera"
-        class="hidden"
-        autoplay
-        playsinline
-      ></video>
+</div>
 
-      <div class="camera-buttons">
+</section>
 
-        <button id="startCamera" type="button">
-          START CAMERA
-        </button>
 
-        <button id="stopCamera" type="button">
-          STOP CAMERA
-        </button>
+<!-- SCREENSHOT -->
+<section class="card">
 
-      </div>
+<h2>Chart Screenshot</h2>
 
-      <label for="scanInterval">
-        Camera Scan Interval
-      </label>
+<input
+id="imageInput"
+type="file"
+accept="image/*"
+>
 
-      <select id="scanInterval">
-        <option value="3">3 Seconds</option>
-        <option value="5" selected>5 Seconds</option>
-        <option value="8">8 Seconds</option>
-        <option value="10">10 Seconds</option>
-      </select>
+<img
+id="preview"
+class="hidden"
+alt="Chart preview"
+>
 
-      <div id="cameraStatus" class="status"></div>
+<button
+id="analyzeBtn"
+class="primary"
+type="button"
+>
+ANALYZE CHART
+</button>
 
-    </section>
+<div id="status" class="status"></div>
 
+</section>
 
-    <!-- RESULT -->
-    <section id="resultCard" class="card result hidden">
 
-      <h2>Analysis Result</h2>
+<!-- CAMERA -->
+<section class="card">
 
-      <div id="signal" class="signal">
-        NO TRADE
-      </div>
+<h2>📷 Camera Scanner</h2>
 
-      <div id="confidence" class="confidence">
-        0%
-      </div>
+<div class="warning">
+Camera mode captures chart frames periodically. It is not a direct
+broker/WebSocket feed.
+</div>
 
-      <div class="row">
-        <span>Trend</span>
-        <strong id="trend">UNCLEAR</strong>
-      </div>
+<video
+id="camera"
+class="hidden"
+autoplay
+playsinline
+></video>
 
-      <div class="row">
-        <span>Expiry</span>
-        <strong id="expiry">-</strong>
-      </div>
+<div class="camera-buttons">
 
-      <div class="row">
-        <span>Entry Candle</span>
-        <strong id="entryCandle">WAIT</strong>
-      </div>
+<button id="startCamera" type="button">
+START CAMERA
+</button>
 
-      <div class="row">
-        <span>Setup</span>
-        <strong id="setup">-</strong>
-      </div>
+<button id="stopCamera" type="button">
+STOP CAMERA
+</button>
 
-      <div class="row">
-        <span>Risk</span>
-        <strong id="risk">HIGH</strong>
-      </div>
+</div>
 
-      <div class="card">
+<label for="scanInterval">
+Camera Scan Interval
+</label>
 
-        <h3>Entry Instruction</h3>
+<select id="scanInterval">
+<option value="3">3 Seconds</option>
+<option value="5" selected>5 Seconds</option>
+<option value="8">8 Seconds</option>
+<option value="10">10 Seconds</option>
+</select>
 
-        <div id="entryInstruction">
-          Wait for confirmation.
-        </div>
+<div id="cameraStatus" class="status"></div>
 
-      </div>
+</section>
 
-      <div class="card">
 
-        <h3>Reasons</h3>
+<!-- RESULT -->
+<section id="resultCard" class="card result hidden">
 
-        <div id="reasons"></div>
+<h2>Analysis Result</h2>
 
-      </div>
+<div id="signal" class="signal">
+NO TRADE
+</div>
 
-      <div class="warning">
-        Technical analysis is probabilistic.
-        No signal is guaranteed. Do not risk money you cannot afford to lose.
-      </div>
+<div id="confidence" class="confidence">
+0%
+</div>
 
-    </section>
+<div class="row">
+<span>Trend</span>
+<strong id="trend">UNCLEAR</strong>
+</div>
 
-  </main>
+<div class="row">
+<span>Expiry</span>
+<strong id="expiry">-</strong>
+</div>
 
+<div class="row">
+<span>Entry Candle</span>
+<strong id="entryCandle">WAIT</strong>
+</div>
 
-  <!-- ALL JAVASCRIPT MUST STAY INSIDE THIS SCRIPT TAG -->
-  <script>
+<div class="row">
+<span>Setup</span>
+<strong id="setup">-</strong>
+</div>
 
-    const $ = (id) => document.getElementById(id);
+<div class="row">
+<span>Risk</span>
+<strong id="risk">HIGH</strong>
+</div>
 
-    let cameraStream = null;
-    let cameraTimer = null;
+<div class="card">
 
+<h3>Entry Instruction</h3>
 
-    // =========================
-    // LOGIN
-    // =========================
+<div id="entryInstruction">
+Wait for confirmation.
+</div>
 
-    async function login() {
+</div>
 
-      const password = $("password").value.trim();
+<div class="card">
 
-      if (!password) {
-        $("loginStatus").textContent = "Password দিন";
-        return;
-      }
+<h3>Reasons</h3>
 
-      $("loginStatus").textContent = "Checking...";
-      $("loginBtn").disabled = true;
+<div id="reasons"></div>
 
-      try {
+</div>
 
-        const response = await fetch("/api/auth", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
+<div class="warning">
+Technical analysis is probabilistic.
+No signal is guaranteed.
+Do not risk money you cannot afford to lose.
+</div>
+
+</section>
+
+</main>
+
+
+<script>
+
+const $ = id => document.getElementById(id);
+
+
+/* =========================================
+   GLOBAL STATE
+========================================= */
+
+let cameraStream = null;
+let cameraTimer = null;
+
+let screenStream = null;
+let liveTimer = null;
+
+let liveBusy = false;
+
+let lastSignalKey = "";
+let lastVoiceKey = "";
+
+let lastFrameHash = "";
+let lastAnalysisTime = 0;
+
+let liveRequestNumber = 0;
+
+
+/* =========================================
+   LOGIN
+========================================= */
+
+async function login(){
+
+  const password = $("password").value.trim();
+
+  if(!password){
+    $("loginStatus").textContent="Password দিন";
+    return;
+  }
+
+  $("loginStatus").textContent="Checking...";
+  $("loginBtn").disabled=true;
+
+  try{
+
+    const response=await fetch("/api/auth",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      credentials:"same-origin",
+      cache:"no-store",
+      body:JSON.stringify({
+        password
+      })
+    });
+
+    const text=await response.text();
+
+    let data={};
+
+    try{
+      data=JSON.parse(text);
+    }catch{
+      throw new Error("Server returned invalid response.");
+    }
+
+    if(!response.ok){
+      throw new Error(data.error||"Wrong password.");
+    }
+
+    sessionStorage.setItem("nt_unlocked","1");
+
+    $("loginStatus").textContent="Unlocked ✓";
+
+    setTimeout(()=>{
+      $("login").classList.add("hidden");
+    },300);
+
+  }catch(error){
+
+    console.error(error);
+
+    $("loginStatus").textContent=
+      error.message||"Login failed.";
+
+  }finally{
+
+    $("loginBtn").disabled=false;
+
+  }
+}
+
+
+/* =========================================
+   IMAGE RESIZE
+========================================= */
+
+async function resizeImage(file){
+
+  const image=new Image();
+
+  const url=URL.createObjectURL(file);
+
+  image.src=url;
+
+  await new Promise((resolve,reject)=>{
+    image.onload=resolve;
+    image.onerror=reject;
+  });
+
+  const maxWidth=1200;
+
+  let width=image.width;
+  let height=image.height;
+
+  if(width>maxWidth){
+
+    height=Math.round(
+      height*maxWidth/width
+    );
+
+    width=maxWidth;
+  }
+
+  const canvas=document.createElement("canvas");
+
+  canvas.width=width;
+  canvas.height=height;
+
+  const ctx=canvas.getContext("2d");
+
+  ctx.drawImage(
+    image,
+    0,
+    0,
+    width,
+    height
+  );
+
+  URL.revokeObjectURL(url);
+
+  return canvas.toDataURL(
+    "image/jpeg",
+    .70
+  );
+}
+
+
+/* =========================================
+   FRAME HASH
+   Lightweight visual-change detector
+========================================= */
+
+function getFrameHash(canvas){
+
+  const small=document.createElement("canvas");
+
+  small.width=32;
+  small.height=18;
+
+  const ctx=small.getContext("2d");
+
+  ctx.drawImage(
+    canvas,
+    0,
+    0,
+    32,
+    18
+  );
+
+  const data=ctx.getImageData(
+    0,
+    0,
+    32,
+    18
+  ).data;
+
+  let hash=0;
+
+  for(let i=0;i<data.length;i+=4){
+
+    hash+=
+      data[i]+
+      data[i+1]+
+      data[i+2];
+
+  }
+
+  return String(hash);
+}
+
+
+/* =========================================
+   VOICE
+========================================= */
+
+function speakSignal(data){
+
+  if($("voiceEnabled").value!=="ON"){
+    return;
+  }
+
+  if(!("speechSynthesis" in window)){
+    return;
+  }
+
+  const signal=
+    String(data.signal||"NO TRADE")
+      .toUpperCase();
+
+  const confidence=
+    Number(data.confidence||0);
+
+  const entry=
+    data.entry_candle||"WAIT";
+
+  const key=
+    signal+"|"+
+    confidence+"|"+
+    entry;
+
+  if(key===lastVoiceKey){
+    return;
+  }
+
+  lastVoiceKey=key;
+
+  window.speechSynthesis.cancel();
+
+  let text="";
+
+  if(signal==="CALL"){
+
+    text=
+      "Next Trader AI. Call signal. "+
+      confidence+
+      " percent confidence. "+
+      entry+".";
+
+  }else if(signal==="PUT"){
+
+    text=
+      "Next Trader AI. Put signal. "+
+      confidence+
+      " percent confidence. "+
+      entry+".";
+
+  }else{
+
+    text=
+      "Next Trader AI. No trade. Wait for confirmation.";
+
+  }
+
+  const utterance=
+    new SpeechSynthesisUtterance(text);
+
+  utterance.rate=.9;
+  utterance.pitch=.75;
+  utterance.volume=1;
+
+  window.speechSynthesis.speak(
+    utterance
+  );
+}
+
+
+/* =========================================
+   ANALYZE IMAGE
+========================================= */
+
+async function analyzeImage(
+  imageData,
+  source="manual",
+  requestNumber=null
+){
+
+  if(
+    source==="live" &&
+    requestNumber!==liveRequestNumber
+  ){
+    return null;
+  }
+
+  if(source!=="live"){
+
+    $("status").textContent=
+      "AI is analyzing chart...";
+
+    $("analyzeBtn").disabled=true;
+
+  }else{
+
+    $("liveStatus").textContent=
+      "AI analyzing latest chart frame...";
+
+  }
+
+  try{
+
+    const response=
+      await fetch(
+        "/api/analyze",
+        {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json"
           },
-          credentials: "same-origin",
-          cache: "no-store",
-          body: JSON.stringify({
-            password: password
+          credentials:"same-origin",
+          cache:"no-store",
+          body:JSON.stringify({
+
+            image:imageData,
+
+            settings:{
+
+              market:
+                $("market").value,
+
+              timeframe:
+                $("timeframe").value,
+
+              mode:
+                $("mode").value,
+
+              min_confidence:
+                Number(
+                  $("minConfidence").value
+                )
+
+            }
+
           })
-        });
-
-        const text = await response.text();
-
-        let data = {};
-
-        try {
-          data = JSON.parse(text);
-        } catch {
-          throw new Error("Server returned invalid response.");
         }
-
-        if (!response.ok) {
-          throw new Error(data.error || "Wrong password.");
-        }
-
-        sessionStorage.setItem(
-          "nt_unlocked",
-          "1"
-        );
-
-        $("loginStatus").textContent = "Unlocked ✓";
-
-        setTimeout(() => {
-          $("login").classList.add("hidden");
-        }, 300);
-
-      } catch (error) {
-
-        console.error("LOGIN ERROR:", error);
-
-        $("loginStatus").textContent =
-          error.message || "Login failed.";
-
-      } finally {
-
-        $("loginBtn").disabled = false;
-
-      }
-    }
-
-
-    // =========================
-    // IMAGE RESIZE
-    // =========================
-
-    async function resizeImage(file) {
-
-      const image = new Image();
-
-      const url = URL.createObjectURL(file);
-
-      image.src = url;
-
-      await new Promise((resolve, reject) => {
-
-        image.onload = resolve;
-        image.onerror = reject;
-
-      });
-
-      const maxWidth = 1200;
-
-      let width = image.width;
-      let height = image.height;
-
-      if (width > maxWidth) {
-
-        height =
-          Math.round(height * maxWidth / width);
-
-        width = maxWidth;
-
-      }
-
-      const canvas =
-        document.createElement("canvas");
-
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext("2d");
-
-      ctx.drawImage(
-        image,
-        0,
-        0,
-        width,
-        height
       );
 
-      URL.revokeObjectURL(url);
+    const text=
+      await response.text();
 
-      return canvas.toDataURL(
-        "image/jpeg",
-        0.70
+    let data={};
+
+    try{
+      data=JSON.parse(text);
+    }catch{
+      throw new Error(
+        "Server returned invalid JSON."
       );
     }
 
+    if(!response.ok){
+      throw new Error(
+        data.error||
+        "Analysis failed."
+      );
+    }
 
-    // =========================
-    // ANALYZE IMAGE
-    // =========================
+    if(
+      source==="live" &&
+      requestNumber!==liveRequestNumber
+    ){
+      return null;
+    }
 
-    async function analyzeImage(imageData) {
+    showResult(data);
 
-      $("status").textContent =
-        "AI is analyzing chart...";
+    if(source==="live"){
 
-      $("analyzeBtn").disabled = true;
+      $("liveStatus").textContent=
+        "LIVE • Latest frame analyzed ✓";
 
-      try {
+      const key=
+        String(data.signal||"NO TRADE")+
+        "|" +
+        String(data.confidence||0)+
+        "|" +
+        String(data.entry_candle||"WAIT");
 
-        const response = await fetch(
-          "/api/analyze",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            credentials: "same-origin",
-            body: JSON.stringify({
+      if(key!==lastSignalKey){
 
-              image: imageData,
+        lastSignalKey=key;
 
-              settings: {
-
-                market:
-                  $("market").value,
-
-                timeframe:
-                  $("timeframe").value,
-
-                mode:
-                  $("mode").value,
-
-                min_confidence:
-                  Number(
-                    $("minConfidence").value
-                  )
-
-              }
-
-            })
-          }
-        );
-
-        const text =
-          await response.text();
-
-        let data = {};
-
-        try {
-          data = JSON.parse(text);
-        } catch {
-          throw new Error(
-            "Server returned invalid JSON."
-          );
-        }
-
-        if (!response.ok) {
-
-          throw new Error(
-            data.error ||
-            "Analysis failed."
-          );
-
-        }
-
-        showResult(data);
-
-        $("status").textContent =
-          "Analysis complete ✓";
-
-      } catch (error) {
-
-        console.error(
-          "ANALYZE ERROR:",
-          error
-        );
-
-        $("status").textContent =
-          error.message ||
-          "Analysis failed.";
-
-      } finally {
-
-        $("analyzeBtn").disabled = false;
+        speakSignal(data);
 
       }
 
+    }else{
+
+      $("status").textContent=
+        "Analysis complete ✓";
+
     }
 
+    return data;
 
-    // =========================
-    // SHOW RESULT
-    // =========================
+  }catch(error){
 
-    function showResult(data) {
+    console.error(
+      "ANALYZE ERROR:",
+      error
+    );
 
-      $("resultCard")
+    if(source==="live"){
+
+      $("liveStatus").textContent=
+        "LIVE • Analysis error: "+
+        (error.message||"unknown");
+
+    }else{
+
+      $("status").textContent=
+        error.message||
+        "Analysis failed.";
+
+    }
+
+    return null;
+
+  }finally{
+
+    if(source!=="live"){
+      $("analyzeBtn").disabled=false;
+    }
+
+  }
+}
+
+
+/* =========================================
+   SHOW RESULT
+========================================= */
+
+function showResult(data){
+
+  $("resultCard")
+    .classList
+    .remove("hidden");
+
+  const signal=
+    String(
+      data.signal||"NO TRADE"
+    ).toUpperCase();
+
+  const confidence=
+    Number(
+      data.confidence||0
+    );
+
+  $("signal").textContent=
+    signal;
+
+  $("signal").className=
+    "signal";
+
+  if(signal==="CALL"){
+
+    $("signal")
+      .classList
+      .add("call");
+
+  }else if(signal==="PUT"){
+
+    $("signal")
+      .classList
+      .add("put");
+
+  }else{
+
+    $("signal")
+      .classList
+      .add("no-trade");
+
+  }
+
+  $("confidence").textContent=
+    confidence+"%";
+
+  $("trend").textContent=
+    data.trend||"UNCLEAR";
+
+  $("expiry").textContent=
+    data.expiry||"-";
+
+  $("entryCandle").textContent=
+    data.entry_candle||"WAIT";
+
+  $("setup").textContent=
+    data.setup||"-";
+
+  $("risk").textContent=
+    data.risk||"HIGH";
+
+  $("entryInstruction").textContent=
+    data.entry_instruction||
+    "Wait for confirmation.";
+
+  const reasons=
+    Array.isArray(data.reasons)
+      ?data.reasons
+      :[];
+
+  $("reasons").innerHTML="";
+
+  if(reasons.length===0){
+
+    $("reasons").innerHTML=
+      '<div class="reason">No reliable reasons returned.</div>';
+
+  }else{
+
+    reasons.forEach(reason=>{
+
+      const div=
+        document.createElement("div");
+
+      div.className="reason";
+
+      div.textContent=
+        "• "+reason;
+
+      $("reasons")
+        .appendChild(div);
+
+    });
+
+  }
+
+}
+
+
+/* =========================================
+   MANUAL FILE UPLOAD
+========================================= */
+
+$("imageInput")
+.addEventListener(
+  "change",
+  async function(){
+
+    const file=this.files?.[0];
+
+    if(!file)return;
+
+    try{
+
+      const imageData=
+        await resizeImage(file);
+
+      $("preview").src=
+        imageData;
+
+      $("preview")
         .classList
         .remove("hidden");
 
-      const signal =
-        String(
-          data.signal || "NO TRADE"
-        ).toUpperCase();
-
-      const confidence =
-        Number(
-          data.confidence || 0
+      $("analyzeBtn").onclick=
+        ()=>analyzeImage(
+          imageData,
+          "manual"
         );
 
-      $("signal").textContent =
-        signal;
+      $("status").textContent=
+        "Chart ready. Click ANALYZE CHART.";
 
-      $("signal").className =
-        "signal";
+    }catch(error){
 
-      if (signal === "CALL") {
+      console.error(error);
 
-        $("signal")
-          .classList
-          .add("call");
-
-      } else if (signal === "PUT") {
-
-        $("signal")
-          .classList
-          .add("put");
-
-      } else {
-
-        $("signal")
-          .classList
-          .add("no-trade");
-
-      }
-
-      $("confidence").textContent =
-        confidence + "%";
-
-      $("trend").textContent =
-        data.trend || "UNCLEAR";
-
-      $("expiry").textContent =
-        data.expiry || "-";
-
-      $("entryCandle").textContent =
-        data.entry_candle || "WAIT";
-
-      $("setup").textContent =
-        data.setup || "-";
-
-      $("risk").textContent =
-        data.risk || "HIGH";
-
-      $("entryInstruction").textContent =
-        data.entry_instruction ||
-        "Wait for confirmation.";
-
-      const reasons =
-        Array.isArray(data.reasons)
-          ? data.reasons
-          : [];
-
-      $("reasons").innerHTML = "";
-
-      if (reasons.length === 0) {
-
-        $("reasons").innerHTML =
-          '<div class="reason">No reliable reasons returned.</div>';
-
-      } else {
-
-        reasons.forEach((reason) => {
-
-          const div =
-            document.createElement("div");
-
-          div.className =
-            "reason";
-
-          div.textContent =
-            "• " + reason;
-
-          $("reasons")
-            .appendChild(div);
-
-        });
-
-      }
+      $("status").textContent=
+        "Could not load image.";
 
     }
 
+  }
+);
 
-    // =========================
-    // FILE UPLOAD
-    // =========================
 
-    $("imageInput")
-      .addEventListener(
-        "change",
-        async function () {
+/* =========================================
+   CAMERA
+========================================= */
 
-          const file =
-            this.files?.[0];
+async function startCamera(){
 
-          if (!file) return;
+  try{
 
-          try {
+    cameraStream=
+      await navigator.mediaDevices.getUserMedia({
 
-            const imageData =
-              await resizeImage(file);
-
-            $("preview").src =
-              imageData;
-
-            $("preview")
-              .classList
-              .remove("hidden");
-
-            $("analyzeBtn")
-              .onclick = () =>
-                analyzeImage(imageData);
-
-            $("status").textContent =
-              "Chart ready. Click ANALYZE CHART.";
-
-          } catch (error) {
-
-            console.error(error);
-
-            $("status").textContent =
-              "Could not load image.";
-
+        video:{
+          facingMode:{
+            ideal:"environment"
           }
+        },
 
-        }
+        audio:false
+
+      });
+
+    $("camera").srcObject=
+      cameraStream;
+
+    $("camera")
+      .classList
+      .remove("hidden");
+
+    $("cameraStatus").textContent=
+      "Camera started ✓";
+
+    startCameraScanner();
+
+  }catch(error){
+
+    console.error(error);
+
+    $("cameraStatus").textContent=
+      "Camera permission denied or unavailable.";
+
+  }
+
+}
+
+
+function stopCamera(){
+
+  if(cameraTimer){
+
+    clearInterval(cameraTimer);
+
+    cameraTimer=null;
+
+  }
+
+  if(cameraStream){
+
+    cameraStream
+      .getTracks()
+      .forEach(
+        track=>track.stop()
       );
 
+    cameraStream=null;
 
-    // =========================
-    // CAMERA
-    // =========================
+  }
 
-    async function startCamera() {
+  $("camera").srcObject=null;
 
-      try {
+  $("camera")
+    .classList
+    .add("hidden");
 
-        cameraStream =
-          await navigator.mediaDevices.getUserMedia({
+  $("cameraStatus").textContent=
+    "Camera stopped.";
 
-            video: {
-              facingMode: {
-                ideal: "environment"
-              }
-            },
+}
 
-            audio: false
 
-          });
+function startCameraScanner(){
 
-        $("camera").srcObject =
-          cameraStream;
+  if(cameraTimer){
+    clearInterval(cameraTimer);
+  }
 
-        $("camera")
-          .classList
-          .remove("hidden");
+  const seconds=
+    Number(
+      $("scanInterval").value
+    );
 
-        $("cameraStatus").textContent =
-          "Camera started ✓";
+  cameraTimer=
+    setInterval(
+      captureCameraFrame,
+      seconds*1000
+    );
 
-        startCameraScanner();
+}
 
-      } catch (error) {
 
-        console.error(
-          "CAMERA ERROR:",
-          error
-        );
+function captureCameraFrame(){
 
-        $("cameraStatus").textContent =
-          "Camera permission denied or unavailable.";
+  if(!cameraStream)return;
 
-      }
+  const video=$("camera");
 
-    }
+  if(
+    video.readyState<
+    HTMLMediaElement.HAVE_CURRENT_DATA
+  ){
+    return;
+  }
 
+  const canvas=
+    document.createElement("canvas");
 
-    function stopCamera() {
+  const maxWidth=1200;
 
-      if (cameraTimer) {
+  let width=video.videoWidth;
+  let height=video.videoHeight;
 
-        clearInterval(
-          cameraTimer
-        );
+  if(!width||!height)return;
 
-        cameraTimer = null;
+  if(width>maxWidth){
 
-      }
+    height=Math.round(
+      height*maxWidth/width
+    );
 
-      if (cameraStream) {
+    width=maxWidth;
 
-        cameraStream
-          .getTracks()
-          .forEach(
-            track => track.stop()
-          );
+  }
 
-        cameraStream = null;
+  canvas.width=width;
+  canvas.height=height;
 
-      }
+  const ctx=canvas.getContext("2d");
 
-      $("camera").srcObject =
-        null;
+  ctx.drawImage(
+    video,
+    0,
+    0,
+    width,
+    height
+  );
 
-      $("camera")
-        .classList
-        .add("hidden");
+  const imageData=
+    canvas.toDataURL(
+      "image/jpeg",
+      .70
+    );
 
-      $("cameraStatus").textContent =
-        "Camera stopped.";
+  $("cameraStatus").textContent=
+    "Analyzing latest camera frame...";
 
-    }
+  analyzeImage(
+    imageData,
+    "camera"
+  );
 
+}
 
-    function startCameraScanner() {
 
-      if (cameraTimer) {
+/* =========================================
+   LIVE SCREEN VISION
+========================================= */
 
-        clearInterval(
-          cameraTimer
-        );
+async function startLiveVision(){
 
-      }
+  if(screenStream){
+    return;
+  }
 
-      const seconds =
-        Number(
-          $("scanInterval").value
-        );
+  if(
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getDisplayMedia
+  ){
 
-      cameraTimer =
-        setInterval(
-          captureCameraFrame,
-          seconds * 1000
-        );
+    $("liveStatus").textContent=
+      "Screen sharing is not supported in this browser.";
 
-    }
+    return;
+  }
 
+  try{
 
-    function captureCameraFrame() {
+    /*
+      IMPORTANT:
+      Browser permission dialog MUST be triggered
+      by this user click.
+    */
 
-      if (!cameraStream) return;
+    screenStream=
+      await navigator.mediaDevices.getDisplayMedia({
 
-      const video =
-        $("camera");
-
-      if (
-        video.readyState <
-        HTMLMediaElement.HAVE_CURRENT_DATA
-      ) {
-        return;
-      }
-
-      const canvas =
-        document.createElement("canvas");
-
-      const maxWidth = 1200;
-
-      let width =
-        video.videoWidth;
-
-      let height =
-        video.videoHeight;
-
-      if (!width || !height) return;
-
-      if (width > maxWidth) {
-
-        height =
-          Math.round(
-            height * maxWidth / width
-          );
-
-        width = maxWidth;
-
-      }
-
-      canvas.width =
-        width;
-
-      canvas.height =
-        height;
-
-      const ctx =
-        canvas.getContext("2d");
-
-      ctx.drawImage(
-        video,
-        0,
-        0,
-        width,
-        height
-      );
-
-      const imageData =
-        canvas.toDataURL(
-          "image/jpeg",
-          0.70
-        );
-
-      $("cameraStatus").textContent =
-        "Analyzing latest camera frame...";
-
-      analyzeImage(imageData);
-
-    }
-
-
-    // =========================
-    // BUTTON EVENTS
-    // =========================
-
-    $("loginBtn")
-      .addEventListener(
-        "click",
-        login
-      );
-
-    $("password")
-      .addEventListener(
-        "keydown",
-        function(event) {
-
-          if (
-            event.key === "Enter"
-          ) {
-            login();
+        video:{
+          frameRate:{
+            ideal:5,
+            max:10
           }
+        },
 
-        }
+        audio:false
+
+      });
+
+    $("screenPreview").srcObject=
+      screenStream;
+
+    $("screenPreview")
+      .classList
+      .remove("hidden");
+
+    $("startLive")
+      .classList
+      .add("live-active");
+
+    $("liveDot")
+      .classList
+      .add("on");
+
+    $("liveStatus").textContent=
+      "LIVE VISION ACTIVE ✓";
+
+    /*
+      If user clicks browser's
+      "Stop sharing" button.
+    */
+
+    const track=
+      screenStream.getVideoTracks()[0];
+
+    if(track){
+
+      track.addEventListener(
+        "ended",
+        stopLiveVision
       );
-
-
-    $("startCamera")
-      .addEventListener(
-        "click",
-        startCamera
-      );
-
-
-    $("stopCamera")
-      .addEventListener(
-        "click",
-        stopCamera
-      );
-
-
-    $("scanInterval")
-      .addEventListener(
-        "change",
-        function() {
-
-          if (cameraStream) {
-            startCameraScanner();
-          }
-
-        }
-      );
-
-
-    // =========================
-    // SESSION UI
-    // =========================
-
-    if (
-      sessionStorage.getItem(
-        "nt_unlocked"
-      ) === "1"
-    ) {
-
-      $("login")
-        .classList
-        .add("hidden");
 
     }
 
-  </script>
+    startLiveScanner();
+
+  }catch(error){
+
+    console.error(
+      "SCREEN SHARE ERROR:",
+      error
+    );
+
+    $("liveStatus").textContent=
+      "Screen share cancelled or unavailable.";
+
+    screenStream=null;
+
+  }
+
+}
+
+
+function stopLiveVision(){
+
+  liveRequestNumber++;
+
+  if(liveTimer){
+
+    clearInterval(liveTimer);
+
+    liveTimer=null;
+
+  }
+
+  if(screenStream){
+
+    screenStream
+      .getTracks()
+      .forEach(
+        track=>track.stop()
+      );
+
+    screenStream=null;
+
+  }
+
+  liveBusy=false;
+
+  $("screenPreview").srcObject=null;
+
+  $("screenPreview")
+    .classList
+    .add("hidden");
+
+  $("startLive")
+    .classList
+    .remove("live-active");
+
+  $("liveDot")
+    .classList
+    .remove("on");
+
+  $("liveStatus").textContent=
+    "LIVE VISION OFF";
+
+}
+
+
+function startLiveScanner(){
+
+  if(liveTimer){
+    clearInterval(liveTimer);
+  }
+
+  const seconds=
+    Number(
+      $("liveInterval").value
+    );
+
+  /*
+    First frame immediately.
+  */
+
+  setTimeout(
+    captureLiveFrame,
+    700
+  );
+
+  liveTimer=
+    setInterval(
+      captureLiveFrame,
+      seconds*1000
+    );
+
+}
+
+
+async function captureLiveFrame(){
+
+  if(!screenStream)return;
+
+  if(liveBusy){
+
+    return;
+
+  }
+
+  const video=
+    $("screenPreview");
+
+  if(
+    video.readyState<
+    HTMLMediaElement.HAVE_CURRENT_DATA
+  ){
+    return;
+  }
+
+  const canvas=
+    document.createElement("canvas");
+
+  const maxWidth=1200;
+
+  let width=
+    video.videoWidth;
+
+  let height=
+    video.videoHeight;
+
+  if(!width||!height){
+    return;
+  }
+
+  if(width>maxWidth){
+
+    height=
+      Math.round(
+        height*maxWidth/width
+      );
+
+    width=maxWidth;
+
+  }
+
+  canvas.width=width;
+  canvas.height=height;
+
+  const ctx=
+    canvas.getContext("2d");
+
+  ctx.drawImage(
+    video,
+    0,
+    0,
+    width,
+    height
+  );
+
+  /*
+    Cheap visual-change check.
+    This does NOT replace AI analysis.
+    It simply prevents sending identical
+    frames repeatedly.
+  */
+
+  const hash=
+    getFrameHash(canvas);
+
+  const now=Date.now();
+
+  /*
+    Always allow the first frame.
+  */
+
+  if(
+    lastFrameHash===hash &&
+    lastAnalysisTime>0 &&
+    now-lastAnalysisTime<10000
+  ){
+
+    $("liveStatus").textContent=
+      "LIVE • Waiting for chart movement...";
+
+    return;
+
+  }
+
+  lastFrameHash=hash;
+
+  const imageData=
+    canvas.toDataURL(
+      "image/jpeg",
+      .70
+    );
+
+  liveBusy=true;
+
+  lastAnalysisTime=now;
+
+  liveRequestNumber++;
+
+  const requestNumber=
+    liveRequestNumber;
+
+  $("liveStatus").textContent=
+    "LIVE • Sending latest frame to AI...";
+
+  try{
+
+    await analyzeImage(
+      imageData,
+      "live",
+      requestNumber
+    );
+
+  }finally{
+
+    liveBusy=false;
+
+  }
+
+}
+
+
+/* =========================================
+   BUTTON EVENTS
+========================================= */
+
+$("loginBtn")
+.addEventListener(
+  "click",
+  login
+);
+
+
+$("password")
+.addEventListener(
+  "keydown",
+  event=>{
+
+    if(event.key==="Enter"){
+      login();
+    }
+
+  }
+);
+
+
+$("startCamera")
+.addEventListener(
+  "click",
+  startCamera
+);
+
+
+$("stopCamera")
+.addEventListener(
+  "click",
+  stopCamera
+);
+
+
+$("scanInterval")
+.addEventListener(
+  "change",
+  ()=>{
+
+    if(cameraStream){
+      startCameraScanner();
+    }
+
+  }
+);
+
+
+$("startLive")
+.addEventListener(
+  "click",
+  startLiveVision
+);
+
+
+$("stopLive")
+.addEventListener(
+  "click",
+  stopLiveVision
+);
+
+
+$("liveInterval")
+.addEventListener(
+  "change",
+  ()=>{
+
+    if(screenStream){
+      startLiveScanner();
+    }
+
+  }
+);
+
+
+/* =========================================
+   SESSION
+========================================= */
+
+if(
+  sessionStorage.getItem(
+    "nt_unlocked"
+  )==="1"
+){
+
+  $("login")
+    .classList
+    .add("hidden");
+
+}
+
+
+/* =========================================
+   CLEANUP
+========================================= */
+
+window.addEventListener(
+  "beforeunload",
+  ()=>{
+    stopLiveVision();
+    stopCamera();
+  }
+);
+
+</script>
 
 </body>
 </html>
