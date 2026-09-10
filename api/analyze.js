@@ -86,5 +86,3 @@ Strict rules:
     return res.status(500).json({error:error?.message||"Gemini API failed."});
   }
 }
-
-
