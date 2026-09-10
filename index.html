@@ -1,1669 +1,304 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXT TRADER AI</title>
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NEXT TRADER AI PRO</title>
 <style>
-*{box-sizing:border-box}
-
-body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:
-    radial-gradient(circle at 50% 0%,#260000 0%,#080808 45%,#000 100%);
-  color:#fff;
+:root{
+--bg:#020308;--panel:rgba(8,11,22,.72);--line:rgba(118,145,255,.22);
+--text:#f4f7ff;--muted:#8994b5;--cyan:#35e7ff;--blue:#6385ff;
+--green:#25f5a0;--red:#ff456d;--purple:#a76bff
 }
-
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;background:#020308;color:var(--text);
+font-family:Inter,Segoe UI,Arial,sans-serif;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:-25%;z-index:-5;
+background:radial-gradient(circle at 20% 20%,rgba(53,231,255,.14),transparent 24%),
+radial-gradient(circle at 80% 25%,rgba(167,107,255,.16),transparent 25%),
+radial-gradient(circle at 50% 90%,rgba(99,133,255,.12),transparent 28%);
+animation:aurora 14s ease-in-out infinite alternate}
+@keyframes aurora{from{transform:translate3d(-2%,0,0) scale(1)}to{transform:translate3d(3%,-2%,0) scale(1.08)}}
+.grid-bg{position:fixed;inset:0;z-index:-4;pointer-events:none;opacity:.26;
+background-image:linear-gradient(rgba(70,120,255,.13) 1px,transparent 1px),
+linear-gradient(90deg,rgba(70,120,255,.13) 1px,transparent 1px);
+background-size:55px 55px;transform:perspective(650px) rotateX(58deg) scale(1.8) translateY(18%);
+transform-origin:center bottom;animation:gridmove 9s linear infinite}
+@keyframes gridmove{to{background-position:0 55px,55px 0}}
+.scanlines{position:fixed;inset:0;z-index:50;pointer-events:none;opacity:.035;
+background:repeating-linear-gradient(0deg,transparent 0 3px,#fff 4px,transparent 5px)}
+.noise{position:fixed;inset:-50%;z-index:-2;pointer-events:none;opacity:.025;
+background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+animation:noise .25s steps(2) infinite}
+@keyframes noise{0%{transform:translate(0,0)}25%{transform:translate(2%,-1%)}50%{transform:translate(-1%,2%)}75%{transform:translate(1%,1%)}100%{transform:translate(-2%,0)}}
+.particles{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.particles i{position:absolute;width:2px;height:2px;border-radius:50%;background:#8fdcff;
+box-shadow:0 0 9px #4beaff;opacity:.65;animation:float linear infinite}
+@keyframes float{from{transform:translateY(110vh) translateX(0);opacity:0}15%{opacity:.8}85%{opacity:.55}
+to{transform:translateY(-15vh) translateX(90px);opacity:0}}
+.wrap{width:min(980px,100%);margin:auto;padding:22px 15px 60px}
+.top{position:relative;display:flex;justify-content:space-between;align-items:center;gap:18px;padding:20px 2px 25px}
+.kicker{font-size:10px;letter-spacing:5px;color:var(--cyan);font-weight:900;text-shadow:0 0 15px rgba(53,231,255,.8);margin-bottom:7px}
+h1{margin:0;font-size:clamp(28px,6vw,48px);line-height:.95;letter-spacing:-2px;font-weight:1000;
+text-transform:uppercase;background:linear-gradient(90deg,#fff,var(--cyan),#fff,var(--purple));
+background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+animation:textflow 5s linear infinite;filter:drop-shadow(0 0 18px rgba(53,231,255,.22))}
+@keyframes textflow{to{background-position:300% 0}}
+.sub{color:#8f9ab8;margin-top:10px;font-size:12px;letter-spacing:1.8px}
+.clock{min-width:118px;text-align:center;padding:12px 14px;border:1px solid var(--line);border-radius:16px;
+background:rgba(8,12,25,.68);backdrop-filter:blur(14px);font-family:ui-monospace,monospace;
+font-weight:900;color:#dffaff;box-shadow:inset 0 0 25px rgba(53,231,255,.04),0 0 25px rgba(53,231,255,.07)}
+.card{position:relative;overflow:hidden;margin:16px 0;padding:20px;
+background:linear-gradient(145deg,rgba(14,18,35,.82),rgba(5,8,17,.72));
+border:1px solid var(--line);border-radius:24px;box-shadow:0 18px 55px rgba(0,0,0,.42),inset 0 0 35px rgba(85,115,255,.035);
+backdrop-filter:blur(18px);animation:cardin .65s ease both}
+.card:before{content:"";position:absolute;inset:-2px;border-radius:25px;padding:1px;
+background:linear-gradient(120deg,transparent 20%,rgba(53,231,255,.5),transparent 45%,rgba(167,107,255,.4),transparent 75%);
+-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+-webkit-mask-composite:xor;mask-composite:exclude;background-size:250% 100%;
+animation:borderflow 7s linear infinite;pointer-events:none}
+@keyframes borderflow{to{background-position:250% 0}}
+@keyframes cardin{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}
+h2{margin:0 0 14px;font-size:15px;letter-spacing:1.5px;text-transform:uppercase}
+h2 .ico{color:var(--cyan);text-shadow:0 0 14px currentColor}
+.small,.muted{color:var(--muted);font-size:12px;line-height:1.65}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+label{display:block;color:#7783a7;font-size:10px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;margin:0 0 7px}
+select,input[type=password],input[type=file]{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(108,132,222,.22);
+background:rgba(3,6,14,.82);color:#fff;outline:none}
+select:focus,input:focus{border-color:rgba(53,231,255,.65);box-shadow:0 0 0 3px rgba(53,231,255,.08)}
+input[type=file]{border-style:dashed;color:#aeb9d6}
+button{position:relative;overflow:hidden;width:100%;padding:14px 16px;margin-top:11px;border:1px solid rgba(255,255,255,.08);
+border-radius:15px;cursor:pointer;color:#eaf3ff;background:rgba(24,30,51,.82);font-weight:1000;letter-spacing:1px;
+transition:.25s;box-shadow:0 8px 22px rgba(0,0,0,.25)}
+button:after{content:"";position:absolute;top:0;left:-110%;width:45%;height:100%;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);transition:.55s}
+button:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(53,231,255,.12)}
+button:hover:after{left:130%}
+button.primary{background:linear-gradient(110deg,#1266ff,#664dff,#12bce8);background-size:220% 100%;
+animation:btnflow 5s linear infinite;box-shadow:0 0 25px rgba(66,111,255,.22)}
+@keyframes btnflow{to{background-position:220% 0}}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.preview,video{width:100%;max-height:430px;object-fit:cover;margin-top:13px;border-radius:18px;
+border:1px solid rgba(80,125,255,.2);background:#01030a;box-shadow:0 12px 40px #0008}
+.preview{display:none}video{display:none}.cambar{display:flex;gap:10px}.cambar button{margin-top:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}
+.pill{padding:8px 11px;border:1px solid rgba(102,130,220,.17);border-radius:999px;background:rgba(19,25,48,.72);
+font-size:11px;color:#aab6d5}
+.pill b{color:#f4f7ff}.status{min-height:20px;margin-top:9px;color:#8f9ab8;font-size:12px}
 .hidden{display:none!important}
-
-.app{
-  max-width:1100px;
-  margin:auto;
-  padding:20px;
-}
-
-h1{text-align:center;margin-bottom:5px}
-
-.subtitle{
-  text-align:center;
-  color:#aaa;
-  margin-bottom:25px;
-}
-
-.card{
-  background:rgba(17,17,17,.94);
-  border:1px solid #292929;
-  border-radius:14px;
-  padding:18px;
-  margin-bottom:18px;
-  box-shadow:0 0 20px rgba(255,0,0,.04);
-}
-
-label{
-  display:block;
-  margin:10px 0 6px;
-  color:#bbb;
-}
-
-input,select,button{
-  width:100%;
-  padding:12px;
-  border-radius:9px;
-  border:1px solid #333;
-  background:#181818;
-  color:white;
-  font-size:15px;
-}
-
-button{
-  cursor:pointer;
-  font-weight:bold;
-  background:#222;
-}
-
-button:hover{background:#303030}
-
-button:disabled{
-  opacity:.5;
-  cursor:not-allowed;
-}
-
-.primary{
-  margin-top:15px;
-  background:#fff;
-  color:#000;
-}
-
-.primary:hover{background:#ddd}
-
-.danger{
-  background:#300;
-  border-color:#600;
-}
-
-.live-btn{
-  background:#240000;
-  border:1px solid #700;
-}
-
-.live-active{
-  background:#3a0000;
-  border-color:#f33;
-  box-shadow:0 0 18px rgba(255,0,0,.25);
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
-}
-
-@media(max-width:700px){
-  .grid{grid-template-columns:1fr}
-}
-
-#preview,#camera,#screenPreview{
-  width:100%;
-  max-height:500px;
-  object-fit:contain;
-  margin-top:15px;
-  border-radius:10px;
-  background:#000;
-}
-
-.result{text-align:center}
-
-.signal{
-  font-size:42px;
-  font-weight:bold;
-  margin:15px 0;
-}
-
-.call{color:#35e38a}
-.put{color:#ff5f5f}
-.no-trade{color:#ffc857}
-
-.confidence{
-  font-size:25px;
-  margin-bottom:15px;
-}
-
-.row{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  padding:8px 0;
-  border-bottom:1px solid #222;
-}
-
-.row span:first-child{color:#999}
-
-.reason{
-  text-align:left;
-  padding:8px 0;
-  color:#ddd;
-}
-
-.status{
-  margin-top:10px;
-  color:#aaa;
-  min-height:20px;
-}
-
-.warning{
-  color:#ffb84d;
-  font-size:13px;
-  line-height:1.5;
-}
-
-.login-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.96);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-  padding:20px;
-}
-
-.login-box{
-  width:100%;
-  max-width:400px;
-  background:#111;
-  border:1px solid #333;
-  border-radius:15px;
-  padding:25px;
-}
-
-.login-box h2{text-align:center}
-
-.camera-buttons,
-.live-buttons{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  margin-top:10px;
-}
-
-.live-status{
-  margin-top:12px;
-  padding:12px;
-  border-radius:9px;
-  background:#090909;
-  border:1px solid #222;
-  color:#aaa;
-}
-
-.live-dot{
-  display:inline-block;
-  width:9px;
-  height:9px;
-  border-radius:50%;
-  background:#555;
-  margin-right:7px;
-}
-
-.live-dot.on{
-  background:#f22;
-  box-shadow:0 0 10px #f22;
-}
-
-.mode-badge{
-  display:inline-block;
-  padding:5px 10px;
-  border-radius:20px;
-  background:#1b1b1b;
-  border:1px solid #333;
-  font-size:12px;
-  color:#aaa;
-}
+.badge{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;
+background:rgba(53,231,255,.07);border:1px solid rgba(53,231,255,.2);color:var(--cyan);
+font-size:10px;font-weight:1000;letter-spacing:1.3px}
+.badge:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
+.signal{margin:13px 0 3px;font-size:clamp(42px,10vw,76px);line-height:.95;font-weight:1000;
+letter-spacing:5px;text-shadow:0 0 25px currentColor;animation:signalpulse 1.5s ease-in-out infinite}
+.call{color:var(--green)}.put{color:var(--red)}.no{color:#d6ddf5}
+@keyframes signalpulse{50%{transform:scale(1.025);text-shadow:0 0 45px currentColor}}
+.entry{background:linear-gradient(120deg,rgba(11,20,42,.8),rgba(5,10,23,.7));border:1px solid rgba(93,126,230,.22);
+border-radius:17px;padding:15px;margin-top:13px}.entry b{color:#dce8ff}
+ul{padding-left:22px;color:#aeb9d6;line-height:1.8}hr{border:0;border-top:1px solid rgba(90,115,200,.15);margin:17px 0}
+.live-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.live-indicator{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:1000;letter-spacing:1px;color:#65708d}
+.live-dot{width:9px;height:9px;border-radius:50%;background:#404860}
+.live-dot.on{background:#ff365f;box-shadow:0 0 0 0 rgba(255,54,95,.65);animation:livepulse 1.2s infinite}
+@keyframes livepulse{70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.live-active{outline:1px solid rgba(255,54,95,.65);box-shadow:0 0 30px rgba(255,54,95,.15)!important}
+.scan-frame{position:relative}.scan-frame:after{content:"";position:absolute;left:4%;right:4%;top:15%;height:2px;
+background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:0 0 16px var(--cyan);opacity:0;pointer-events:none}
+.scanning:after{opacity:.9;animation:scan 2.2s linear infinite}
+@keyframes scan{from{top:12%}to{top:88%}}
+.wave{display:inline-flex;gap:3px;height:16px;align-items:center;margin-left:7px}
+.wave i{width:3px;height:5px;background:var(--cyan);border-radius:4px;animation:wave .8s ease-in-out infinite}
+.wave i:nth-child(2){animation-delay:.1s}.wave i:nth-child(3){animation-delay:.2s}.wave i:nth-child(4){animation-delay:.3s}.wave i:nth-child(5){animation-delay:.4s}
+@keyframes wave{50%{height:16px;box-shadow:0 0 8px var(--cyan)}}
+.login{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;
+background:rgba(1,2,7,.82);backdrop-filter:blur(22px)}
+.login .card{width:min(450px,100%);text-align:center}
+.login-logo{font-size:30px;font-weight:1000;letter-spacing:-1px;margin:12px 0;
+background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-background-clip:text;color:transparent}
+.footer{text-align:center;color:#59637e;font-size:10px;letter-spacing:1px;margin-top:25px}
+@media(max-width:650px){.grid,.two{grid-template-columns:1fr}.top{align-items:flex-start}.clock{min-width:auto;font-size:11px}
+.wrap{padding-top:10px}.card{padding:17px;border-radius:20px}.cambar{flex-direction:column}.cambar button{margin-top:7px}}
 </style>
 </head>
-
 <body>
-
-<!-- LOGIN -->
-<div id="login" class="login-overlay">
-  <div class="login-box">
-    <h2>NEXT TRADER AI</h2>
-
-    <label for="password">Password</label>
-
-    <input
-      id="password"
-      type="password"
-      placeholder="Enter password"
-      autocomplete="current-password"
-    >
-
-    <button id="loginBtn" class="primary" type="button">
-      LOGIN
-    </button>
-
-    <div id="loginStatus" class="status"></div>
-  </div>
+<div class="grid-bg"></div><div class="scanlines"></div><div class="noise"></div>
+<div class="particles">
+<i style="left:5%;animation-duration:13s;animation-delay:-4s"></i><i style="left:13%;animation-duration:17s;animation-delay:-9s"></i>
+<i style="left:22%;animation-duration:11s;animation-delay:-2s"></i><i style="left:31%;animation-duration:19s;animation-delay:-13s"></i>
+<i style="left:43%;animation-duration:15s;animation-delay:-7s"></i><i style="left:54%;animation-duration:12s;animation-delay:-10s"></i>
+<i style="left:63%;animation-duration:18s;animation-delay:-5s"></i><i style="left:74%;animation-duration:14s;animation-delay:-8s"></i>
+<i style="left:85%;animation-duration:20s;animation-delay:-14s"></i><i style="left:94%;animation-duration:16s;animation-delay:-3s"></i>
 </div>
 
+<div id="login" class="login"><div class="card">
+<div class="badge">PRIVATE ACCESS // SECURE NODE</div>
+<div class="login-logo">⚡ NEXT TRADER AI PRO</div>
+<p class="muted">AI VISION TERMINAL • AUTHORIZED USERS ONLY</p>
+<input id="password" type="password" placeholder="ENTER ACCESS PASSWORD" autocomplete="current-password">
+<button id="loginBtn" class="primary">UNLOCK SYSTEM</button><div id="loginStatus" class="status"></div>
+</div></div>
 
-<main class="app">
+<div class="wrap">
+<header class="top"><div><div class="kicker">AI VISION // MARKET INTELLIGENCE</div>
+<h1>NEXT TRADER</h1><div class="sub">SCREENSHOT • CAMERA • LIVE VISION • CALL / PUT / NO TRADE</div></div>
+<div id="clock" class="clock">--:--:--</div></header>
 
-<h1>☠ NEXT TRADER AI ☠</h1>
+<section class="card"><h2><span class="ico">◈</span> Chart Screenshot</h2>
+<input id="file" type="file" accept="image/png,image/jpeg,image/webp"><img id="preview" class="preview">
+<button id="go" class="primary">ANALYZE CHART ↗</button></section>
 
-<div class="subtitle">
-  AI Chart Screenshot Analyzer
+<section class="card"><div class="live-head"><h2><span class="ico">◉</span> LIVE VISION MODE</h2>
+<div class="live-indicator"><span id="liveDot" class="live-dot"></span><span id="liveStatus">OFFLINE</span></div></div>
+<div class="small">Share your broker/chart window or tab. The browser captures periodic frames and sends them to the AI; this is not a direct broker data feed.</div>
+<div id="liveFrame" class="scan-frame"><video id="screenPreview" autoplay playsinline muted></video></div>
+<div class="two"><button id="startLive" class="primary">▶ START LIVE VISION</button><button id="stopLive">■ STOP LIVE</button></div>
+<div class="row"><span class="pill">Scan interval:
+<select id="liveInterval" style="border:0;background:transparent;padding:0;width:auto;color:#fff">
+<option value="2">2 sec</option><option value="3">3 sec</option><option value="5" selected>5 sec</option><option value="8">8 sec</option></select></span>
+<span class="pill">AI Voice: <b id="voiceState">ON</b></span></div>
+<button id="voiceToggle">🔊 TOGGLE AI VOICE</button></section>
+
+<section class="card"><h2><span class="ico">◎</span> Camera Chart Scanner</h2>
+<div class="small">Hold the broker chart in front of the camera. Automatic frames are analyzed at your selected interval.</div>
+<video id="camera" autoplay playsinline muted></video>
+<div class="cambar"><button id="startCam" class="primary">START CAMERA</button><button id="stopCam">STOP CAMERA</button></div>
+<div id="camStatus" class="status"></div><div class="row">
+<span class="pill">Last scan: <b id="lastScan">—</b></span><span class="pill">Next scan: <b id="nextScan">—</b></span></div></section>
+
+<section class="card"><h2><span class="ico">⚙</span> Advanced Controls</h2><div class="grid">
+<div><label>Market</label><select id="market"><option>OTC</option><option>FOREX</option><option>GENERAL</option></select></div>
+<div><label>Candle timeframe</label><select id="timeframe"><option>1 minute</option><option>2 minutes</option><option>5 minutes</option><option>15 minutes</option></select></div>
+<div><label>Analysis mode</label><select id="mode"><option>STRICT SMC</option><option>PRICE ACTION</option><option>SCALPING</option><option>CONSERVATIVE</option></select></div>
+<div><label>Camera interval</label><select id="interval"><option value="3">3 sec</option><option value="5" selected>5 sec</option><option value="8">8 sec</option><option value="10">10 sec</option></select></div>
+<div><label>Minimum confidence</label><select id="minConfidence"><option value="50">50%</option><option value="60" selected>60%</option><option value="70">70%</option><option value="80">80%</option></select></div>
+<div><label>Signal filter</label><select id="filter"><option>ALL</option><option>NO TRADE ONLY</option><option>HIGH CONFIDENCE ONLY</option></select></div>
+</div></section>
+
+<section id="candleCard" class="card"><h2><span class="ico">◷</span> Candle Clock</h2><div class="row">
+<span class="pill">Current time: <b id="timeNow">—</b></span><span class="pill">Next candle in: <b id="candleCountdown">—</b></span>
+</div><div class="small">Device-time estimate. Always compare it with the broker's own candle timer.</div></section>
+
+<section id="result" class="card hidden"></section>
+<div class="footer">NEXT TRADER AI PRO // TECHNICAL ANALYSIS IS PROBABILISTIC // NO SIGNAL IS GUARANTEED</div>
 </div>
-
-
-<!-- SETTINGS -->
-<section class="card">
-
-<h2>Analysis Settings</h2>
-
-<div class="grid">
-
-<div>
-<label for="market">Market</label>
-<select id="market">
-<option value="OTC">OTC</option>
-<option value="FOREX">FOREX</option>
-<option value="GENERAL">GENERAL</option>
-</select>
-</div>
-
-<div>
-<label for="timeframe">Timeframe</label>
-<select id="timeframe">
-<option value="1 minute">1 Minute</option>
-<option value="2 minutes">2 Minutes</option>
-<option value="5 minutes">5 Minutes</option>
-<option value="15 minutes">15 Minutes</option>
-</select>
-</div>
-
-<div>
-<label for="mode">Analysis Mode</label>
-<select id="mode">
-<option value="STRICT SMC">STRICT SMC</option>
-<option value="PRICE ACTION">PRICE ACTION</option>
-<option value="SCALPING">SCALPING</option>
-<option value="CONSERVATIVE">CONSERVATIVE</option>
-</select>
-</div>
-
-<div>
-<label for="minConfidence">Minimum Confidence</label>
-
-<select id="minConfidence">
-<option value="50">50%</option>
-<option value="60" selected>60%</option>
-<option value="70">70%</option>
-<option value="80">80%</option>
-</select>
-</div>
-
-</div>
-</section>
-
-
-<!-- LIVE VISION -->
-<section class="card">
-
-<h2>👁 LIVE VISION MODE</h2>
-
-<div class="warning">
-Share your broker/chart window. The AI will periodically capture
-visible frames and analyze them. This is screen-based vision,
-not a direct broker/WebSocket price feed.
-</div>
-
-<div style="margin-top:12px">
-<span class="mode-badge">
-SCREEN VISION
-</span>
-</div>
-
-<video
-id="screenPreview"
-class="hidden"
-autoplay
-playsinline
-muted
-></video>
-
-<div class="live-buttons">
-
-<button id="startLive" class="live-btn" type="button">
-🔴 START LIVE VISION
-</button>
-
-<button id="stopLive" class="danger" type="button">
-⛔ STOP LIVE VISION
-</button>
-
-</div>
-
-<label for="liveInterval">
-Live Scan Interval
-</label>
-
-<select id="liveInterval">
-<option value="2">2 Seconds</option>
-<option value="3" selected>3 Seconds</option>
-<option value="5">5 Seconds</option>
-<option value="8">8 Seconds</option>
-</select>
-
-<label for="voiceEnabled">
-AI Voice
-</label>
-
-<select id="voiceEnabled">
-<option value="ON" selected>VOICE ON</option>
-<option value="OFF">VOICE OFF</option>
-</select>
-
-<div class="live-status">
-
-<span id="liveDot" class="live-dot"></span>
-
-<span id="liveStatus">
-LIVE VISION OFF
-</span>
-
-</div>
-
-</section>
-
-
-<!-- SCREENSHOT -->
-<section class="card">
-
-<h2>Chart Screenshot</h2>
-
-<input
-id="imageInput"
-type="file"
-accept="image/*"
->
-
-<img
-id="preview"
-class="hidden"
-alt="Chart preview"
->
-
-<button
-id="analyzeBtn"
-class="primary"
-type="button"
->
-ANALYZE CHART
-</button>
-
-<div id="status" class="status"></div>
-
-</section>
-
-
-<!-- CAMERA -->
-<section class="card">
-
-<h2>📷 Camera Scanner</h2>
-
-<div class="warning">
-Camera mode captures chart frames periodically. It is not a direct
-broker/WebSocket feed.
-</div>
-
-<video
-id="camera"
-class="hidden"
-autoplay
-playsinline
-></video>
-
-<div class="camera-buttons">
-
-<button id="startCamera" type="button">
-START CAMERA
-</button>
-
-<button id="stopCamera" type="button">
-STOP CAMERA
-</button>
-
-</div>
-
-<label for="scanInterval">
-Camera Scan Interval
-</label>
-
-<select id="scanInterval">
-<option value="3">3 Seconds</option>
-<option value="5" selected>5 Seconds</option>
-<option value="8">8 Seconds</option>
-<option value="10">10 Seconds</option>
-</select>
-
-<div id="cameraStatus" class="status"></div>
-
-</section>
-
-
-<!-- RESULT -->
-<section id="resultCard" class="card result hidden">
-
-<h2>Analysis Result</h2>
-
-<div id="signal" class="signal">
-NO TRADE
-</div>
-
-<div id="confidence" class="confidence">
-0%
-</div>
-
-<div class="row">
-<span>Trend</span>
-<strong id="trend">UNCLEAR</strong>
-</div>
-
-<div class="row">
-<span>Expiry</span>
-<strong id="expiry">-</strong>
-</div>
-
-<div class="row">
-<span>Entry Candle</span>
-<strong id="entryCandle">WAIT</strong>
-</div>
-
-<div class="row">
-<span>Setup</span>
-<strong id="setup">-</strong>
-</div>
-
-<div class="row">
-<span>Risk</span>
-<strong id="risk">HIGH</strong>
-</div>
-
-<div class="card">
-
-<h3>Entry Instruction</h3>
-
-<div id="entryInstruction">
-Wait for confirmation.
-</div>
-
-</div>
-
-<div class="card">
-
-<h3>Reasons</h3>
-
-<div id="reasons"></div>
-
-</div>
-
-<div class="warning">
-Technical analysis is probabilistic.
-No signal is guaranteed.
-Do not risk money you cannot afford to lose.
-</div>
-
-</section>
-
-</main>
-
 
 <script>
+const $=id=>document.getElementById(id);
+let cameraStream=null,autoTimer=null,busy=false,nextScanAt=0;
+let screenStream=null,liveTimer=null,liveBusy=false,lastFrameHash="",lastAnalysisTime=0,liveRequestNumber=0;
+let lastVoiceKey="",voiceOn=true;
 
-const $ = id => document.getElementById(id);
-
-
-/* =========================================
-   GLOBAL STATE
-========================================= */
-
-let cameraStream = null;
-let cameraTimer = null;
-
-let screenStream = null;
-let liveTimer = null;
-
-let liveBusy = false;
-
-let lastSignalKey = "";
-let lastVoiceKey = "";
-
-let lastFrameHash = "";
-let lastAnalysisTime = 0;
-
-let liveRequestNumber = 0;
-
-
-/* =========================================
-   LOGIN
-========================================= */
+function tickClock(){
+ const now=new Date(),s=now.toLocaleTimeString('en-BD',{hour12:false});
+ $('clock').textContent=s;$('timeNow').textContent=s;
+ const tf=parseInt(($('timeframe').value||'1')),mins=now.getMinutes(),secs=now.getSeconds();
+ const elapsed=(mins%tf)*60+secs,remain=tf*60-elapsed;
+ $('candleCountdown').textContent=`${String(Math.floor(remain/60)).padStart(2,'0')}:${String(remain%60).padStart(2,'0')}`;
+ if(nextScanAt)$('nextScan').textContent=Math.max(0,Math.ceil((nextScanAt-Date.now())/1000))+'s';
+}
+setInterval(tickClock,1000);tickClock();
 
 async function login(){
-
-  const password = $("password").value.trim();
-
-  if(!password){
-    $("loginStatus").textContent="Password দিন";
-    return;
-  }
-
-  $("loginStatus").textContent="Checking...";
-  $("loginBtn").disabled=true;
-
-  try{
-
-    const response=await fetch("/api/auth",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      credentials:"same-origin",
-      cache:"no-store",
-      body:JSON.stringify({
-        password
-      })
-    });
-
-    const text=await response.text();
-
-    let data={};
-
-    try{
-      data=JSON.parse(text);
-    }catch{
-      throw new Error("Server returned invalid response.");
-    }
-
-    if(!response.ok){
-      throw new Error(data.error||"Wrong password.");
-    }
-
-    sessionStorage.setItem("nt_unlocked","1");
-
-    $("loginStatus").textContent="Unlocked ✓";
-
-    setTimeout(()=>{
-      $("login").classList.add("hidden");
-    },300);
-
-  }catch(error){
-
-    console.error(error);
-
-    $("loginStatus").textContent=
-      error.message||"Login failed.";
-
-  }finally{
-
-    $("loginBtn").disabled=false;
-
-  }
+ const password=$('password').value;$('loginStatus').textContent='AUTHENTICATING...';
+ try{const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+ const d=await r.json();if(!r.ok)throw new Error(d.error||'Wrong password');
+ $('login').classList.add('hidden');sessionStorage.setItem('nt_unlocked','1')}
+ catch(e){$('loginStatus').textContent=e.message}
 }
+$('loginBtn').onclick=login;$('password').onkeydown=e=>{if(e.key==='Enter')login()};
+if(sessionStorage.getItem('nt_unlocked')==='1')$('login').classList.add('hidden');
 
-
-/* =========================================
-   IMAGE RESIZE
-========================================= */
-
-async function resizeImage(file){
-
-  const image=new Image();
-
-  const url=URL.createObjectURL(file);
-
-  image.src=url;
-
-  await new Promise((resolve,reject)=>{
-    image.onload=resolve;
-    image.onerror=reject;
-  });
-
-  const maxWidth=1200;
-
-  let width=image.width;
-  let height=image.height;
-
-  if(width>maxWidth){
-
-    height=Math.round(
-      height*maxWidth/width
-    );
-
-    width=maxWidth;
-  }
-
-  const canvas=document.createElement("canvas");
-
-  canvas.width=width;
-  canvas.height=height;
-
-  const ctx=canvas.getContext("2d");
-
-  ctx.drawImage(
-    image,
-    0,
-    0,
-    width,
-    height
-  );
-
-  URL.revokeObjectURL(url);
-
-  return canvas.toDataURL(
-    "image/jpeg",
-    .70
-  );
+$('file').onchange=()=>{const f=$('file').files[0];if(!f)return;$('preview').src=URL.createObjectURL(f);$('preview').style.display='block'};
+$('go').onclick=()=>analyzeFile($('file').files[0]);
+function settings(){return{market:$('market').value,timeframe:$('timeframe').value,mode:$('mode').value,
+min_confidence:Number($('minConfidence').value),signal_filter:$('filter').value}}
+async function analyzeFile(file){if(!file){showError('Upload a chart screenshot first.');return}return sendAnalysis(await resizeImage(file),'Screenshot')}
+async function sendAnalysis(image,source){
+ if(busy)return null;busy=true;$('result').classList.remove('hidden');
+ $('result').innerHTML='<div class="badge">AI PROCESSING</div><div class="status">◉ NEXT TRADER AI is analyzing '+escapeHtml(source)+'... <span class="wave"><i></i><i></i><i></i><i></i><i></i></span></div>';
+ try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image,settings:settings()})});
+ const d=await r.json();if(!r.ok)throw new Error(d.error||('API error '+r.status));render(d,source);return d}
+ catch(e){showError(e.message);return null}finally{busy=false}
 }
-
-
-/* =========================================
-   FRAME HASH
-   Lightweight visual-change detector
-========================================= */
-
-function getFrameHash(canvas){
-
-  const small=document.createElement("canvas");
-
-  small.width=32;
-  small.height=18;
-
-  const ctx=small.getContext("2d");
-
-  ctx.drawImage(
-    canvas,
-    0,
-    0,
-    32,
-    18
-  );
-
-  const data=ctx.getImageData(
-    0,
-    0,
-    32,
-    18
-  ).data;
-
-  let hash=0;
-
-  for(let i=0;i<data.length;i+=4){
-
-    hash+=
-      data[i]+
-      data[i+1]+
-      data[i+2];
-
-  }
-
-  return String(hash);
+function showError(msg){$('result').classList.remove('hidden');$('result').innerHTML='<div class="badge">SYSTEM ERROR</div><div class="status">'+escapeHtml(msg)+'</div>'}
+function render(d,source){
+ const sig=d.signal||'NO TRADE',cls=sig==='CALL'?'call':sig==='PUT'?'put':'no';
+ const reasons=Array.isArray(d.reasons)?d.reasons.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'';
+ $('result').innerHTML=`<div class="badge">${escapeHtml(source)} ANALYSIS</div>
+ <div class="signal ${cls}">${escapeHtml(sig)}</div><div class="row">
+ <span class="pill">CONFIDENCE <b>${escapeHtml(String(d.confidence??'—'))}%</b></span>
+ <span class="pill">TREND <b>${escapeHtml(d.trend||'—')}</b></span>
+ <span class="pill">EXPIRY <b>${escapeHtml(d.expiry||'—')}</b></span>
+ <span class="pill">RISK <b>${escapeHtml(d.risk||'—')}</b></span></div>
+ <div class="entry"><b>🎯 ENTRY: ${escapeHtml(d.entry_candle||'WAIT')}</b><br>
+ <span class="muted">${escapeHtml(d.entry_instruction||'Wait for confirmation before entering.')}</span></div>
+ <p><b>SETUP:</b> ${escapeHtml(d.setup||'—')}</p><b>REASONS</b><ul>${reasons}</ul>
+ <p class="muted">${escapeHtml(d.disclaimer||'Technical analysis is probabilistic; no signal is guaranteed.')}</p>`;
+ speakSignal(d);
 }
-
-
-/* =========================================
-   VOICE
-========================================= */
-
-function speakSignal(data){
-
-  if($("voiceEnabled").value!=="ON"){
-    return;
-  }
-
-  if(!("speechSynthesis" in window)){
-    return;
-  }
-
-  const signal=
-    String(data.signal||"NO TRADE")
-      .toUpperCase();
-
-  const confidence=
-    Number(data.confidence||0);
-
-  const entry=
-    data.entry_candle||"WAIT";
-
-  const key=
-    signal+"|"+
-    confidence+"|"+
-    entry;
-
-  if(key===lastVoiceKey){
-    return;
-  }
-
-  lastVoiceKey=key;
-
-  window.speechSynthesis.cancel();
-
-  let text="";
-
-  if(signal==="CALL"){
-
-    text=
-      "Next Trader AI. Call signal. "+
-      confidence+
-      " percent confidence. "+
-      entry+".";
-
-  }else if(signal==="PUT"){
-
-    text=
-      "Next Trader AI. Put signal. "+
-      confidence+
-      " percent confidence. "+
-      entry+".";
-
-  }else{
-
-    text=
-      "Next Trader AI. No trade. Wait for confirmation.";
-
-  }
-
-  const utterance=
-    new SpeechSynthesisUtterance(text);
-
-  utterance.rate=.9;
-  utterance.pitch=.75;
-  utterance.volume=1;
-
-  window.speechSynthesis.speak(
-    utterance
-  );
+function speakSignal(d){
+ if(!voiceOn)return;const key=`${d.signal}|${d.confidence}|${d.entry_candle}`;if(key===lastVoiceKey)return;lastVoiceKey=key;
+ if(!('speechSynthesis'in window))return;
+ const text=d.signal==='NO TRADE'?'No trade. Wait for confirmation.':`${d.signal}. Confidence ${d.confidence} percent. Entry ${d.entry_candle||'wait'}.`;
+ speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=.95;u.pitch=.9;speechSynthesis.speak(u);
 }
-
-
-/* =========================================
-   ANALYZE IMAGE
-========================================= */
-
-async function analyzeImage(
-  imageData,
-  source="manual",
-  requestNumber=null
-){
-
-  if(
-    source==="live" &&
-    requestNumber!==liveRequestNumber
-  ){
-    return null;
-  }
-
-  if(source!=="live"){
-
-    $("status").textContent=
-      "AI is analyzing chart...";
-
-    $("analyzeBtn").disabled=true;
-
-  }else{
-
-    $("liveStatus").textContent=
-      "AI analyzing latest chart frame...";
-
-  }
-
-  try{
-
-    const response=
-      await fetch(
-        "/api/analyze",
-        {
-          method:"POST",
-          headers:{
-            "Content-Type":"application/json"
-          },
-          credentials:"same-origin",
-          cache:"no-store",
-          body:JSON.stringify({
-
-            image:imageData,
-
-            settings:{
-
-              market:
-                $("market").value,
-
-              timeframe:
-                $("timeframe").value,
-
-              mode:
-                $("mode").value,
-
-              min_confidence:
-                Number(
-                  $("minConfidence").value
-                )
-
-            }
-
-          })
-        }
-      );
-
-    const text=
-      await response.text();
-
-    let data={};
-
-    try{
-      data=JSON.parse(text);
-    }catch{
-      throw new Error(
-        "Server returned invalid JSON."
-      );
-    }
-
-    if(!response.ok){
-      throw new Error(
-        data.error||
-        "Analysis failed."
-      );
-    }
-
-    if(
-      source==="live" &&
-      requestNumber!==liveRequestNumber
-    ){
-      return null;
-    }
-
-    showResult(data);
-
-    if(source==="live"){
-
-      $("liveStatus").textContent=
-        "LIVE • Latest frame analyzed ✓";
-
-      const key=
-        String(data.signal||"NO TRADE")+
-        "|" +
-        String(data.confidence||0)+
-        "|" +
-        String(data.entry_candle||"WAIT");
-
-      if(key!==lastSignalKey){
-
-        lastSignalKey=key;
-
-        speakSignal(data);
-
-      }
-
-    }else{
-
-      $("status").textContent=
-        "Analysis complete ✓";
-
-    }
-
-    return data;
-
-  }catch(error){
-
-    console.error(
-      "ANALYZE ERROR:",
-      error
-    );
-
-    if(source==="live"){
-
-      $("liveStatus").textContent=
-        "LIVE • Analysis error: "+
-        (error.message||"unknown");
-
-    }else{
-
-      $("status").textContent=
-        error.message||
-        "Analysis failed.";
-
-    }
-
-    return null;
-
-  }finally{
-
-    if(source!=="live"){
-      $("analyzeBtn").disabled=false;
-    }
-
-  }
-}
-
-
-/* =========================================
-   SHOW RESULT
-========================================= */
-
-function showResult(data){
-
-  $("resultCard")
-    .classList
-    .remove("hidden");
-
-  const signal=
-    String(
-      data.signal||"NO TRADE"
-    ).toUpperCase();
-
-  const confidence=
-    Number(
-      data.confidence||0
-    );
-
-  $("signal").textContent=
-    signal;
-
-  $("signal").className=
-    "signal";
-
-  if(signal==="CALL"){
-
-    $("signal")
-      .classList
-      .add("call");
-
-  }else if(signal==="PUT"){
-
-    $("signal")
-      .classList
-      .add("put");
-
-  }else{
-
-    $("signal")
-      .classList
-      .add("no-trade");
-
-  }
-
-  $("confidence").textContent=
-    confidence+"%";
-
-  $("trend").textContent=
-    data.trend||"UNCLEAR";
-
-  $("expiry").textContent=
-    data.expiry||"-";
-
-  $("entryCandle").textContent=
-    data.entry_candle||"WAIT";
-
-  $("setup").textContent=
-    data.setup||"-";
-
-  $("risk").textContent=
-    data.risk||"HIGH";
-
-  $("entryInstruction").textContent=
-    data.entry_instruction||
-    "Wait for confirmation.";
-
-  const reasons=
-    Array.isArray(data.reasons)
-      ?data.reasons
-      :[];
-
-  $("reasons").innerHTML="";
-
-  if(reasons.length===0){
-
-    $("reasons").innerHTML=
-      '<div class="reason">No reliable reasons returned.</div>';
-
-  }else{
-
-    reasons.forEach(reason=>{
-
-      const div=
-        document.createElement("div");
-
-      div.className="reason";
-
-      div.textContent=
-        "• "+reason;
-
-      $("reasons")
-        .appendChild(div);
-
-    });
-
-  }
-
-}
-
-
-/* =========================================
-   MANUAL FILE UPLOAD
-========================================= */
-
-$("imageInput")
-.addEventListener(
-  "change",
-  async function(){
-
-    const file=this.files?.[0];
-
-    if(!file)return;
-
-    try{
-
-      const imageData=
-        await resizeImage(file);
-
-      $("preview").src=
-        imageData;
-
-      $("preview")
-        .classList
-        .remove("hidden");
-
-      $("analyzeBtn").onclick=
-        ()=>analyzeImage(
-          imageData,
-          "manual"
-        );
-
-      $("status").textContent=
-        "Chart ready. Click ANALYZE CHART.";
-
-    }catch(error){
-
-      console.error(error);
-
-      $("status").textContent=
-        "Could not load image.";
-
-    }
-
-  }
-);
-
-
-/* =========================================
-   CAMERA
-========================================= */
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 async function startCamera(){
-
-  try{
-
-    cameraStream=
-      await navigator.mediaDevices.getUserMedia({
-
-        video:{
-          facingMode:{
-            ideal:"environment"
-          }
-        },
-
-        audio:false
-
-      });
-
-    $("camera").srcObject=
-      cameraStream;
-
-    $("camera")
-      .classList
-      .remove("hidden");
-
-    $("cameraStatus").textContent=
-      "Camera started ✓";
-
-    startCameraScanner();
-
-  }catch(error){
-
-    console.error(error);
-
-    $("cameraStatus").textContent=
-      "Camera permission denied or unavailable.";
-
-  }
-
+ if(cameraStream)return;try{cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+ $('camera').srcObject=cameraStream;$('camera').style.display='block';$('camStatus').textContent='CAMERA ONLINE — AUTO SCAN ACTIVE';scheduleScan(true)}
+ catch(e){$('camStatus').textContent='Camera permission/error: '+e.message}
 }
-
-
-function stopCamera(){
-
-  if(cameraTimer){
-
-    clearInterval(cameraTimer);
-
-    cameraTimer=null;
-
-  }
-
-  if(cameraStream){
-
-    cameraStream
-      .getTracks()
-      .forEach(
-        track=>track.stop()
-      );
-
-    cameraStream=null;
-
-  }
-
-  $("camera").srcObject=null;
-
-  $("camera")
-    .classList
-    .add("hidden");
-
-  $("cameraStatus").textContent=
-    "Camera stopped.";
-
-}
-
-
-function startCameraScanner(){
-
-  if(cameraTimer){
-    clearInterval(cameraTimer);
-  }
-
-  const seconds=
-    Number(
-      $("scanInterval").value
-    );
-
-  cameraTimer=
-    setInterval(
-      captureCameraFrame,
-      seconds*1000
-    );
-
-}
-
-
-function captureCameraFrame(){
-
-  if(!cameraStream)return;
-
-  const video=$("camera");
-
-  if(
-    video.readyState<
-    HTMLMediaElement.HAVE_CURRENT_DATA
-  ){
-    return;
-  }
-
-  const canvas=
-    document.createElement("canvas");
-
-  const maxWidth=1200;
-
-  let width=video.videoWidth;
-  let height=video.videoHeight;
-
-  if(!width||!height)return;
-
-  if(width>maxWidth){
-
-    height=Math.round(
-      height*maxWidth/width
-    );
-
-    width=maxWidth;
-
-  }
-
-  canvas.width=width;
-  canvas.height=height;
-
-  const ctx=canvas.getContext("2d");
-
-  ctx.drawImage(
-    video,
-    0,
-    0,
-    width,
-    height
-  );
-
-  const imageData=
-    canvas.toDataURL(
-      "image/jpeg",
-      .70
-    );
-
-  $("cameraStatus").textContent=
-    "Analyzing latest camera frame...";
-
-  analyzeImage(
-    imageData,
-    "camera"
-  );
-
-}
-
-
-/* =========================================
-   LIVE SCREEN VISION
-========================================= */
+function stopCamera(){if(autoTimer)clearTimeout(autoTimer);autoTimer=null;nextScanAt=0;
+ if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null}
+ $('camera').srcObject=null;$('camera').style.display='none';$('camStatus').textContent='CAMERA OFFLINE';$('nextScan').textContent='—'}
+$('startCam').onclick=startCamera;$('stopCam').onclick=stopCamera;
+function scheduleScan(immediate=false){if(autoTimer)clearTimeout(autoTimer);const delay=immediate?300:Number($('interval').value)*1000;
+ nextScanAt=Date.now()+delay;autoTimer=setTimeout(async()=>{if(!cameraStream)return;nextScanAt=Date.now()+Number($('interval').value)*1000;
+ const img=captureFrame();if(img){$('lastScan').textContent=new Date().toLocaleTimeString('en-BD',{hour12:false});await sendAnalysis(img,'Camera')}scheduleScan(false)},delay)}
+$('interval').onchange=()=>{if(cameraStream)scheduleScan(false)};
+function captureFrame(){const v=$('camera');if(!v.videoWidth)return null;const max=1200,scale=Math.min(1,max/v.videoWidth),c=document.createElement('canvas');
+ c.width=Math.round(v.videoWidth*scale);c.height=Math.round(v.videoHeight*scale);c.getContext('2d').drawImage(v,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.68)}
+function resizeImage(file){return new Promise((resolve,reject)=>{const img=new Image(),url=URL.createObjectURL(file);
+ img.onload=()=>{const max=1200,scale=Math.min(1,max/img.width),c=document.createElement('canvas');c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);
+ c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',.70))};img.onerror=reject;img.src=url})}
 
 async function startLiveVision(){
-
-  if(screenStream){
-    return;
-  }
-
-  if(
-    !navigator.mediaDevices ||
-    !navigator.mediaDevices.getDisplayMedia
-  ){
-
-    $("liveStatus").textContent=
-      "Screen sharing is not supported in this browser.";
-
-    return;
-  }
-
-  try{
-
-    /*
-      IMPORTANT:
-      Browser permission dialog MUST be triggered
-      by this user click.
-    */
-
-    screenStream=
-      await navigator.mediaDevices.getDisplayMedia({
-
-        video:{
-          frameRate:{
-            ideal:5,
-            max:10
-          }
-        },
-
-        audio:false
-
-      });
-
-    $("screenPreview").srcObject=
-      screenStream;
-
-    $("screenPreview")
-      .classList
-      .remove("hidden");
-
-    $("startLive")
-      .classList
-      .add("live-active");
-
-    $("liveDot")
-      .classList
-      .add("on");
-
-    $("liveStatus").textContent=
-      "LIVE VISION ACTIVE ✓";
-
-    /*
-      If user clicks browser's
-      "Stop sharing" button.
-    */
-
-    const track=
-      screenStream.getVideoTracks()[0];
-
-    if(track){
-
-      track.addEventListener(
-        "ended",
-        stopLiveVision
-      );
-
-    }
-
-    startLiveScanner();
-
-  }catch(error){
-
-    console.error(
-      "SCREEN SHARE ERROR:",
-      error
-    );
-
-    $("liveStatus").textContent=
-      "Screen share cancelled or unavailable.";
-
-    screenStream=null;
-
-  }
-
+ if(screenStream)return;if(!navigator.mediaDevices?.getDisplayMedia){$('liveStatus').textContent='SCREEN SHARE NOT SUPPORTED';return}
+ try{screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:5,max:10}},audio:false});
+ $('screenPreview').srcObject=screenStream;$('screenPreview').style.display='block';$('startLive').classList.add('live-active');
+ $('liveDot').classList.add('on');$('liveStatus').textContent='LIVE VISION ACTIVE';$('liveFrame').classList.add('scanning');
+ const track=screenStream.getVideoTracks()[0];if(track)track.addEventListener('ended',stopLiveVision);startLiveScanner()}
+ catch(e){$('liveStatus').textContent='SCREEN SHARE CANCELLED';screenStream=null}
 }
-
-
-function stopLiveVision(){
-
-  liveRequestNumber++;
-
-  if(liveTimer){
-
-    clearInterval(liveTimer);
-
-    liveTimer=null;
-
-  }
-
-  if(screenStream){
-
-    screenStream
-      .getTracks()
-      .forEach(
-        track=>track.stop()
-      );
-
-    screenStream=null;
-
-  }
-
-  liveBusy=false;
-
-  $("screenPreview").srcObject=null;
-
-  $("screenPreview")
-    .classList
-    .add("hidden");
-
-  $("startLive")
-    .classList
-    .remove("live-active");
-
-  $("liveDot")
-    .classList
-    .remove("on");
-
-  $("liveStatus").textContent=
-    "LIVE VISION OFF";
-
-}
-
-
-function startLiveScanner(){
-
-  if(liveTimer){
-    clearInterval(liveTimer);
-  }
-
-  const seconds=
-    Number(
-      $("liveInterval").value
-    );
-
-  /*
-    First frame immediately.
-  */
-
-  setTimeout(
-    captureLiveFrame,
-    700
-  );
-
-  liveTimer=
-    setInterval(
-      captureLiveFrame,
-      seconds*1000
-    );
-
-}
-
-
+function stopLiveVision(){liveRequestNumber++;if(liveTimer){clearInterval(liveTimer);liveTimer=null}
+ if(screenStream){screenStream.getTracks().forEach(t=>t.stop());screenStream=null}liveBusy=false;
+ $('screenPreview').srcObject=null;$('screenPreview').style.display='none';$('startLive').classList.remove('live-active');
+ $('liveDot').classList.remove('on');$('liveFrame').classList.remove('scanning');$('liveStatus').textContent='OFFLINE'}
+function startLiveScanner(){if(liveTimer)clearInterval(liveTimer);const seconds=Number($('liveInterval').value);
+ setTimeout(captureLiveFrame,700);liveTimer=setInterval(captureLiveFrame,seconds*1000)}
+function getFrameHash(canvas){const w=32,h=18,tmp=document.createElement('canvas');tmp.width=w;tmp.height=h;tmp.getContext('2d').drawImage(canvas,0,0,w,h);
+ const d=tmp.getContext('2d').getImageData(0,0,w,h).data;let hash=0;for(let i=0;i<d.length;i+=12)hash=((hash<<5)-hash+d[i]+d[i+1]+d[i+2])|0;return String(hash)}
 async function captureLiveFrame(){
-
-  if(!screenStream)return;
-
-  if(liveBusy){
-
-    return;
-
-  }
-
-  const video=
-    $("screenPreview");
-
-  if(
-    video.readyState<
-    HTMLMediaElement.HAVE_CURRENT_DATA
-  ){
-    return;
-  }
-
-  const canvas=
-    document.createElement("canvas");
-
-  const maxWidth=1200;
-
-  let width=
-    video.videoWidth;
-
-  let height=
-    video.videoHeight;
-
-  if(!width||!height){
-    return;
-  }
-
-  if(width>maxWidth){
-
-    height=
-      Math.round(
-        height*maxWidth/width
-      );
-
-    width=maxWidth;
-
-  }
-
-  canvas.width=width;
-  canvas.height=height;
-
-  const ctx=
-    canvas.getContext("2d");
-
-  ctx.drawImage(
-    video,
-    0,
-    0,
-    width,
-    height
-  );
-
-  /*
-    Cheap visual-change check.
-    This does NOT replace AI analysis.
-    It simply prevents sending identical
-    frames repeatedly.
-  */
-
-  const hash=
-    getFrameHash(canvas);
-
-  const now=Date.now();
-
-  /*
-    Always allow the first frame.
-  */
-
-  if(
-    lastFrameHash===hash &&
-    lastAnalysisTime>0 &&
-    now-lastAnalysisTime<10000
-  ){
-
-    $("liveStatus").textContent=
-      "LIVE • Waiting for chart movement...";
-
-    return;
-
-  }
-
-  lastFrameHash=hash;
-
-  const imageData=
-    canvas.toDataURL(
-      "image/jpeg",
-      .70
-    );
-
-  liveBusy=true;
-
-  lastAnalysisTime=now;
-
-  liveRequestNumber++;
-
-  const requestNumber=
-    liveRequestNumber;
-
-  $("liveStatus").textContent=
-    "LIVE • Sending latest frame to AI...";
-
-  try{
-
-    await analyzeImage(
-      imageData,
-      "live",
-      requestNumber
-    );
-
-  }finally{
-
-    liveBusy=false;
-
-  }
-
+ if(!screenStream||liveBusy)return;const video=$('screenPreview');if(video.readyState<2)return;
+ const canvas=document.createElement('canvas'),maxWidth=1200;let width=video.videoWidth,height=video.videoHeight;if(!width||!height)return;
+ if(width>maxWidth){height=Math.round(height*maxWidth/width);width=maxWidth}canvas.width=width;canvas.height=height;
+ canvas.getContext('2d').drawImage(video,0,0,width,height);const hash=getFrameHash(canvas),now=Date.now();
+ if(lastFrameHash===hash&&lastAnalysisTime>0&&now-lastAnalysisTime<10000){$('liveStatus').textContent='LIVE • WAITING FOR CHART MOVEMENT...';return}
+ lastFrameHash=hash;const imageData=canvas.toDataURL('image/jpeg',.70);liveBusy=true;lastAnalysisTime=now;liveRequestNumber++;const requestNumber=liveRequestNumber;
+ try{await sendLiveAnalysis(imageData,requestNumber)}finally{liveBusy=false}
 }
-
-
-/* =========================================
-   BUTTON EVENTS
-========================================= */
-
-$("loginBtn")
-.addEventListener(
-  "click",
-  login
-);
-
-
-$("password")
-.addEventListener(
-  "keydown",
-  event=>{
-
-    if(event.key==="Enter"){
-      login();
-    }
-
-  }
-);
-
-
-$("startCamera")
-.addEventListener(
-  "click",
-  startCamera
-);
-
-
-$("stopCamera")
-.addEventListener(
-  "click",
-  stopCamera
-);
-
-
-$("scanInterval")
-.addEventListener(
-  "change",
-  ()=>{
-
-    if(cameraStream){
-      startCameraScanner();
-    }
-
-  }
-);
-
-
-$("startLive")
-.addEventListener(
-  "click",
-  startLiveVision
-);
-
-
-$("stopLive")
-.addEventListener(
-  "click",
-  stopLiveVision
-);
-
-
-$("liveInterval")
-.addEventListener(
-  "change",
-  ()=>{
-
-    if(screenStream){
-      startLiveScanner();
-    }
-
-  }
-);
-
-
-/* =========================================
-   SESSION
-========================================= */
-
-if(
-  sessionStorage.getItem(
-    "nt_unlocked"
-  )==="1"
-){
-
-  $("login")
-    .classList
-    .add("hidden");
-
-}
-
-
-/* =========================================
-   CLEANUP
-========================================= */
-
-window.addEventListener(
-  "beforeunload",
-  ()=>{
-    stopLiveVision();
-    stopCamera();
-  }
-);
-
+async function sendLiveAnalysis(image,requestNumber){$('liveStatus').textContent='LIVE • AI SCANNING...';
+ try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image,settings:settings()})});
+ const d=await r.json();if(!r.ok)throw new Error(d.error||('API error '+r.status));if(requestNumber!==liveRequestNumber)return;render(d,'LIVE VISION')}
+ catch(e){$('liveStatus').textContent='LIVE • ERROR: '+e.message}}
+$('startLive').onclick=startLiveVision;$('stopLive').onclick=stopLiveVision;
+$('liveInterval').onchange=()=>{if(screenStream)startLiveScanner()};
+$('voiceToggle').onclick=()=>{voiceOn=!voiceOn;$('voiceState').textContent=voiceOn?'ON':'OFF';
+ $('voiceToggle').textContent=voiceOn?'🔊 AI VOICE: ON':'🔇 AI VOICE: OFF';if(!voiceOn&&'speechSynthesis'in window)speechSynthesis.cancel()};
+window.addEventListener('beforeunload',()=>{stopCamera();stopLiveVision()});
 </script>
-
 </body>
 </html>
