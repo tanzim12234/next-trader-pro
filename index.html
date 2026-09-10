@@ -121,6 +121,21 @@ background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-backgro
 @media(max-width:650px){.grid,.two{grid-template-columns:1fr}.top{align-items:flex-start}.clock{min-width:auto;font-size:11px}
 .wrap{padding-top:10px}.card{padding:17px;border-radius:20px}.cambar{flex-direction:column}.cambar button{margin-top:7px}}
 </style>
+
+<style>
+#closeEntryModeBanner{
+  position:fixed;left:16px;right:16px;top:12px;z-index:99999;
+  padding:10px 16px;border:1px solid rgba(255,255,255,.16);
+  border-radius:14px;background:rgba(8,10,20,.78);backdrop-filter:blur(14px);
+  color:#fff;font:600 13px/1.35 system-ui,sans-serif;text-align:center;
+  box-shadow:0 8px 30px rgba(0,0,0,.25)
+}
+#closeEntryModeBanner b{color:#7CFFB2}
+</style>
+<div id="closeEntryModeBanner">
+  <b>LIVE CLOSE-ENTRY MODE</b> — running candle silent • analyze only after candle close • entry on the new running candle
+</div>
+
 </head>
 <body>
 <div class="grid-bg"></div><div class="scanlines"></div><div class="noise"></div>
@@ -218,7 +233,14 @@ async function analyzeFile(file){if(!file){showError('Upload a chart screenshot 
 async function sendAnalysis(image,source){
  if(busy)return null;busy=true;$('result').classList.remove('hidden');
  $('result').innerHTML='<div class="badge">AI PROCESSING</div><div class="status">◉ NEXT TRADER AI is analyzing '+escapeHtml(source)+'... <span class="wave"><i></i><i></i><i></i><i></i><i></i></span></div>';
- try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image,settings:settings()})});
+ try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+  image,
+  settings:{
+    ...settings(),
+    execution_mode:"CANDLE_CLOSE_THEN_RUNNING_ENTRY_ONLY",
+    entry_rule:"Analyze only immediately after a confirmed candle close; if valid, signal entry on the newly running candle only. Never issue a future/next-candle signal."
+  }
+})});
  const d=await r.json();if(!r.ok)throw new Error(d.error||('API error '+r.status));render(d,source);return d}
  catch(e){showError(e.message);return null}finally{busy=false}
 }
@@ -291,7 +313,14 @@ async function captureLiveFrame(){
  try{await sendLiveAnalysis(imageData,requestNumber)}finally{liveBusy=false}
 }
 async function sendLiveAnalysis(image,requestNumber){$('liveStatus').textContent='LIVE • AI SCANNING...';
- try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image,settings:settings()})});
+ try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+  image,
+  settings:{
+    ...settings(),
+    execution_mode:"CANDLE_CLOSE_THEN_RUNNING_ENTRY_ONLY",
+    entry_rule:"Analyze only immediately after a confirmed candle close; if valid, signal entry on the newly running candle only. Never issue a future/next-candle signal."
+  }
+})});
  const d=await r.json();if(!r.ok)throw new Error(d.error||('API error '+r.status));if(requestNumber!==liveRequestNumber)return;render(d,'LIVE VISION')}
  catch(e){$('liveStatus').textContent='LIVE • ERROR: '+e.message}}
 $('startLive').onclick=startLiveVision;$('stopLive').onclick=stopLiveVision;
@@ -300,5 +329,49 @@ $('voiceToggle').onclick=()=>{voiceOn=!voiceOn;$('voiceState').textContent=voice
  $('voiceToggle').textContent=voiceOn?'🔊 AI VOICE: ON':'🔇 AI VOICE: OFF';if(!voiceOn&&'speechSynthesis'in window)speechSynthesis.cancel()};
 window.addEventListener('beforeunload',()=>{stopCamera();stopLiveVision()});
 </script>
+
+<script>
+/* NEXT TRADER — Candle Close → Analyze → Running Candle Entry
+   IMPORTANT: this is a visual/chart-frame workflow, not exchange tick data.
+*/
+(() => {
+  const CLOSE_ENTRY = {
+    runningSilent: true,
+    analyzeOnlyAfterClose: true,
+    entryOnlyRunningCandle: true,
+    allowNextCandleSignal: false
+  };
+
+  window.NEXT_TRADER_CLOSE_ENTRY = CLOSE_ENTRY;
+
+  // Prevent verbose voice output during a running candle.
+  window.ntSpeakCloseEntry = function(signal) {
+    if (!window.speechSynthesis) return;
+    if (!CLOSE_ENTRY.entryOnlyRunningCandle) return;
+    const s = String(signal || '').toUpperCase();
+    if (s !== 'CALL' && s !== 'PUT') return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(
+      s === 'CALL' ? 'CALL. Entry now.' : 'PUT. Entry now.'
+    );
+    u.rate = 1.05;
+    u.volume = 0.8;
+    speechSynthesis.speak(u);
+  };
+
+  // A helper for existing LIVE loops: call this ONLY when a candle close
+  // has actually been detected from the visible chart.
+  window.ntAnalyzeAfterCandleClose = async function(captureFrame) {
+    if (typeof captureFrame !== 'function') return null;
+    const image = await captureFrame();
+    if (!image) return null;
+
+    // The caller must invoke this at the detected close boundary.
+    // The returned signal is intended for the newly running candle only.
+    return image;
+  };
+})();
+</script>
+
 </body>
 </html>
