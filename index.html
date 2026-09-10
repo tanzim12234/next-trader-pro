@@ -20,7 +20,7 @@ video{width:100%;border-radius:15px;background:#050914;display:none;max-height:4
 .cambar{display:flex;gap:9px;align-items:center;margin-top:10px}.cambar button{margin:0}.small{font-size:12px;color:var(--muted)}
 .signal{font-size:36px;font-weight:1000;letter-spacing:.5px}.call{color:var(--good)}.put{color:var(--bad)}.no{color:#dce3f7}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.pill{padding:8px 11px;border-radius:999px;background:#202a43}
-.entry{background:#0c1428;border:1px solid #334260;border-radius:14px;padding:13px;margin-top:12px}
+.entry{background:#0c1428;border:1px solid #334260;border-radius:14px;padding:13px;margin-top:12px}.entry.lock{border-color:#39a0ff;box-shadow:0 0 0 1px #39a0ff33,0 0 22px #39a0ff22}.entry.wait{border-color:#ffbf4d}.entry.go{border-color:#24d18b}.entryTime{font-size:30px;font-weight:1000;margin-top:7px}.lockText{font-weight:900;margin-top:4px}
 .status{color:var(--muted);min-height:20px;margin-top:9px}.muted{color:var(--muted)}ul{padding-left:21px}.hidden{display:none}
 .login{position:fixed;inset:0;background:#070b18ee;display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}.login .card{width:min(420px,100%)}
 .badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#1a2742;color:#b9d8ff;font-size:12px;font-weight:800}
@@ -88,12 +88,13 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
   </div>
 
   <div id="result" class="card hidden"></div>
+  <div id="entryLock" class="card hidden"></div>
   <div class="small" style="text-align:center">Technical analysis is probabilistic. No signal is guaranteed. Use NO TRADE when confirmation is weak.</div>
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
-let cameraStream=null, autoTimer=null, busy=false, nextScanAt=0;
+let cameraStream=null, autoTimer=null, busy=false, nextScanAt=0, lastDecision=null, entryTimer=null;
 
 function tickClock(){
   const now=new Date();
@@ -144,6 +145,8 @@ async function analyzeFile(file){
 async function sendAnalysis(image,source){
  if(busy)return null; busy=true;
  $('result').classList.remove('hidden');
+ $('entryLock').classList.add('hidden');
+ clearInterval(entryTimer);
  $('result').innerHTML='<div class="muted">🤖 NEXT TRADER AI is analyzing '+source+'...</div>';
  try{
    const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image,settings:settings()})});
