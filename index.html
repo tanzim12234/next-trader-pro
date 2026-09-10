@@ -1,87 +1,1063 @@
-async function login(){
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXT TRADER AI</title>
 
-  const password =
-    $('password').value.trim();
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-  if(!password){
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #080808;
+      color: #fff;
+    }
 
-    $('loginStatus').textContent =
-      'Password দিন';
+    .hidden {
+      display: none !important;
+    }
 
-    return;
-  }
+    .app {
+      max-width: 1100px;
+      margin: auto;
+      padding: 20px;
+    }
 
-  $('loginStatus').textContent =
-    'Checking...';
+    h1 {
+      text-align: center;
+      margin-bottom: 5px;
+    }
 
-  $('loginBtn').disabled = true;
+    .subtitle {
+      text-align: center;
+      color: #aaa;
+      margin-bottom: 25px;
+    }
 
-  try{
+    .card {
+      background: #111;
+      border: 1px solid #292929;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
 
-    const r = await fetch(
-      '/api/auth',
-      {
-        method:'POST',
+    label {
+      display: block;
+      margin: 10px 0 6px;
+      color: #bbb;
+    }
 
-        headers:{
-          'Content-Type':
-          'application/json'
-        },
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 9px;
+      border: 1px solid #333;
+      background: #181818;
+      color: white;
+      font-size: 15px;
+    }
 
-        credentials:'same-origin',
+    button {
+      cursor: pointer;
+      font-weight: bold;
+      background: #222;
+    }
 
-        cache:'no-store',
+    button:hover {
+      background: #303030;
+    }
 
-        body:JSON.stringify({
-          password
-        })
+    .primary {
+      margin-top: 15px;
+      background: #fff;
+      color: #000;
+    }
+
+    .primary:hover {
+      background: #ddd;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    @media(max-width:700px) {
+      .grid {
+        grid-template-columns: 1fr;
       }
-    );
+    }
 
-    const text = await r.text();
+    #preview {
+      width: 100%;
+      max-height: 500px;
+      object-fit: contain;
+      margin-top: 15px;
+      border-radius: 10px;
+      background: #000;
+    }
 
-    let d = {};
+    #camera {
+      width: 100%;
+      max-height: 500px;
+      background: #000;
+      border-radius: 10px;
+      margin-top: 15px;
+    }
 
-    try{
-      d = JSON.parse(text);
-    }catch{
-      throw new Error(
-        'Server returned invalid response.'
+    .result {
+      text-align: center;
+    }
+
+    .signal {
+      font-size: 42px;
+      font-weight: bold;
+      margin: 15px 0;
+    }
+
+    .call {
+      color: #35e38a;
+    }
+
+    .put {
+      color: #ff5f5f;
+    }
+
+    .no-trade {
+      color: #ffc857;
+    }
+
+    .confidence {
+      font-size: 25px;
+      margin-bottom: 15px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #222;
+    }
+
+    .row span:first-child {
+      color: #999;
+    }
+
+    .reason {
+      text-align: left;
+      padding: 8px 0;
+      color: #ddd;
+    }
+
+    .status {
+      margin-top: 10px;
+      color: #aaa;
+      min-height: 20px;
+    }
+
+    .warning {
+      color: #ffb84d;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    .login-box {
+      width: 100%;
+      max-width: 400px;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 15px;
+      padding: 25px;
+    }
+
+    .login-box h2 {
+      text-align: center;
+    }
+
+    .camera-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- LOGIN -->
+  <div id="login" class="login-overlay">
+    <div class="login-box">
+      <h2>NEXT TRADER AI</h2>
+
+      <label for="password">Password</label>
+      <input
+        id="password"
+        type="password"
+        placeholder="Enter password"
+        autocomplete="current-password"
+      >
+
+      <button id="loginBtn" class="primary" type="button">
+        LOGIN
+      </button>
+
+      <div id="loginStatus" class="status"></div>
+    </div>
+  </div>
+
+
+  <!-- MAIN APP -->
+  <main class="app">
+
+    <h1>NEXT TRADER AI</h1>
+    <div class="subtitle">
+      AI Chart Screenshot Analyzer
+    </div>
+
+
+    <!-- SETTINGS -->
+    <section class="card">
+
+      <h2>Analysis Settings</h2>
+
+      <div class="grid">
+
+        <div>
+          <label for="market">Market</label>
+          <select id="market">
+            <option value="OTC">OTC</option>
+            <option value="FOREX">FOREX</option>
+            <option value="GENERAL">GENERAL</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="timeframe">Timeframe</label>
+          <select id="timeframe">
+            <option value="1 minute">1 Minute</option>
+            <option value="2 minutes">2 Minutes</option>
+            <option value="5 minutes">5 Minutes</option>
+            <option value="15 minutes">15 Minutes</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="mode">Analysis Mode</label>
+          <select id="mode">
+            <option value="STRICT SMC">STRICT SMC</option>
+            <option value="PRICE ACTION">PRICE ACTION</option>
+            <option value="SCALPING">SCALPING</option>
+            <option value="CONSERVATIVE">CONSERVATIVE</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="minConfidence">
+            Minimum Confidence
+          </label>
+
+          <select id="minConfidence">
+            <option value="50">50%</option>
+            <option value="60" selected>60%</option>
+            <option value="70">70%</option>
+            <option value="80">80%</option>
+          </select>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- SCREENSHOT -->
+    <section class="card">
+
+      <h2>Chart Screenshot</h2>
+
+      <input
+        id="imageInput"
+        type="file"
+        accept="image/*"
+      >
+
+      <img
+        id="preview"
+        class="hidden"
+        alt="Chart preview"
+      >
+
+      <button
+        id="analyzeBtn"
+        class="primary"
+        type="button"
+      >
+        ANALYZE CHART
+      </button>
+
+      <div id="status" class="status"></div>
+
+    </section>
+
+
+    <!-- CAMERA -->
+    <section class="card">
+
+      <h2>Camera Scanner</h2>
+
+      <div class="warning">
+        Camera mode periodically captures chart frames and sends them
+        for analysis. It is not a direct broker/WebSocket feed.
+      </div>
+
+      <video
+        id="camera"
+        class="hidden"
+        autoplay
+        playsinline
+      ></video>
+
+      <div class="camera-buttons">
+
+        <button id="startCamera" type="button">
+          START CAMERA
+        </button>
+
+        <button id="stopCamera" type="button">
+          STOP CAMERA
+        </button>
+
+      </div>
+
+      <label for="scanInterval">
+        Camera Scan Interval
+      </label>
+
+      <select id="scanInterval">
+        <option value="3">3 Seconds</option>
+        <option value="5" selected>5 Seconds</option>
+        <option value="8">8 Seconds</option>
+        <option value="10">10 Seconds</option>
+      </select>
+
+      <div id="cameraStatus" class="status"></div>
+
+    </section>
+
+
+    <!-- RESULT -->
+    <section id="resultCard" class="card result hidden">
+
+      <h2>Analysis Result</h2>
+
+      <div id="signal" class="signal">
+        NO TRADE
+      </div>
+
+      <div id="confidence" class="confidence">
+        0%
+      </div>
+
+      <div class="row">
+        <span>Trend</span>
+        <strong id="trend">UNCLEAR</strong>
+      </div>
+
+      <div class="row">
+        <span>Expiry</span>
+        <strong id="expiry">-</strong>
+      </div>
+
+      <div class="row">
+        <span>Entry Candle</span>
+        <strong id="entryCandle">WAIT</strong>
+      </div>
+
+      <div class="row">
+        <span>Setup</span>
+        <strong id="setup">-</strong>
+      </div>
+
+      <div class="row">
+        <span>Risk</span>
+        <strong id="risk">HIGH</strong>
+      </div>
+
+      <div class="card">
+
+        <h3>Entry Instruction</h3>
+
+        <div id="entryInstruction">
+          Wait for confirmation.
+        </div>
+
+      </div>
+
+      <div class="card">
+
+        <h3>Reasons</h3>
+
+        <div id="reasons"></div>
+
+      </div>
+
+      <div class="warning">
+        Technical analysis is probabilistic.
+        No signal is guaranteed. Do not risk money you cannot afford to lose.
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- ALL JAVASCRIPT MUST STAY INSIDE THIS SCRIPT TAG -->
+  <script>
+
+    const $ = (id) => document.getElementById(id);
+
+    let cameraStream = null;
+    let cameraTimer = null;
+
+
+    // =========================
+    // LOGIN
+    // =========================
+
+    async function login() {
+
+      const password = $("password").value.trim();
+
+      if (!password) {
+        $("loginStatus").textContent = "Password দিন";
+        return;
+      }
+
+      $("loginStatus").textContent = "Checking...";
+      $("loginBtn").disabled = true;
+
+      try {
+
+        const response = await fetch("/api/auth", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "same-origin",
+          cache: "no-store",
+          body: JSON.stringify({
+            password: password
+          })
+        });
+
+        const text = await response.text();
+
+        let data = {};
+
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error("Server returned invalid response.");
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || "Wrong password.");
+        }
+
+        sessionStorage.setItem(
+          "nt_unlocked",
+          "1"
+        );
+
+        $("loginStatus").textContent = "Unlocked ✓";
+
+        setTimeout(() => {
+          $("login").classList.add("hidden");
+        }, 300);
+
+      } catch (error) {
+
+        console.error("LOGIN ERROR:", error);
+
+        $("loginStatus").textContent =
+          error.message || "Login failed.";
+
+      } finally {
+
+        $("loginBtn").disabled = false;
+
+      }
+    }
+
+
+    // =========================
+    // IMAGE RESIZE
+    // =========================
+
+    async function resizeImage(file) {
+
+      const image = new Image();
+
+      const url = URL.createObjectURL(file);
+
+      image.src = url;
+
+      await new Promise((resolve, reject) => {
+
+        image.onload = resolve;
+        image.onerror = reject;
+
+      });
+
+      const maxWidth = 1200;
+
+      let width = image.width;
+      let height = image.height;
+
+      if (width > maxWidth) {
+
+        height =
+          Math.round(height * maxWidth / width);
+
+        width = maxWidth;
+
+      }
+
+      const canvas =
+        document.createElement("canvas");
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+
+      ctx.drawImage(
+        image,
+        0,
+        0,
+        width,
+        height
+      );
+
+      URL.revokeObjectURL(url);
+
+      return canvas.toDataURL(
+        "image/jpeg",
+        0.70
       );
     }
 
-    if(!r.ok){
-      throw new Error(
-        d.error || 'Wrong password'
-      );
+
+    // =========================
+    // ANALYZE IMAGE
+    // =========================
+
+    async function analyzeImage(imageData) {
+
+      $("status").textContent =
+        "AI is analyzing chart...";
+
+      $("analyzeBtn").disabled = true;
+
+      try {
+
+        const response = await fetch(
+          "/api/analyze",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({
+
+              image: imageData,
+
+              settings: {
+
+                market:
+                  $("market").value,
+
+                timeframe:
+                  $("timeframe").value,
+
+                mode:
+                  $("mode").value,
+
+                min_confidence:
+                  Number(
+                    $("minConfidence").value
+                  )
+
+              }
+
+            })
+          }
+        );
+
+        const text =
+          await response.text();
+
+        let data = {};
+
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(
+            "Server returned invalid JSON."
+          );
+        }
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.error ||
+            "Analysis failed."
+          );
+
+        }
+
+        showResult(data);
+
+        $("status").textContent =
+          "Analysis complete ✓";
+
+      } catch (error) {
+
+        console.error(
+          "ANALYZE ERROR:",
+          error
+        );
+
+        $("status").textContent =
+          error.message ||
+          "Analysis failed.";
+
+      } finally {
+
+        $("analyzeBtn").disabled = false;
+
+      }
+
     }
 
-    sessionStorage.setItem(
-      'nt_unlocked',
-      '1'
-    );
 
-    $('loginStatus').textContent =
-      'Unlocked ✓';
+    // =========================
+    // SHOW RESULT
+    // =========================
 
-    setTimeout(()=>{
-      $('login').classList.add('hidden');
-    },200);
+    function showResult(data) {
 
-  }catch(e){
+      $("resultCard")
+        .classList
+        .remove("hidden");
 
-    console.error(
-      'LOGIN ERROR:',
-      e
-    );
+      const signal =
+        String(
+          data.signal || "NO TRADE"
+        ).toUpperCase();
 
-    $('loginStatus').textContent =
-      e.message ||
-      'Login failed.';
+      const confidence =
+        Number(
+          data.confidence || 0
+        );
 
-  }finally{
+      $("signal").textContent =
+        signal;
 
-    $('loginBtn').disabled = false;
+      $("signal").className =
+        "signal";
 
-  }
-}
+      if (signal === "CALL") {
+
+        $("signal")
+          .classList
+          .add("call");
+
+      } else if (signal === "PUT") {
+
+        $("signal")
+          .classList
+          .add("put");
+
+      } else {
+
+        $("signal")
+          .classList
+          .add("no-trade");
+
+      }
+
+      $("confidence").textContent =
+        confidence + "%";
+
+      $("trend").textContent =
+        data.trend || "UNCLEAR";
+
+      $("expiry").textContent =
+        data.expiry || "-";
+
+      $("entryCandle").textContent =
+        data.entry_candle || "WAIT";
+
+      $("setup").textContent =
+        data.setup || "-";
+
+      $("risk").textContent =
+        data.risk || "HIGH";
+
+      $("entryInstruction").textContent =
+        data.entry_instruction ||
+        "Wait for confirmation.";
+
+      const reasons =
+        Array.isArray(data.reasons)
+          ? data.reasons
+          : [];
+
+      $("reasons").innerHTML = "";
+
+      if (reasons.length === 0) {
+
+        $("reasons").innerHTML =
+          '<div class="reason">No reliable reasons returned.</div>';
+
+      } else {
+
+        reasons.forEach((reason) => {
+
+          const div =
+            document.createElement("div");
+
+          div.className =
+            "reason";
+
+          div.textContent =
+            "• " + reason;
+
+          $("reasons")
+            .appendChild(div);
+
+        });
+
+      }
+
+    }
+
+
+    // =========================
+    // FILE UPLOAD
+    // =========================
+
+    $("imageInput")
+      .addEventListener(
+        "change",
+        async function () {
+
+          const file =
+            this.files?.[0];
+
+          if (!file) return;
+
+          try {
+
+            const imageData =
+              await resizeImage(file);
+
+            $("preview").src =
+              imageData;
+
+            $("preview")
+              .classList
+              .remove("hidden");
+
+            $("analyzeBtn")
+              .onclick = () =>
+                analyzeImage(imageData);
+
+            $("status").textContent =
+              "Chart ready. Click ANALYZE CHART.";
+
+          } catch (error) {
+
+            console.error(error);
+
+            $("status").textContent =
+              "Could not load image.";
+
+          }
+
+        }
+      );
+
+
+    // =========================
+    // CAMERA
+    // =========================
+
+    async function startCamera() {
+
+      try {
+
+        cameraStream =
+          await navigator.mediaDevices.getUserMedia({
+
+            video: {
+              facingMode: {
+                ideal: "environment"
+              }
+            },
+
+            audio: false
+
+          });
+
+        $("camera").srcObject =
+          cameraStream;
+
+        $("camera")
+          .classList
+          .remove("hidden");
+
+        $("cameraStatus").textContent =
+          "Camera started ✓";
+
+        startCameraScanner();
+
+      } catch (error) {
+
+        console.error(
+          "CAMERA ERROR:",
+          error
+        );
+
+        $("cameraStatus").textContent =
+          "Camera permission denied or unavailable.";
+
+      }
+
+    }
+
+
+    function stopCamera() {
+
+      if (cameraTimer) {
+
+        clearInterval(
+          cameraTimer
+        );
+
+        cameraTimer = null;
+
+      }
+
+      if (cameraStream) {
+
+        cameraStream
+          .getTracks()
+          .forEach(
+            track => track.stop()
+          );
+
+        cameraStream = null;
+
+      }
+
+      $("camera").srcObject =
+        null;
+
+      $("camera")
+        .classList
+        .add("hidden");
+
+      $("cameraStatus").textContent =
+        "Camera stopped.";
+
+    }
+
+
+    function startCameraScanner() {
+
+      if (cameraTimer) {
+
+        clearInterval(
+          cameraTimer
+        );
+
+      }
+
+      const seconds =
+        Number(
+          $("scanInterval").value
+        );
+
+      cameraTimer =
+        setInterval(
+          captureCameraFrame,
+          seconds * 1000
+        );
+
+    }
+
+
+    function captureCameraFrame() {
+
+      if (!cameraStream) return;
+
+      const video =
+        $("camera");
+
+      if (
+        video.readyState <
+        HTMLMediaElement.HAVE_CURRENT_DATA
+      ) {
+        return;
+      }
+
+      const canvas =
+        document.createElement("canvas");
+
+      const maxWidth = 1200;
+
+      let width =
+        video.videoWidth;
+
+      let height =
+        video.videoHeight;
+
+      if (!width || !height) return;
+
+      if (width > maxWidth) {
+
+        height =
+          Math.round(
+            height * maxWidth / width
+          );
+
+        width = maxWidth;
+
+      }
+
+      canvas.width =
+        width;
+
+      canvas.height =
+        height;
+
+      const ctx =
+        canvas.getContext("2d");
+
+      ctx.drawImage(
+        video,
+        0,
+        0,
+        width,
+        height
+      );
+
+      const imageData =
+        canvas.toDataURL(
+          "image/jpeg",
+          0.70
+        );
+
+      $("cameraStatus").textContent =
+        "Analyzing latest camera frame...";
+
+      analyzeImage(imageData);
+
+    }
+
+
+    // =========================
+    // BUTTON EVENTS
+    // =========================
+
+    $("loginBtn")
+      .addEventListener(
+        "click",
+        login
+      );
+
+    $("password")
+      .addEventListener(
+        "keydown",
+        function(event) {
+
+          if (
+            event.key === "Enter"
+          ) {
+            login();
+          }
+
+        }
+      );
+
+
+    $("startCamera")
+      .addEventListener(
+        "click",
+        startCamera
+      );
+
+
+    $("stopCamera")
+      .addEventListener(
+        "click",
+        stopCamera
+      );
+
+
+    $("scanInterval")
+      .addEventListener(
+        "change",
+        function() {
+
+          if (cameraStream) {
+            startCameraScanner();
+          }
+
+        }
+      );
+
+
+    // =========================
+    // SESSION UI
+    // =========================
+
+    if (
+      sessionStorage.getItem(
+        "nt_unlocked"
+      ) === "1"
+    ) {
+
+      $("login")
+        .classList
+        .add("hidden");
+
+    }
+
+  </script>
+
+</body>
+</html>
