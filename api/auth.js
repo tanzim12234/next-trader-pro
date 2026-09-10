@@ -1,4 +1,4 @@
-mport crypto from "crypto";
+import crypto from "crypto";
 
 const COOKIE = "nt_session";
 const FALLBACK_PASSWORD = "NEXT2026";
