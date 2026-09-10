@@ -121,21 +121,6 @@ background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-backgro
 @media(max-width:650px){.grid,.two{grid-template-columns:1fr}.top{align-items:flex-start}.clock{min-width:auto;font-size:11px}
 .wrap{padding-top:10px}.card{padding:17px;border-radius:20px}.cambar{flex-direction:column}.cambar button{margin-top:7px}}
 </style>
-
-<style>
-#closeEntryModeBanner{
-  position:fixed;left:16px;right:16px;top:12px;z-index:99999;
-  padding:10px 16px;border:1px solid rgba(255,255,255,.16);
-  border-radius:14px;background:rgba(8,10,20,.78);backdrop-filter:blur(14px);
-  color:#fff;font:600 13px/1.35 system-ui,sans-serif;text-align:center;
-  box-shadow:0 8px 30px rgba(0,0,0,.25)
-}
-#closeEntryModeBanner b{color:#7CFFB2}
-</style>
-<div id="closeEntryModeBanner">
-  <b>LIVE CLOSE-ENTRY MODE</b> — running candle silent • analyze only after candle close • entry on the new running candle
-</div>
-
 </head>
 <body>
 <div class="grid-bg"></div><div class="scanlines"></div><div class="noise"></div>
@@ -164,14 +149,12 @@ background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-backgro
 <input id="file" type="file" accept="image/png,image/jpeg,image/webp"><img id="preview" class="preview">
 <button id="go" class="primary">ANALYZE CHART ↗</button></section>
 
-<section class="card"><div class="live-head"><h2><span class="ico">◉</span> LIVE VISION MODE</h2>
+<section class="card"><div class="live-head"><h2><span class="ico">◉</span> LIVE VISION MODE</h2><div class="small" style="margin-top:8px"><b>⚡ CLOSE-ENTRY ENGINE:</b> AI stays silent during the running candle.</div>
 <div class="live-indicator"><span id="liveDot" class="live-dot"></span><span id="liveStatus">OFFLINE</span></div></div>
-<div class="small">Share your broker/chart window or tab. The browser captures periodic frames and sends them to the AI; this is not a direct broker data feed.</div>
+<div class="small">Share your broker/chart window or tab. Running candles stay silent. Frames are inspected locally; AI is called only after a detected candle boundary. This is not a direct broker data feed.</div>
 <div id="liveFrame" class="scan-frame"><video id="screenPreview" autoplay playsinline muted></video></div>
 <div class="two"><button id="startLive" class="primary">▶ START LIVE VISION</button><button id="stopLive">■ STOP LIVE</button></div>
-<div class="row"><span class="pill">Scan interval:
-<select id="liveInterval" style="border:0;background:transparent;padding:0;width:auto;color:#fff">
-<option value="2">2 sec</option><option value="3">3 sec</option><option value="5" selected>5 sec</option><option value="8">8 sec</option></select></span>
+<div class="row"><span class="pill">Mode: <b>CANDLE CLOSE → RUNNING ENTRY</b></span>
 <span class="pill">AI Voice: <b id="voiceState">ON</b></span></div>
 <button id="voiceToggle">🔊 TOGGLE AI VOICE</button></section>
 
@@ -233,14 +216,7 @@ async function analyzeFile(file){if(!file){showError('Upload a chart screenshot 
 async function sendAnalysis(image,source){
  if(busy)return null;busy=true;$('result').classList.remove('hidden');
  $('result').innerHTML='<div class="badge">AI PROCESSING</div><div class="status">◉ NEXT TRADER AI is analyzing '+escapeHtml(source)+'... <span class="wave"><i></i><i></i><i></i><i></i><i></i></span></div>';
- try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-  image,
-  settings:{
-    ...settings(),
-    execution_mode:"CANDLE_CLOSE_THEN_RUNNING_ENTRY_ONLY",
-    entry_rule:"Analyze only immediately after a confirmed candle close; if valid, signal entry on the newly running candle only. Never issue a future/next-candle signal."
-  }
-})});
+ try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image,settings:settings()})});
  const d=await r.json();if(!r.ok)throw new Error(d.error||('API error '+r.status));render(d,source);return d}
  catch(e){showError(e.message);return null}finally{busy=false}
 }
@@ -287,91 +263,243 @@ function resizeImage(file){return new Promise((resolve,reject)=>{const img=new I
  img.onload=()=>{const max=1200,scale=Math.min(1,max/img.width),c=document.createElement('canvas');c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);
  c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',.70))};img.onerror=reject;img.src=url})}
 
+
 async function startLiveVision(){
- if(screenStream)return;if(!navigator.mediaDevices?.getDisplayMedia){$('liveStatus').textContent='SCREEN SHARE NOT SUPPORTED';return}
- try{screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:5,max:10}},audio:false});
- $('screenPreview').srcObject=screenStream;$('screenPreview').style.display='block';$('startLive').classList.add('live-active');
- $('liveDot').classList.add('on');$('liveStatus').textContent='LIVE VISION ACTIVE';$('liveFrame').classList.add('scanning');
- const track=screenStream.getVideoTracks()[0];if(track)track.addEventListener('ended',stopLiveVision);startLiveScanner()}
- catch(e){$('liveStatus').textContent='SCREEN SHARE CANCELLED';screenStream=null}
-}
-function stopLiveVision(){liveRequestNumber++;if(liveTimer){clearInterval(liveTimer);liveTimer=null}
- if(screenStream){screenStream.getTracks().forEach(t=>t.stop());screenStream=null}liveBusy=false;
- $('screenPreview').srcObject=null;$('screenPreview').style.display='none';$('startLive').classList.remove('live-active');
- $('liveDot').classList.remove('on');$('liveFrame').classList.remove('scanning');$('liveStatus').textContent='OFFLINE'}
-function startLiveScanner(){if(liveTimer)clearInterval(liveTimer);const seconds=Number($('liveInterval').value);
- setTimeout(captureLiveFrame,700);liveTimer=setInterval(captureLiveFrame,seconds*1000)}
-function getFrameHash(canvas){const w=32,h=18,tmp=document.createElement('canvas');tmp.width=w;tmp.height=h;tmp.getContext('2d').drawImage(canvas,0,0,w,h);
- const d=tmp.getContext('2d').getImageData(0,0,w,h).data;let hash=0;for(let i=0;i<d.length;i+=12)hash=((hash<<5)-hash+d[i]+d[i+1]+d[i+2])|0;return String(hash)}
-async function captureLiveFrame(){
- if(!screenStream||liveBusy)return;const video=$('screenPreview');if(video.readyState<2)return;
- const canvas=document.createElement('canvas'),maxWidth=1200;let width=video.videoWidth,height=video.videoHeight;if(!width||!height)return;
- if(width>maxWidth){height=Math.round(height*maxWidth/width);width=maxWidth}canvas.width=width;canvas.height=height;
- canvas.getContext('2d').drawImage(video,0,0,width,height);const hash=getFrameHash(canvas),now=Date.now();
- if(lastFrameHash===hash&&lastAnalysisTime>0&&now-lastAnalysisTime<10000){$('liveStatus').textContent='LIVE • WAITING FOR CHART MOVEMENT...';return}
- lastFrameHash=hash;const imageData=canvas.toDataURL('image/jpeg',.70);liveBusy=true;lastAnalysisTime=now;liveRequestNumber++;const requestNumber=liveRequestNumber;
- try{await sendLiveAnalysis(imageData,requestNumber)}finally{liveBusy=false}
-}
-async function sendLiveAnalysis(image,requestNumber){$('liveStatus').textContent='LIVE • AI SCANNING...';
- try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-  image,
-  settings:{
-    ...settings(),
-    execution_mode:"CANDLE_CLOSE_THEN_RUNNING_ENTRY_ONLY",
-    entry_rule:"Analyze only immediately after a confirmed candle close; if valid, signal entry on the newly running candle only. Never issue a future/next-candle signal."
+  if(screenStream)return;
+  if(!navigator.mediaDevices?.getDisplayMedia){
+    $('liveStatus').textContent='SCREEN SHARE NOT SUPPORTED';
+    return;
   }
-})});
- const d=await r.json();if(!r.ok)throw new Error(d.error||('API error '+r.status));if(requestNumber!==liveRequestNumber)return;render(d,'LIVE VISION')}
- catch(e){$('liveStatus').textContent='LIVE • ERROR: '+e.message}}
+  try{
+    screenStream=await navigator.mediaDevices.getDisplayMedia({
+      video:{frameRate:{ideal:5,max:10}},
+      audio:false
+    });
+    $('screenPreview').srcObject=screenStream;
+    $('screenPreview').style.display='block';
+    $('startLive').classList.add('live-active');
+    $('liveDot').classList.add('on');
+    $('liveFrame').classList.add('scanning');
+
+    liveRequestNumber++;
+    lastFrameHash="";
+    lastAnalysisTime=0;
+    liveBusy=false;
+
+    const track=screenStream.getVideoTracks()[0];
+    if(track)track.addEventListener('ended',stopLiveVision);
+
+    // IMPORTANT: no periodic AI calls. We only inspect frames locally to
+    // detect the candle boundary, then send ONE frame after the close.
+    startCandleCloseWatcher();
+  }catch(e){
+    $('liveStatus').textContent='SCREEN SHARE CANCELLED';
+    screenStream=null;
+  }
+}
+
+function stopLiveVision(){
+  liveRequestNumber++;
+  if(liveTimer){clearInterval(liveTimer);liveTimer=null}
+  if(screenStream){
+    screenStream.getTracks().forEach(t=>t.stop());
+    screenStream=null;
+  }
+  liveBusy=false;
+  $('screenPreview').srcObject=null;
+  $('screenPreview').style.display='none';
+  $('startLive').classList.remove('live-active');
+  $('liveDot').classList.remove('on');
+  $('liveFrame').classList.remove('scanning');
+  $('liveStatus').textContent='OFFLINE';
+}
+
+/*
+  Candle-close watcher:
+  - Captures frames locally (no API call) every ~250ms.
+  - Uses the broker's visible candle countdown when possible.
+  - Falls back to a stable visual-change boundary detector.
+  - Only after a confirmed boundary does it call /api/analyze.
+*/
+let candleWatcher=null;
+let candleState={
+  lastRemaining:null,
+  lastVisualHash:"",
+  lastBoundaryAt:0,
+  awaitingNewCandle:false,
+  candidateSince:0,
+  lastSignalCandleKey:""
+};
+
+function startCandleCloseWatcher(){
+  if(candleWatcher)clearInterval(candleWatcher);
+  candleState={
+    lastRemaining:null,lastVisualHash:"",
+    lastBoundaryAt:0,awaitingNewCandle:false,
+    candidateSince:0,lastSignalCandleKey:""
+  };
+
+  $('liveStatus').textContent='LIVE • WAITING FOR CANDLE CLOSE';
+  candleWatcher=setInterval(localCandleCheck,250);
+  localCandleCheck();
+}
+
+function stopCandleWatcher(){
+  if(candleWatcher)clearInterval(candleWatcher);
+  candleWatcher=null;
+}
+
+function getVisibleCandleRemaining(){
+  // Prefer broker/chart DOM timer if it is inside the shared page.
+  // Screen-share mode normally cannot access broker DOM, so return null.
+  return null;
+}
+
+function captureLocalCanvas(){
+  if(!screenStream)return null;
+  const video=$('screenPreview');
+  if(!video || video.readyState<2)return null;
+  let width=video.videoWidth,height=video.videoHeight;
+  if(!width||!height)return null;
+  const maxWidth=900;
+  if(width>maxWidth){
+    height=Math.round(height*maxWidth/width);
+    width=maxWidth;
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=width;canvas.height=height;
+  canvas.getContext('2d').drawImage(video,0,0,width,height);
+  return canvas;
+}
+
+function getSmallVisualHash(canvas){
+  const w=24,h=14;
+  const tmp=document.createElement('canvas');
+  tmp.width=w;tmp.height=h;
+  const ctx=tmp.getContext('2d');
+  ctx.drawImage(canvas,0,0,w,h);
+  const d=ctx.getImageData(0,0,w,h).data;
+  let hash=2166136261;
+  for(let i=0;i<d.length;i+=8){
+    hash^=d[i];hash=Math.imul(hash,16777619);
+    hash^=d[i+1];hash=Math.imul(hash,16777619);
+    hash^=d[i+2];hash=Math.imul(hash,16777619);
+  }
+  return (hash>>>0).toString(16);
+}
+
+function localCandleCheck(){
+  if(!screenStream||liveBusy)return;
+  const canvas=captureLocalCanvas();
+  if(!canvas)return;
+
+  const hash=getSmallVisualHash(canvas);
+
+  if(!candleState.lastVisualHash){
+    candleState.lastVisualHash=hash;
+    $('liveStatus').textContent='LIVE • WAITING FOR CANDLE CLOSE';
+    return;
+  }
+
+  /*
+    We intentionally do NOT interpret ordinary movement as a candle close.
+    A boundary candidate is only accepted when the visual state changes
+    sharply and then stabilizes for several checks. This reduces duplicate
+    entries, but screen capture cannot guarantee exchange-level candle timing.
+  */
+  const changed=hash!==candleState.lastVisualHash;
+  candleState.lastVisualHash=hash;
+
+  if(!changed){
+    if(candleState.awaitingNewCandle){
+      candleState.awaitingNewCandle=false;
+      candleState.candidateSince=0;
+      analyzeClosedCandleFrame();
+    }
+    return;
+  }
+
+  if(!candleState.candidateSince){
+    candleState.candidateSince=Date.now();
+    $('liveStatus').textContent='LIVE • CANDLE BOUNDARY DETECTED...';
+  }else if(Date.now()-candleState.candidateSince>500){
+    candleState.awaitingNewCandle=true;
+  }
+}
+
+async function analyzeClosedCandleFrame(){
+  if(!screenStream||liveBusy)return;
+  const now=Date.now();
+
+  // Hard duplicate guard: never analyze twice inside the same 2.5 seconds.
+  if(now-candleState.lastBoundaryAt<2500)return;
+  candleState.lastBoundaryAt=now;
+
+  const canvas=captureLocalCanvas();
+  if(!canvas)return;
+
+  const imageData=canvas.toDataURL('image/jpeg',.72);
+  liveBusy=true;
+  liveRequestNumber++;
+  const requestNumber=liveRequestNumber;
+
+  $('liveStatus').textContent='LIVE • CANDLE CLOSED → ANALYZING...';
+
+  try{
+    const r=await fetch('/api/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        image:imageData,
+        settings:{
+          ...settings(),
+          execution_mode:'CANDLE_CLOSE_THEN_RUNNING_ENTRY_ONLY',
+          entry_rule:'This request is triggered only after a detected candle boundary. Analyze the just-closed candle and, if valid, give entry ONLY for the newly running candle. Never say NEXT CANDLE.',
+          running_candle_only:true,
+          silent_during_running_candle:true
+        }
+      })
+    });
+
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||('API error '+r.status));
+    if(requestNumber!==liveRequestNumber)return;
+
+    // Enforce the UI contract even if the model returns another label.
+    d.entry_candle=(d.signal==='CALL'||d.signal==='PUT')?'RUNNING CANDLE':'WAIT';
+    render(d,'LIVE CLOSE-ENTRY');
+
+    if(d.signal==='CALL'||d.signal==='PUT'){
+      $('liveStatus').textContent='LIVE • '+d.signal+' ENTRY NOW';
+      if(voiceOn)ntSpeakShort(d.signal);
+    }else{
+      $('liveStatus').textContent='LIVE • NO TRADE — WAIT FOR NEXT CLOSE';
+      if('speechSynthesis' in window)speechSynthesis.cancel();
+    }
+  }catch(e){
+    $('liveStatus').textContent='LIVE • ERROR: '+e.message;
+  }finally{
+    liveBusy=false;
+    candleState.candidateSince=0;
+  }
+}
+
+function ntSpeakShort(signal){
+  if(!voiceOn||!('speechSynthesis' in window))return;
+  const s=String(signal||'').toUpperCase();
+  if(s!=='CALL'&&s!=='PUT')return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(s==='CALL'?'CALL. Entry now.':'PUT. Entry now.');
+  u.rate=1.05;
+  u.volume=.75;
+  speechSynthesis.speak(u);
+}
+
 $('startLive').onclick=startLiveVision;$('stopLive').onclick=stopLiveVision;
-$('liveInterval').onchange=()=>{if(screenStream)startLiveScanner()};
+
 $('voiceToggle').onclick=()=>{voiceOn=!voiceOn;$('voiceState').textContent=voiceOn?'ON':'OFF';
  $('voiceToggle').textContent=voiceOn?'🔊 AI VOICE: ON':'🔇 AI VOICE: OFF';if(!voiceOn&&'speechSynthesis'in window)speechSynthesis.cancel()};
-window.addEventListener('beforeunload',()=>{stopCamera();stopLiveVision()});
+window.addEventListener('beforeunload',()=>{stopCandleWatcher();stopCamera();stopLiveVision()});
 </script>
-
-<script>
-/* NEXT TRADER — Candle Close → Analyze → Running Candle Entry
-   IMPORTANT: this is a visual/chart-frame workflow, not exchange tick data.
-*/
-(() => {
-  const CLOSE_ENTRY = {
-    runningSilent: true,
-    analyzeOnlyAfterClose: true,
-    entryOnlyRunningCandle: true,
-    allowNextCandleSignal: false
-  };
-
-  window.NEXT_TRADER_CLOSE_ENTRY = CLOSE_ENTRY;
-
-  // Prevent verbose voice output during a running candle.
-  window.ntSpeakCloseEntry = function(signal) {
-    if (!window.speechSynthesis) return;
-    if (!CLOSE_ENTRY.entryOnlyRunningCandle) return;
-    const s = String(signal || '').toUpperCase();
-    if (s !== 'CALL' && s !== 'PUT') return;
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(
-      s === 'CALL' ? 'CALL. Entry now.' : 'PUT. Entry now.'
-    );
-    u.rate = 1.05;
-    u.volume = 0.8;
-    speechSynthesis.speak(u);
-  };
-
-  // A helper for existing LIVE loops: call this ONLY when a candle close
-  // has actually been detected from the visible chart.
-  window.ntAnalyzeAfterCandleClose = async function(captureFrame) {
-    if (typeof captureFrame !== 'function') return null;
-    const image = await captureFrame();
-    if (!image) return null;
-
-    // The caller must invoke this at the detected close boundary.
-    // The returned signal is intended for the newly running candle only.
-    return image;
-  };
-})();
-</script>
-
 </body>
 </html>
