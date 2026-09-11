@@ -337,13 +337,12 @@ function stopLiveVision(){
 }
 
 /*
-  Candle-close watcher:
-  - Captures frames locally (no API call) every ~250ms.
-  - Uses the broker's visible candle countdown when possible.
-  - Falls back to a stable visual-change boundary detector.
-  - Only after a confirmed boundary does it call /api/analyze.
+  FIXED CLOCK LIVE ENGINE:
+  :59 capture -> AI -> :00 running-candle entry.
+  No visual candle-boundary detection.
 */
 let candleWatcher=null;
+let candleWakeTimer=null;
 
 let candleState={
   capturedMinute:null,
@@ -355,28 +354,20 @@ let candleState={
   analysisInProgress:false
 };
 
-/*
-  FIXED 1-MINUTE TIMING ENGINE
-
-  :59.xxx  -> capture screen-share frame
-  :00.xxx  -> new candle is running
-  :00–:02  -> AI result may still arrive and become the running-candle entry
-
-  No visual candle-boundary detection is used.
-  Browser/device clock is the timing reference.
-*/
+function liveMinuteKey(date){
+  return [
+    date.getFullYear(),date.getMonth(),date.getDate(),
+    date.getHours(),date.getMinutes()
+  ].join("-");
+}
 
 function captureLiveFrame(){
   if(!screenStream)return null;
-
   const video=$("screenPreview");
-  if(!video || video.readyState<2)return null;
-  if(!video.videoWidth || !video.videoHeight)return null;
+  if(!video || video.readyState<2 || !video.videoWidth || !video.videoHeight)return null;
 
-  let width=video.videoWidth;
-  let height=video.videoHeight;
+  let width=video.videoWidth,height=video.videoHeight;
   const maxWidth=1200;
-
   if(width>maxWidth){
     height=Math.round(height*maxWidth/width);
     width=maxWidth;
@@ -385,237 +376,185 @@ function captureLiveFrame(){
   const canvas=document.createElement("canvas");
   canvas.width=width;
   canvas.height=height;
-
-  const ctx=canvas.getContext("2d");
+  const ctx=canvas.getContext("2d",{willReadFrequently:false});
   ctx.drawImage(video,0,0,width,height);
-
-  return canvas.toDataURL("image/jpeg",.75);
+  return canvas.toDataURL("image/jpeg",.78);
 }
 
-function liveMinuteKey(date){
-  return [
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    date.getHours(),
-    date.getMinutes()
-  ].join("-");
-}
-
-function getNextMinuteStart(now){
+function nextMinuteStartMs(now=new Date()){
   const d=new Date(now);
   d.setSeconds(0,0);
   d.setMinutes(d.getMinutes()+1);
   return d.getTime();
 }
 
-async function analyzeFixedClose(image,captureMinuteKey,entryMinuteKey,entryStartMs){
+function scheduleFixedWake(){
+  if(candleWakeTimer)clearTimeout(candleWakeTimer);
+  if(!screenStream)return;
 
-  if(!screenStream||!image)return;
+  const now=Date.now();
+  const next=(Math.floor(now/1000)+1)*1000;
+  candleWakeTimer=setTimeout(fixedTimingTick,Math.max(25,next-now));
+}
+
+async function runLiveAIAtClose(captureMinuteKey,entryMinuteKey,entryStartMs){
+  if(!screenStream)return;
+
+  const image=captureLiveFrame();
+  if(!image){
+    $("liveStatus").textContent="LIVE • SCREEN FRAME NOT READY — RETRYING";
+    candleState.captureInProgress=false;
+    return;
+  }
 
   candleState.analysisInProgress=true;
-
-  $("liveStatus").textContent=
-    "LIVE • :59 CAPTURED → AI ANALYZING...";
+  $("liveStatus").textContent="LIVE • :59 CAPTURED → AI ANALYZING...";
 
   try{
-
     const r=await fetch("/api/analyze",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
-        image:image,
+        image,
         settings:{
           ...settings(),
-
           execution_mode:"FIXED_1M_CLOSE_TO_RUNNING_ENTRY",
-
           entry_rule:
-            "Capture chart at second 59. Analyze the just-closed candle. "
-            +"CALL or PUT is ENTRY for the newly running candle at :00. "
-            +"Never call it NEXT CANDLE. "
-            +"A result arriving up to 2 seconds after :00 is valid.",
-
+            "At second 59, analyze the just-closed 1-minute candle. "
+            +"The result is for the newly running candle at :00. "
+            +"CALL or PUT means ENTRY NOW for the running candle. "
+            +"Never label it NEXT CANDLE. "
+            +"A result arriving during the first 2 seconds after :00 is still valid.",
           running_candle_only:true,
-
-          fixed_timing:
-            "CAPTURE :59, ENTRY :00, LATE WINDOW :00-:02"
+          fixed_timing:"CAPTURE :59 → ENTRY :00 → LATE WINDOW 2 SECONDS"
         }
       })
     });
 
     const d=await r.json();
+    if(!r.ok)throw new Error(d.error||("API error "+r.status));
 
-    if(!r.ok){
-      throw new Error(d.error||("API error "+r.status));
-    }
+    const raw=String(d.signal||"").toUpperCase().trim();
+    d.signal=raw==="CALL"?"CALL":raw==="PUT"?"PUT":"NO TRADE";
+    d.entry_candle=(d.signal==="CALL"||d.signal==="PUT")
+      ?"RUNNING CANDLE":"WAIT";
 
-    d.entry_candle=
-      (d.signal==="CALL"||d.signal==="PUT")
-        ? "RUNNING CANDLE"
-        : "WAIT";
-
-    // Show signal now; voice waits for the actual :00–:02 entry.
+    // Show the AI result immediately, but do not speak before entry.
     render(d,"LIVE VISION",false);
 
     candleState.pendingResult={
-      entryMinuteKey:entryMinuteKey,
-      entryStartMs:entryStartMs,
+      entryMinuteKey,
+      entryStartMs,
       entryDeadlineMs:entryStartMs+2000,
       result:d
     };
 
-    // If AI finished after :00, immediately process it if still inside the 2-sec window.
+    // If the AI returned after :00, trigger the entry immediately.
     processFixedEntry(entryMinuteKey);
 
     if(candleState.entryMinute!==entryMinuteKey){
-      $("liveStatus").textContent=
-        "LIVE • AI READY — WAITING FOR ENTRY WINDOW";
+      $("liveStatus").textContent="LIVE • AI READY — WAITING FOR :00 ENTRY";
     }
 
   }catch(e){
-
     console.error("LIVE AI ERROR:",e);
-
-    $("liveStatus").textContent=
-      "LIVE • AI ERROR: "+e.message;
-
+    $("liveStatus").textContent="LIVE • AI ERROR: "+e.message;
   }finally{
-
     candleState.analysisInProgress=false;
     candleState.captureInProgress=false;
   }
 }
 
 function processFixedEntry(minuteKey){
-
   if(!screenStream)return;
-
   const pending=candleState.pendingResult;
-
-  if(!pending)return;
-  if(pending.entryMinuteKey!==minuteKey)return;
+  if(!pending || pending.entryMinuteKey!==minuteKey)return;
   if(candleState.entryMinute===minuteKey)return;
 
-  const nowMs=Date.now();
+  const now=Date.now();
+  if(now<pending.entryStartMs)return;
 
-  if(nowMs<pending.entryStartMs)return;
-  if(nowMs>pending.entryDeadlineMs){
+  if(now>pending.entryDeadlineMs){
     candleState.pendingResult=null;
+    $("liveStatus").textContent="LIVE • ENTRY WINDOW MISSED";
     return;
   }
 
   const d=pending.result;
-
   candleState.entryMinute=minuteKey;
   candleState.pendingResult=null;
 
   render(d,"LIVE ENTRY",false);
 
   if(d.signal==="CALL"){
-
     $("liveStatus").textContent="LIVE • CALL ENTRY NOW";
-    speakSignal(d,"LIVE|"+minuteKey);
-
   }else if(d.signal==="PUT"){
-
     $("liveStatus").textContent="LIVE • PUT ENTRY NOW";
-    speakSignal(d,"LIVE|"+minuteKey);
-
   }else{
-
-    $("liveStatus").textContent=
-      "LIVE • NO TRADE — WAIT FOR NEXT CLOSE";
-    speakSignal(d,"LIVE|"+minuteKey);
+    $("liveStatus").textContent="LIVE • NO TRADE — WAIT";
   }
+
+  // Exactly one spoken result for this running candle.
+  speakSignal(d,"LIVE|"+minuteKey);
 }
 
-async function fixedTimingTick(){
-
+function fixedTimingTick(){
   if(!screenStream)return;
 
   const now=new Date();
   const seconds=now.getSeconds();
-  const ms=now.getMilliseconds();
   const minuteKey=liveMinuteKey(now);
 
-  /*
-    :00–:02
-    Process a result captured during the previous minute.
-  */
+  // Always check pending entry during :00–:02.
   if(seconds<=2){
     processFixedEntry(minuteKey);
-
-    if(
-      seconds===0 &&
-      candleState.entryMinute!==minuteKey &&
-      !candleState.pendingResult &&
-      !candleState.analysisInProgress
-    ){
-      $("liveStatus").textContent=
-        "LIVE • NEW CANDLE — WAITING AI";
-    }
   }
 
-  /*
-    :59
-    Capture exactly once and associate the result with the NEXT minute.
-  */
-  if(seconds===59){
+  // Capture once during the :59 second.
+  if(seconds===59 &&
+     candleState.capturedMinute!==minuteKey &&
+     !candleState.captureInProgress){
 
-    if(
-      candleState.capturedMinute!==minuteKey &&
-      !candleState.captureInProgress
-    ){
+    candleState.capturedMinute=minuteKey;
+    candleState.captureInProgress=true;
 
-      candleState.capturedMinute=minuteKey;
-      candleState.captureInProgress=true;
+    const entryStartMs=nextMinuteStartMs(now);
+    const entryMinuteKey=liveMinuteKey(new Date(entryStartMs));
 
-      const image=captureLiveFrame();
+    $("liveStatus").textContent="LIVE • :59 CAPTURE — SENDING TO AI...";
 
-      if(image){
-
-        const entryStartMs=getNextMinuteStart(now);
-        const entryDate=new Date(entryStartMs);
-        const entryMinuteKey=liveMinuteKey(entryDate);
-
-        $("liveStatus").textContent=
-          "LIVE • :59 SCREENSHOT CAPTURED";
-
-        analyzeFixedClose(
-          image,
-          minuteKey,
-          entryMinuteKey,
-          entryStartMs
-        );
-
-      }else{
-
-        candleState.captureInProgress=false;
-
-        $("liveStatus").textContent=
-          "LIVE • FRAME NOT READY";
-      }
-    }
+    // Give the screen-share video a moment to present its latest frame.
+    setTimeout(()=>{
+      if(!screenStream || !candleState.captureInProgress)return;
+      runLiveAIAtClose(minuteKey,entryMinuteKey,entryStartMs);
+    },100);
   }
 
-  /*
-    Re-align to the absolute device clock to prevent setInterval drift.
-  */
-  const delay=
-    seconds===59
-      ? Math.max(10,1000-ms)
-      : Math.max(10,250-ms);
+  // If a frame was not ready, retry once at :59.5.
+  if(seconds===59 &&
+     candleState.captureInProgress &&
+     !candleState.analysisInProgress &&
+     !candleState.pendingResult){
 
-  candleWatcher=setTimeout(fixedTimingTick,delay);
+    setTimeout(()=>{
+      if(!screenStream)return;
+      if(candleState.analysisInProgress)return;
+      if(candleState.capturedMinute!==minuteKey)return;
+
+      runLiveAIAtClose(
+        minuteKey,
+        liveMinuteKey(new Date(nextMinuteStartMs(new Date()))),
+        nextMinuteStartMs(new Date())
+      );
+    },500);
+  }
+
+  scheduleFixedWake();
 }
 
 function startCandleCloseWatcher(){
-
-  if(candleWatcher){
-    clearTimeout(candleWatcher);
-    candleWatcher=null;
-  }
+  if(candleWatcher)clearTimeout(candleWatcher);
+  if(candleWakeTimer)clearTimeout(candleWakeTimer);
 
   candleState={
     capturedMinute:null,
@@ -627,19 +566,15 @@ function startCandleCloseWatcher(){
     analysisInProgress:false
   };
 
-  $("liveStatus").textContent=
-    "LIVE • SYNCING 1-MINUTE TIMING...";
-
+  $("liveStatus").textContent="LIVE • CLOCK SYNCED — WAITING FOR :59";
   fixedTimingTick();
 }
 
 function stopCandleWatcher(){
-
-  if(candleWatcher){
-    clearTimeout(candleWatcher);
-    candleWatcher=null;
-  }
-
+  if(candleWatcher)clearTimeout(candleWatcher);
+  if(candleWakeTimer)clearTimeout(candleWakeTimer);
+  candleWatcher=null;
+  candleWakeTimer=null;
   candleState.pendingResult=null;
   candleState.captureInProgress=false;
   candleState.analysisInProgress=false;
