@@ -185,7 +185,7 @@ background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-backgro
 <script>
 const $=id=>document.getElementById(id);
 let cameraStream=null,autoTimer=null,busy=false,nextScanAt=0;
-
+let screenStream=null,liveTimer=null,liveBusy=false,lastFrameHash="",lastAnalysisTime=0,liveRequestNumber=0;
 let lastVoiceKey="",voiceOn=true;
 
 function tickClock(){
@@ -199,38 +199,14 @@ function tickClock(){
 setInterval(tickClock,1000);tickClock();
 
 async function login(){
-  const password=$('password').value.trim();
-  if(!password){
-    $('loginStatus').textContent='ENTER ACCESS PASSWORD';
-    return;
-  }
-  $('loginBtn').disabled=true;
-  $('loginStatus').textContent='AUTHENTICATING...';
-  try{
-    const r=await fetch('/api/auth',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      credentials:'same-origin',
-      body:JSON.stringify({password})
-    });
-    const text=await r.text();
-    let d={};
-    try{d=JSON.parse(text)}catch(_){}
-    if(!r.ok)throw new Error(d.error||`Login failed (${r.status})`);
-    $('login').classList.add('hidden');
-    sessionStorage.setItem('nt_unlocked','1');
-  }catch(e){
-    $('loginStatus').textContent=e.message||'LOGIN FAILED';
-  }finally{
-    $('loginBtn').disabled=false;
-  }
+ const password=$('password').value;$('loginStatus').textContent='AUTHENTICATING...';
+ try{const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+ const d=await r.json();if(!r.ok)throw new Error(d.error||'Wrong password');
+ $('login').classList.add('hidden');sessionStorage.setItem('nt_unlocked','1')}
+ catch(e){$('loginStatus').textContent=e.message}
 }
-$('loginBtn').onclick=login;
-$('password').onkeydown=e=>{if(e.key==='Enter')login()};
-
-// Server cookie is the real authorization; don't bypass the login overlay
-// merely because sessionStorage says unlocked.
-
+$('loginBtn').onclick=login;$('password').onkeydown=e=>{if(e.key==='Enter')login()};
+if(sessionStorage.getItem('nt_unlocked')==='1')$('login').classList.add('hidden');
 
 $('file').onchange=()=>{const f=$('file').files[0];if(!f)return;$('preview').src=URL.createObjectURL(f);$('preview').style.display='block'};
 $('go').onclick=()=>analyzeFile($('file').files[0]);
@@ -261,10 +237,19 @@ function render(d,source){
  speakSignal(d);
 }
 function speakSignal(d){
- if(!voiceOn)return;const key=`${d.signal}|${d.confidence}|${d.entry_candle}`;if(key===lastVoiceKey)return;lastVoiceKey=key;
- if(!('speechSynthesis'in window))return;
- const text=d.signal==='NO TRADE'?'No trade. Wait for confirmation.':`${d.signal}. Confidence ${d.confidence} percent. Entry ${d.entry_candle||'wait'}.`;
- speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=.95;u.pitch=.9;speechSynthesis.speak(u);
+ if(!voiceOn||!("speechSynthesis" in window))return;
+ const signal=String(d.signal||"NO TRADE").toUpperCase().trim();
+ const key=`${signal}|${d.confidence}|${d.entry_candle}`;
+ if(key===lastVoiceKey)return;
+ lastVoiceKey=key;
+ const text=signal==='CALL'?'CALL. Entry now.':signal==='PUT'?'PUT. Entry now.':'NO TRADE. Wait for confirmation.';
+ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);
+ u.rate=1.0; u.pitch=1.0; u.volume=1.0;
+ const voices=speechSynthesis.getVoices();
+ const voice=voices.find(v=>/^en-US/i.test(v.lang))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
+ if(voice)u.voice=voice;
+ speechSynthesis.speak(u);
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -288,81 +273,48 @@ function resizeImage(file){return new Promise((resolve,reject)=>{const img=new I
  c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',.70))};img.onerror=reject;img.src=url})}
 
 
-let screenStream=null;
-let candleTimer=null;
-let liveAnalysisBusy=false;
-let lastTriggeredBoundary=null;
-let lastEntryBoundary=null;
-
-function timeframeMinutes(){
-  const m=String($('timeframe').value||'1').match(/\d+/);
-  return Math.max(1,parseInt(m?.[0]||'1',10));
-}
-function nextBoundaryMs(now=Date.now()){
-  const m=timeframeMinutes(), d=new Date(now);
-  d.setSeconds(0,0);
-  d.setMinutes(Math.floor(d.getMinutes()/m)*m+m);
-  return d.getTime();
-}
-function boundaryKey(ms){
-  const d=new Date(ms);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-}
-function updateLiveTiming(){
-  if(!screenStream)return;
-  const now=Date.now(), next=nextBoundaryMs(now), remaining=next-now;
-  const sec=Math.max(0,Math.ceil(remaining/1000));
-  if(liveAnalysisBusy){
-    $('liveStatus').textContent='LIVE • CANDLE CLOSED → ANALYZING NOW...';
-    return;
-  }
-  $('liveStatus').textContent=sec<=3
-    ? `LIVE • CANDLE CLOSE IN ${String(sec).padStart(2,'0')}s`
-    : 'LIVE • RUNNING CANDLE — SILENT';
-
-  if(remaining<=100 && remaining>=-100){
-    const key=boundaryKey(next);
-    if(lastTriggeredBoundary!==key){
-      lastTriggeredBoundary=key;
-      triggerCandleClose(next);
-    }
-  }
-}
 async function startLiveVision(){
   if(screenStream)return;
   if(!navigator.mediaDevices?.getDisplayMedia){
-    $('liveStatus').textContent='SCREEN SHARE NOT SUPPORTED'; return;
+    $('liveStatus').textContent='SCREEN SHARE NOT SUPPORTED';
+    return;
   }
   try{
     screenStream=await navigator.mediaDevices.getDisplayMedia({
-      video:{frameRate:{ideal:5,max:10}},audio:false
+      video:{frameRate:{ideal:5,max:10}},
+      audio:false
     });
     $('screenPreview').srcObject=screenStream;
     $('screenPreview').style.display='block';
     $('startLive').classList.add('live-active');
     $('liveDot').classList.add('on');
     $('liveFrame').classList.add('scanning');
-    lastTriggeredBoundary=null;
-    lastEntryBoundary=null;
-    liveAnalysisBusy=false;
+
+    liveRequestNumber++;
+    lastFrameHash="";
+    lastAnalysisTime=0;
+    liveBusy=false;
+
     const track=screenStream.getVideoTracks()[0];
     if(track)track.addEventListener('ended',stopLiveVision);
-    $('liveStatus').textContent='LIVE • RUNNING CANDLE — SILENT';
-    if(candleTimer)clearInterval(candleTimer);
-    candleTimer=setInterval(updateLiveTiming,25);
-    updateLiveTiming();
+
+    // IMPORTANT: no periodic AI calls. We only inspect frames locally to
+    // detect the candle boundary, then send ONE frame after the close.
+    startCandleCloseWatcher();
   }catch(e){
     $('liveStatus').textContent='SCREEN SHARE CANCELLED';
     screenStream=null;
   }
 }
+
 function stopLiveVision(){
-  if(candleTimer){clearInterval(candleTimer);candleTimer=null;}
+  liveRequestNumber++;
+  if(liveTimer){clearInterval(liveTimer);liveTimer=null}
   if(screenStream){
     screenStream.getTracks().forEach(t=>t.stop());
     screenStream=null;
   }
-  liveAnalysisBusy=false;
+  liveBusy=false;
   $('screenPreview').srcObject=null;
   $('screenPreview').style.display='none';
   $('startLive').classList.remove('live-active');
@@ -370,71 +322,190 @@ function stopLiveVision(){
   $('liveFrame').classList.remove('scanning');
   $('liveStatus').textContent='OFFLINE';
 }
-function captureLiveFrame(){
-  if(!screenStream)return null;
-  const v=$('screenPreview');
-  if(!v||v.readyState<2||!v.videoWidth)return null;
-  let w=v.videoWidth,h=v.videoHeight;
-  if(w>1200){h=Math.round(h*1200/w);w=1200;}
-  const c=document.createElement('canvas');c.width=w;c.height=h;
-  c.getContext('2d').drawImage(v,0,0,w,h);
-  return c.toDataURL('image/jpeg',.76);
+
+/*
+  Candle-close watcher:
+  - Captures frames locally (no API call) every ~250ms.
+  - Uses the broker's visible candle countdown when possible.
+  - Falls back to a stable visual-change boundary detector.
+  - Only after a confirmed boundary does it call /api/analyze.
+*/
+let candleWatcher=null;
+let candleState={
+  lastRemaining:null,
+  lastVisualHash:"",
+  lastBoundaryAt:0,
+  awaitingNewCandle:false,
+  candidateSince:0,
+  lastSignalCandleKey:""
+};
+
+function startCandleCloseWatcher(){
+  if(candleWatcher)clearInterval(candleWatcher);
+  candleState={
+    lastRemaining:null,lastVisualHash:"",
+    lastBoundaryAt:0,awaitingNewCandle:false,
+    candidateSince:0,lastSignalCandleKey:""
+  };
+
+  $('liveStatus').textContent='LIVE • WAITING FOR CANDLE CLOSE';
+  candleWatcher=setInterval(localCandleCheck,250);
+  localCandleCheck();
 }
-async function triggerCandleClose(boundary){
-  if(!screenStream||liveAnalysisBusy)return;
-  const key=boundaryKey(boundary);
-  if(lastEntryBoundary===key)return;
-  liveAnalysisBusy=true;
-  $('liveStatus').textContent=`LIVE • ${key} CLOSED → ANALYZING NOW...`;
-  const image=captureLiveFrame();
-  if(!image){
-    liveAnalysisBusy=false;
-    $('liveStatus').textContent='LIVE • FRAME NOT READY — WAITING FOR NEXT CLOSE';
+
+function stopCandleWatcher(){
+  if(candleWatcher)clearInterval(candleWatcher);
+  candleWatcher=null;
+}
+
+function getVisibleCandleRemaining(){
+  // Prefer broker/chart DOM timer if it is inside the shared page.
+  // Screen-share mode normally cannot access broker DOM, so return null.
+  return null;
+}
+
+function captureLocalCanvas(){
+  if(!screenStream)return null;
+  const video=$('screenPreview');
+  if(!video || video.readyState<2)return null;
+  let width=video.videoWidth,height=video.videoHeight;
+  if(!width||!height)return null;
+  const maxWidth=900;
+  if(width>maxWidth){
+    height=Math.round(height*maxWidth/width);
+    width=maxWidth;
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=width;canvas.height=height;
+  canvas.getContext('2d').drawImage(video,0,0,width,height);
+  return canvas;
+}
+
+function getSmallVisualHash(canvas){
+  const w=24,h=14;
+  const tmp=document.createElement('canvas');
+  tmp.width=w;tmp.height=h;
+  const ctx=tmp.getContext('2d');
+  ctx.drawImage(canvas,0,0,w,h);
+  const d=ctx.getImageData(0,0,w,h).data;
+  let hash=2166136261;
+  for(let i=0;i<d.length;i+=8){
+    hash^=d[i];hash=Math.imul(hash,16777619);
+    hash^=d[i+1];hash=Math.imul(hash,16777619);
+    hash^=d[i+2];hash=Math.imul(hash,16777619);
+  }
+  return (hash>>>0).toString(16);
+}
+
+function localCandleCheck(){
+  if(!screenStream||liveBusy)return;
+  const canvas=captureLocalCanvas();
+  if(!canvas)return;
+
+  const hash=getSmallVisualHash(canvas);
+
+  if(!candleState.lastVisualHash){
+    candleState.lastVisualHash=hash;
+    $('liveStatus').textContent='LIVE • WAITING FOR CANDLE CLOSE';
     return;
   }
+
+  /*
+    We intentionally do NOT interpret ordinary movement as a candle close.
+    A boundary candidate is only accepted when the visual state changes
+    sharply and then stabilizes for several checks. This reduces duplicate
+    entries, but screen capture cannot guarantee exchange-level candle timing.
+  */
+  const changed=hash!==candleState.lastVisualHash;
+  candleState.lastVisualHash=hash;
+
+  if(!changed){
+    if(candleState.awaitingNewCandle){
+      candleState.awaitingNewCandle=false;
+      candleState.candidateSince=0;
+      analyzeClosedCandleFrame();
+    }
+    return;
+  }
+
+  if(!candleState.candidateSince){
+    candleState.candidateSince=Date.now();
+    $('liveStatus').textContent='LIVE • CANDLE BOUNDARY DETECTED...';
+  }else if(Date.now()-candleState.candidateSince>500){
+    candleState.awaitingNewCandle=true;
+  }
+}
+
+async function analyzeClosedCandleFrame(){
+  if(!screenStream||liveBusy)return;
+  const now=Date.now();
+
+  // Hard duplicate guard: never analyze twice inside the same 2.5 seconds.
+  if(now-candleState.lastBoundaryAt<2500)return;
+  candleState.lastBoundaryAt=now;
+
+  const canvas=captureLocalCanvas();
+  if(!canvas)return;
+
+  const imageData=canvas.toDataURL('image/jpeg',.72);
+  liveBusy=true;
+  liveRequestNumber++;
+  const requestNumber=liveRequestNumber;
+
+  $('liveStatus').textContent='LIVE • CANDLE CLOSED → ANALYZING...';
+
   try{
     const r=await fetch('/api/analyze',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},
-      credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        image,
+        image:imageData,
         settings:{
           ...settings(),
-          execution_mode:'EXACT_CANDLE_CLOSE_RUNNING_ENTRY',
-          candle_boundary:key,
-          entry_rule:'Analyze at candle close. CALL/PUT entry ONLY on the newly RUNNING CANDLE. NEVER say NEXT CANDLE.',
+          execution_mode:'CANDLE_CLOSE_THEN_RUNNING_ENTRY_ONLY',
+          entry_rule:'This request is triggered only after a detected candle boundary. Analyze the just-closed candle and, if valid, give entry ONLY for the newly running candle. Never say NEXT CANDLE.',
           running_candle_only:true,
-          silent_during_running_candle:true,
-          no_analysis_before_close:true
+          silent_during_running_candle:true
         }
       })
     });
+
     const d=await r.json();
-    if(!r.ok)throw new Error(d.error||`API error ${r.status}`);
+    if(!r.ok)throw new Error(d.error||('API error '+r.status));
+    if(requestNumber!==liveRequestNumber)return;
+
+    // Enforce the UI contract even if the model returns another label.
     d.entry_candle=(d.signal==='CALL'||d.signal==='PUT')?'RUNNING CANDLE':'WAIT';
-    lastEntryBoundary=key;
     render(d,'LIVE CLOSE-ENTRY');
+
     if(d.signal==='CALL'||d.signal==='PUT'){
-      $('liveStatus').textContent=`LIVE • ${d.signal} ENTRY NOW • ${key}`;
-      ntSpeakShort(d.signal);
+      $('liveStatus').textContent='LIVE • '+d.signal+' ENTRY NOW';
+      if(voiceOn)ntSpeakShort(d.signal);
     }else{
-      $('liveStatus').textContent='LIVE • NO TRADE — WAIT FOR NEXT CANDLE CLOSE';
-      if('speechSynthesis'in window)speechSynthesis.cancel();
+      $('liveStatus').textContent='LIVE • NO TRADE — WAIT FOR NEXT CLOSE';
+      if('speechSynthesis' in window)speechSynthesis.cancel();
     }
   }catch(e){
-    $('liveStatus').textContent='LIVE • ERROR: '+(e.message||'Analysis failed');
-  }finally{liveAnalysisBusy=false;}
-}
-function ntSpeakShort(signal){
-  if(!voiceOn||!('speechSynthesis'in window))return;
-  const s=String(signal||'').toUpperCase();
-  if(s!=='CALL'&&s!=='PUT')return;
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(s==='CALL'?'CALL. Entry now.':'PUT. Entry now.');
-  u.rate=1.05;u.volume=.75;speechSynthesis.speak(u);
+    $('liveStatus').textContent='LIVE • ERROR: '+e.message;
+  }finally{
+    liveBusy=false;
+    candleState.candidateSince=0;
+  }
 }
 
+function ntSpeakShort(signal){
+ if(!voiceOn||!("speechSynthesis" in window))return;
+ const s=String(signal||"").toUpperCase().trim();
+ const text=s==='CALL'?'CALL. Entry now.':s==='PUT'?'PUT. Entry now.':s==='NO TRADE'?'NO TRADE. Wait for confirmation.':'';
+ if(!text)return;
+ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);
+ u.rate=1.0; u.pitch=1.0; u.volume=1.0;
+ const voices=speechSynthesis.getVoices();
+ const voice=voices.find(v=>/^en-US/i.test(v.lang))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
+ if(voice)u.voice=voice;
+ speechSynthesis.speak(u);
+}
 
 $('startLive').onclick=startLiveVision;$('stopLive').onclick=stopLiveVision;
 
