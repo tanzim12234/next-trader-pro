@@ -221,20 +221,20 @@ async function sendAnalysis(image,source){
  catch(e){showError(e.message);return null}finally{busy=false}
 }
 function showError(msg){$('result').classList.remove('hidden');$('result').innerHTML='<div class="badge">SYSTEM ERROR</div><div class="status">'+escapeHtml(msg)+'</div>'}
-function render(d,source){
- const sig=d.signal||'NO TRADE',cls=sig==='CALL'?'call':sig==='PUT'?'put':'no';
- const reasons=Array.isArray(d.reasons)?d.reasons.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'';
- $('result').innerHTML=`<div class="badge">${escapeHtml(source)} ANALYSIS</div>
- <div class="signal ${cls}">${escapeHtml(sig)}</div><div class="row">
- <span class="pill">CONFIDENCE <b>${escapeHtml(String(d.confidence??'—'))}%</b></span>
- <span class="pill">TREND <b>${escapeHtml(d.trend||'—')}</b></span>
- <span class="pill">EXPIRY <b>${escapeHtml(d.expiry||'—')}</b></span>
- <span class="pill">RISK <b>${escapeHtml(d.risk||'—')}</b></span></div>
- <div class="entry"><b>🎯 ENTRY: ${escapeHtml(d.entry_candle||'WAIT')}</b><br>
- <span class="muted">${escapeHtml(d.entry_instruction||'Wait for confirmation before entering.')}</span></div>
- <p><b>SETUP:</b> ${escapeHtml(d.setup||'—')}</p><b>REASONS</b><ul>${reasons}</ul>
- <p class="muted">${escapeHtml(d.disclaimer||'Technical analysis is probabilistic; no signal is guaranteed.')}</p>`;
- speakSignal(d);
+function render(d,source,shouldSpeak=true,voiceContext=""){
+  const sig=d.signal||'NO TRADE',cls=sig==='CALL'?'call':sig==='PUT'?'put':'no';
+  const reasons=Array.isArray(d.reasons)?d.reasons.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'';
+  $('result').innerHTML=`<div class="badge">${escapeHtml(source)} ANALYSIS</div>
+  <div class="signal ${cls}">${escapeHtml(sig)}</div><div class="row">
+  <span class="pill">CONFIDENCE <b>${escapeHtml(String(d.confidence??'—'))}%</b></span>
+  <span class="pill">TREND <b>${escapeHtml(d.trend||'—')}</b></span>
+  <span class="pill">EXPIRY <b>${escapeHtml(d.expiry||'—')}</b></span>
+  <span class="pill">RISK <b>${escapeHtml(d.risk||'—')}</b></span></div>
+  <div class="entry"><b>🎯 ENTRY: ${escapeHtml(d.entry_candle||'WAIT')}</b><br>
+  <span class="muted">${escapeHtml(d.entry_instruction||'Wait for confirmation before entering.')}</span></div>
+  <p><b>SETUP:</b> ${escapeHtml(d.setup||'—')}</p><b>REASONS</b><ul>${reasons}</ul>
+  <p class="muted">${escapeHtml(d.disclaimer||'Technical analysis is probabilistic; no signal is guaranteed.')}</p>`;
+  if(shouldSpeak)speakSignal(d,voiceContext);
 }
 function unlockVoice(){
  if(!('speechSynthesis' in window))return;
@@ -246,16 +246,23 @@ function getBestVoice(){
  const v=speechSynthesis.getVoices();
  return v.find(x=>/^en-US$/i.test(x.lang))||v.find(x=>/^en-GB$/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||v[0]||null;
 }
-function speakSignal(d){
- if(!voiceOn||!('speechSynthesis' in window))return;
+function speakSignal(d,context=""){
+ if(!voiceOn||!("speechSynthesis" in window))return;
  const signal=String(d?.signal||'NO TRADE').toUpperCase().trim();
  const confidence=Number(d?.confidence||0);
  const entry=String(d?.entry_candle||'WAIT');
- const key=`${signal}|${confidence}|${entry}`;
+ const key=`${context}|${signal}|${confidence}|${entry}`;
  if(key===lastVoiceKey)return;
  lastVoiceKey=key;
  const text=signal==='CALL'?'CALL. Entry now.':signal==='PUT'?'PUT. Entry now.':'NO TRADE. Wait for confirmation.';
- try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=1.0;u.pitch=1.0;u.volume=1.0;const v=getBestVoice();if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){console.warn('Voice error',e)}
+ try{
+   speechSynthesis.cancel();
+   speechSynthesis.resume();
+   const u=new SpeechSynthesisUtterance(text);
+   u.rate=1.0;u.pitch=1.0;u.volume=1.0;
+   const v=getBestVoice();if(v)u.voice=v;
+   speechSynthesis.speak(u);
+ }catch(e){console.warn('Voice error',e)}
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -304,8 +311,7 @@ async function startLiveVision(){
     const track=screenStream.getVideoTracks()[0];
     if(track)track.addEventListener('ended',stopLiveVision);
 
-    // IMPORTANT: no periodic AI calls. We only inspect frames locally to
-    // detect the candle boundary, then send ONE frame after the close.
+    // Fixed clock engine: capture at :59, then enter on the next :00–:02 window.
     startCandleCloseWatcher();
   }catch(e){
     $('liveStatus').textContent='SCREEN SHARE CANCELLED';
@@ -449,6 +455,9 @@ async function analyzeFixedClose(image,captureMinuteKey,entryMinuteKey,entryStar
         ? "RUNNING CANDLE"
         : "WAIT";
 
+    // Show signal now; voice waits for the actual :00–:02 entry.
+    render(d,"LIVE VISION",false);
+
     candleState.pendingResult={
       entryMinuteKey:entryMinuteKey,
       entryStartMs:entryStartMs,
@@ -500,6 +509,8 @@ function processFixedEntry(minuteKey){
 
   candleState.entryMinute=minuteKey;
   candleState.pendingResult=null;
+
+  render(d,"LIVE ENTRY",false);
 
   if(d.signal==="CALL"){
 
@@ -662,4 +673,3 @@ window.addEventListener('beforeunload',()=>{stopCandleWatcher();stopCamera();sto
 </script>
 </body>
 </html>
-
