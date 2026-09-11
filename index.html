@@ -156,7 +156,7 @@ background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-backgro
 <div class="two"><button id="startLive" class="primary">▶ START LIVE VISION</button><button id="stopLive">■ STOP LIVE</button></div>
 <div class="row"><span class="pill">Mode: <b>CANDLE CLOSE → RUNNING ENTRY</b></span>
 <span class="pill">AI Voice: <b id="voiceState">ON</b></span></div>
-<button id="voiceToggle">🔊 TOGGLE AI VOICE</button></section>
+<button id="voiceToggle">🔊 AI VOICE: ON</button><button type="button" onclick="testAIVoice()">🔊 TEST AI VOICE</button></section>
 
 <section class="card"><h2><span class="ico">◎</span> Camera Chart Scanner</h2>
 <div class="small">Hold the broker chart in front of the camera. Automatic frames are analyzed at your selected interval.</div>
@@ -186,7 +186,7 @@ background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-backgro
 const $=id=>document.getElementById(id);
 let cameraStream=null,autoTimer=null,busy=false,nextScanAt=0;
 let screenStream=null,liveTimer=null,liveBusy=false,lastFrameHash="",lastAnalysisTime=0,liveRequestNumber=0;
-let lastVoiceKey="",voiceOn=true;
+let lastVoiceKey="",voiceOn=true,voiceUnlocked=false;
 
 function tickClock(){
  const now=new Date(),s=now.toLocaleTimeString('en-BD',{hour12:false});
@@ -236,20 +236,25 @@ function render(d,source){
  <p class="muted">${escapeHtml(d.disclaimer||'Technical analysis is probabilistic; no signal is guaranteed.')}</p>`;
  speakSignal(d);
 }
+function unlockVoice(){
+ if(!('speechSynthesis' in window))return;
+ try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance('');u.volume=0;speechSynthesis.speak(u);voiceUnlocked=true}catch(e){console.warn(e)}
+}
+function getBestVoice(){
+ if(!('speechSynthesis' in window))return null;
+ const v=speechSynthesis.getVoices();
+ return v.find(x=>/^en-US$/i.test(x.lang))||v.find(x=>/^en-GB$/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||v[0]||null;
+}
 function speakSignal(d){
- if(!voiceOn||!("speechSynthesis" in window))return;
- const signal=String(d.signal||"NO TRADE").toUpperCase().trim();
- const key=`${signal}|${d.confidence}|${d.entry_candle}`;
+ if(!voiceOn||!('speechSynthesis' in window))return;
+ const signal=String(d?.signal||'NO TRADE').toUpperCase().trim();
+ const confidence=Number(d?.confidence||0);
+ const entry=String(d?.entry_candle||'WAIT');
+ const key=`${signal}|${confidence}|${entry}`;
  if(key===lastVoiceKey)return;
  lastVoiceKey=key;
  const text=signal==='CALL'?'CALL. Entry now.':signal==='PUT'?'PUT. Entry now.':'NO TRADE. Wait for confirmation.';
- speechSynthesis.cancel();
- const u=new SpeechSynthesisUtterance(text);
- u.rate=1.0; u.pitch=1.0; u.volume=1.0;
- const voices=speechSynthesis.getVoices();
- const voice=voices.find(v=>/^en-US/i.test(v.lang))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
- if(voice)u.voice=voice;
- speechSynthesis.speak(u);
+ try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=1.0;u.pitch=1.0;u.volume=1.0;const v=getBestVoice();if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){console.warn('Voice error',e)}
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -480,11 +485,10 @@ async function analyzeClosedCandleFrame(){
 
     if(d.signal==='CALL'||d.signal==='PUT'){
       $('liveStatus').textContent='LIVE • '+d.signal+' ENTRY NOW';
-      if(voiceOn)ntSpeakShort(d.signal);
     }else{
       $('liveStatus').textContent='LIVE • NO TRADE — WAIT FOR NEXT CLOSE';
-      if('speechSynthesis' in window)speechSynthesis.cancel();
     }
+    speakSignal(d);
   }catch(e){
     $('liveStatus').textContent='LIVE • ERROR: '+e.message;
   }finally{
@@ -493,24 +497,31 @@ async function analyzeClosedCandleFrame(){
   }
 }
 
-function ntSpeakShort(signal){
- if(!voiceOn||!("speechSynthesis" in window))return;
- const s=String(signal||"").toUpperCase().trim();
- const text=s==='CALL'?'CALL. Entry now.':s==='PUT'?'PUT. Entry now.':s==='NO TRADE'?'NO TRADE. Wait for confirmation.':'';
- if(!text)return;
- speechSynthesis.cancel();
- const u=new SpeechSynthesisUtterance(text);
- u.rate=1.0; u.pitch=1.0; u.volume=1.0;
- const voices=speechSynthesis.getVoices();
- const voice=voices.find(v=>/^en-US/i.test(v.lang))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
- if(voice)u.voice=voice;
- speechSynthesis.speak(u);
-}
 
 $('startLive').onclick=startLiveVision;$('stopLive').onclick=stopLiveVision;
 
-$('voiceToggle').onclick=()=>{voiceOn=!voiceOn;$('voiceState').textContent=voiceOn?'ON':'OFF';
- $('voiceToggle').textContent=voiceOn?'🔊 AI VOICE: ON':'🔇 AI VOICE: OFF';if(!voiceOn&&'speechSynthesis'in window)speechSynthesis.cancel()};
+$('voiceToggle').onclick=()=>{
+ unlockVoice();
+ voiceOn=!voiceOn;
+ $('voiceState').textContent=voiceOn?'ON':'OFF';
+ $('voiceToggle').textContent=voiceOn?'🔊 AI VOICE: ON':'🔇 AI VOICE: OFF';
+ if(!voiceOn&&'speechSynthesis' in window)speechSynthesis.cancel();
+};
+
+function testAIVoice(){
+ if(!('speechSynthesis' in window)){alert('এই browser-এ AI voice support নেই।');return;}
+ voiceOn=true;voiceUnlocked=true;
+ $('voiceState').textContent='ON';
+ $('voiceToggle').textContent='🔊 AI VOICE: ON';
+ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance('NEXT TRADER AI voice is ready.');
+ u.rate=1.0;u.pitch=1.0;u.volume=1.0;
+ const v=getBestVoice();if(v)u.voice=v;
+ speechSynthesis.speak(u);
+}
+if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices();}
+document.addEventListener('click',()=>{if(!voiceUnlocked)unlockVoice()},{once:true});
+$('startLive').addEventListener('click',unlockVoice);
 window.addEventListener('beforeunload',()=>{stopCandleWatcher();stopCamera();stopLiveVision()});
 </script>
 </body>
