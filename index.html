@@ -185,7 +185,7 @@ background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-backgro
 <script>
 const $=id=>document.getElementById(id);
 let cameraStream=null,autoTimer=null,busy=false,nextScanAt=0;
-let screenStream=null,liveTimer=null,liveBusy=false,lastFrameHash="",lastAnalysisTime=0,liveRequestNumber=0;
+
 let lastVoiceKey="",voiceOn=true;
 
 function tickClock(){
@@ -199,14 +199,38 @@ function tickClock(){
 setInterval(tickClock,1000);tickClock();
 
 async function login(){
- const password=$('password').value;$('loginStatus').textContent='AUTHENTICATING...';
- try{const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
- const d=await r.json();if(!r.ok)throw new Error(d.error||'Wrong password');
- $('login').classList.add('hidden');sessionStorage.setItem('nt_unlocked','1')}
- catch(e){$('loginStatus').textContent=e.message}
+  const password=$('password').value.trim();
+  if(!password){
+    $('loginStatus').textContent='ENTER ACCESS PASSWORD';
+    return;
+  }
+  $('loginBtn').disabled=true;
+  $('loginStatus').textContent='AUTHENTICATING...';
+  try{
+    const r=await fetch('/api/auth',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'same-origin',
+      body:JSON.stringify({password})
+    });
+    const text=await r.text();
+    let d={};
+    try{d=JSON.parse(text)}catch(_){}
+    if(!r.ok)throw new Error(d.error||`Login failed (${r.status})`);
+    $('login').classList.add('hidden');
+    sessionStorage.setItem('nt_unlocked','1');
+  }catch(e){
+    $('loginStatus').textContent=e.message||'LOGIN FAILED';
+  }finally{
+    $('loginBtn').disabled=false;
+  }
 }
-$('loginBtn').onclick=login;$('password').onkeydown=e=>{if(e.key==='Enter')login()};
-if(sessionStorage.getItem('nt_unlocked')==='1')$('login').classList.add('hidden');
+$('loginBtn').onclick=login;
+$('password').onkeydown=e=>{if(e.key==='Enter')login()};
+
+// Server cookie is the real authorization; don't bypass the login overlay
+// merely because sessionStorage says unlocked.
+
 
 $('file').onchange=()=>{const f=$('file').files[0];if(!f)return;$('preview').src=URL.createObjectURL(f);$('preview').style.display='block'};
 $('go').onclick=()=>analyzeFile($('file').files[0]);
@@ -264,16 +288,154 @@ function resizeImage(file){return new Promise((resolve,reject)=>{const img=new I
  c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',.70))};img.onerror=reject;img.src=url})}
 
 
-let candleTimer=null,screenStream=null,liveAnalysisBusy=false,lastTriggeredBoundary=null,lastEntryBoundary=null;
-function timeframeMinutes(){return Math.max(1,parseInt(($('timeframe').value||'1').match(/\d+/)?.[0]||'1',10));}
-function boundaryMs(now=Date.now()){const m=timeframeMinutes(),d=new Date(now);d.setSeconds(0,0);d.setMinutes(Math.floor(d.getMinutes()/m)*m+m);return d.getTime();}
-function boundaryKey(ms){const d=new Date(ms);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
-function updatePrecisionTimer(){if(!screenStream)return;const now=Date.now(),next=boundaryMs(now),remaining=Math.max(0,next-now),sec=Math.ceil(remaining/1000);$('liveStatus').textContent=sec<=3?`LIVE • CANDLE CLOSE IN ${String(sec).padStart(2,'0')}s`:'LIVE • RUNNING CANDLE — SILENT';if(now>=next-100&&now<=next+500&&!liveAnalysisBusy){const key=boundaryKey(next);if(lastTriggeredBoundary!==key){lastTriggeredBoundary=key;triggerCandleClose(next);}}}
-async function startLiveVision(){if(screenStream)return;if(!navigator.mediaDevices?.getDisplayMedia){$('liveStatus').textContent='SCREEN SHARE NOT SUPPORTED';return;}try{screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:5,max:10}},audio:false});$('screenPreview').srcObject=screenStream;$('screenPreview').style.display='block';$('startLive').classList.add('live-active');$('liveDot').classList.add('on');$('liveFrame').classList.add('scanning');lastTriggeredBoundary=null;lastEntryBoundary=null;liveAnalysisBusy=false;$('liveStatus').textContent='LIVE • RUNNING CANDLE — SILENT';const track=screenStream.getVideoTracks()[0];if(track)track.addEventListener('ended',stopLiveVision);if(candleTimer)clearInterval(candleTimer);candleTimer=setInterval(updatePrecisionTimer,50);updatePrecisionTimer();}catch(e){$('liveStatus').textContent='SCREEN SHARE CANCELLED';screenStream=null;}}
-function stopLiveVision(){if(candleTimer){clearInterval(candleTimer);candleTimer=null;}if(screenStream){screenStream.getTracks().forEach(t=>t.stop());screenStream=null;}liveAnalysisBusy=false;$('screenPreview').srcObject=null;$('screenPreview').style.display='none';$('startLive').classList.remove('live-active');$('liveDot').classList.remove('on');$('liveFrame').classList.remove('scanning');$('liveStatus').textContent='OFFLINE';}
-function captureLiveFrame(){if(!screenStream)return null;const v=$('screenPreview');if(!v||v.readyState<2||!v.videoWidth)return null;let w=v.videoWidth,h=v.videoHeight;if(w>1200){h=Math.round(h*1200/w);w=1200;}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(v,0,0,w,h);return c.toDataURL('image/jpeg',.76);}
-async function triggerCandleClose(boundary){if(!screenStream||liveAnalysisBusy)return;const key=boundaryKey(boundary);if(lastEntryBoundary===key)return;liveAnalysisBusy=true;$('liveStatus').textContent='LIVE • CANDLE CLOSED → ANALYZING NOW...';const image=captureLiveFrame();if(!image){liveAnalysisBusy=false;$('liveStatus').textContent='LIVE • FRAME NOT READY — WAITING FOR NEXT CLOSE';return;}try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body:JSON.stringify({image,settings:{...settings(),execution_mode:'EXACT_CANDLE_CLOSE_RUNNING_ENTRY',candle_boundary:key,timing_rule:'For 1 minute: 12:59:59 closes, analyze immediately, 13:00:00 is the ONLY entry candle.',entry_rule:'CALL/PUT ONLY on the newly RUNNING CANDLE immediately after the boundary. Never say NEXT CANDLE.',running_candle_only:true,silent_during_running_candle:true,no_analysis_before_close:true}})});const d=await r.json();if(!r.ok)throw new Error(d.error||('API error '+r.status));d.entry_candle=(d.signal==='CALL'||d.signal==='PUT')?'RUNNING CANDLE':'WAIT';lastEntryBoundary=key;render(d,'LIVE CLOSE-ENTRY');if(d.signal==='CALL'||d.signal==='PUT'){$('liveStatus').textContent=`LIVE • ${d.signal} ENTRY NOW • ${key}`;ntSpeakShort(d.signal);}else{$('liveStatus').textContent='LIVE • NO TRADE — WAIT FOR NEXT CANDLE CLOSE';if('speechSynthesis'in window)speechSynthesis.cancel();}}catch(e){$('liveStatus').textContent='LIVE • ERROR: '+e.message;}finally{liveAnalysisBusy=false;}}
-function ntSpeakShort(signal){if(!voiceOn||!('speechSynthesis'in window))return;const s=String(signal||'').toUpperCase();if(s!=='CALL'&&s!=='PUT')return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s==='CALL'?'CALL. Entry now.':'PUT. Entry now.');u.rate=1.05;u.volume=.75;speechSynthesis.speak(u);}
+let screenStream=null;
+let candleTimer=null;
+let liveAnalysisBusy=false;
+let lastTriggeredBoundary=null;
+let lastEntryBoundary=null;
+
+function timeframeMinutes(){
+  const m=String($('timeframe').value||'1').match(/\d+/);
+  return Math.max(1,parseInt(m?.[0]||'1',10));
+}
+function nextBoundaryMs(now=Date.now()){
+  const m=timeframeMinutes(), d=new Date(now);
+  d.setSeconds(0,0);
+  d.setMinutes(Math.floor(d.getMinutes()/m)*m+m);
+  return d.getTime();
+}
+function boundaryKey(ms){
+  const d=new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function updateLiveTiming(){
+  if(!screenStream)return;
+  const now=Date.now(), next=nextBoundaryMs(now), remaining=next-now;
+  const sec=Math.max(0,Math.ceil(remaining/1000));
+  if(liveAnalysisBusy){
+    $('liveStatus').textContent='LIVE • CANDLE CLOSED → ANALYZING NOW...';
+    return;
+  }
+  $('liveStatus').textContent=sec<=3
+    ? `LIVE • CANDLE CLOSE IN ${String(sec).padStart(2,'0')}s`
+    : 'LIVE • RUNNING CANDLE — SILENT';
+
+  if(remaining<=100 && remaining>=-100){
+    const key=boundaryKey(next);
+    if(lastTriggeredBoundary!==key){
+      lastTriggeredBoundary=key;
+      triggerCandleClose(next);
+    }
+  }
+}
+async function startLiveVision(){
+  if(screenStream)return;
+  if(!navigator.mediaDevices?.getDisplayMedia){
+    $('liveStatus').textContent='SCREEN SHARE NOT SUPPORTED'; return;
+  }
+  try{
+    screenStream=await navigator.mediaDevices.getDisplayMedia({
+      video:{frameRate:{ideal:5,max:10}},audio:false
+    });
+    $('screenPreview').srcObject=screenStream;
+    $('screenPreview').style.display='block';
+    $('startLive').classList.add('live-active');
+    $('liveDot').classList.add('on');
+    $('liveFrame').classList.add('scanning');
+    lastTriggeredBoundary=null;
+    lastEntryBoundary=null;
+    liveAnalysisBusy=false;
+    const track=screenStream.getVideoTracks()[0];
+    if(track)track.addEventListener('ended',stopLiveVision);
+    $('liveStatus').textContent='LIVE • RUNNING CANDLE — SILENT';
+    if(candleTimer)clearInterval(candleTimer);
+    candleTimer=setInterval(updateLiveTiming,25);
+    updateLiveTiming();
+  }catch(e){
+    $('liveStatus').textContent='SCREEN SHARE CANCELLED';
+    screenStream=null;
+  }
+}
+function stopLiveVision(){
+  if(candleTimer){clearInterval(candleTimer);candleTimer=null;}
+  if(screenStream){
+    screenStream.getTracks().forEach(t=>t.stop());
+    screenStream=null;
+  }
+  liveAnalysisBusy=false;
+  $('screenPreview').srcObject=null;
+  $('screenPreview').style.display='none';
+  $('startLive').classList.remove('live-active');
+  $('liveDot').classList.remove('on');
+  $('liveFrame').classList.remove('scanning');
+  $('liveStatus').textContent='OFFLINE';
+}
+function captureLiveFrame(){
+  if(!screenStream)return null;
+  const v=$('screenPreview');
+  if(!v||v.readyState<2||!v.videoWidth)return null;
+  let w=v.videoWidth,h=v.videoHeight;
+  if(w>1200){h=Math.round(h*1200/w);w=1200;}
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  c.getContext('2d').drawImage(v,0,0,w,h);
+  return c.toDataURL('image/jpeg',.76);
+}
+async function triggerCandleClose(boundary){
+  if(!screenStream||liveAnalysisBusy)return;
+  const key=boundaryKey(boundary);
+  if(lastEntryBoundary===key)return;
+  liveAnalysisBusy=true;
+  $('liveStatus').textContent=`LIVE • ${key} CLOSED → ANALYZING NOW...`;
+  const image=captureLiveFrame();
+  if(!image){
+    liveAnalysisBusy=false;
+    $('liveStatus').textContent='LIVE • FRAME NOT READY — WAITING FOR NEXT CLOSE';
+    return;
+  }
+  try{
+    const r=await fetch('/api/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},
+      credentials:'same-origin',
+      body:JSON.stringify({
+        image,
+        settings:{
+          ...settings(),
+          execution_mode:'EXACT_CANDLE_CLOSE_RUNNING_ENTRY',
+          candle_boundary:key,
+          entry_rule:'Analyze at candle close. CALL/PUT entry ONLY on the newly RUNNING CANDLE. NEVER say NEXT CANDLE.',
+          running_candle_only:true,
+          silent_during_running_candle:true,
+          no_analysis_before_close:true
+        }
+      })
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||`API error ${r.status}`);
+    d.entry_candle=(d.signal==='CALL'||d.signal==='PUT')?'RUNNING CANDLE':'WAIT';
+    lastEntryBoundary=key;
+    render(d,'LIVE CLOSE-ENTRY');
+    if(d.signal==='CALL'||d.signal==='PUT'){
+      $('liveStatus').textContent=`LIVE • ${d.signal} ENTRY NOW • ${key}`;
+      ntSpeakShort(d.signal);
+    }else{
+      $('liveStatus').textContent='LIVE • NO TRADE — WAIT FOR NEXT CANDLE CLOSE';
+      if('speechSynthesis'in window)speechSynthesis.cancel();
+    }
+  }catch(e){
+    $('liveStatus').textContent='LIVE • ERROR: '+(e.message||'Analysis failed');
+  }finally{liveAnalysisBusy=false;}
+}
+function ntSpeakShort(signal){
+  if(!voiceOn||!('speechSynthesis'in window))return;
+  const s=String(signal||'').toUpperCase();
+  if(s!=='CALL'&&s!=='PUT')return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(s==='CALL'?'CALL. Entry now.':'PUT. Entry now.');
+  u.rate=1.05;u.volume=.75;speechSynthesis.speak(u);
+}
+
+
 $('startLive').onclick=startLiveVision;$('stopLive').onclick=stopLiveVision;
 
 $('voiceToggle').onclick=()=>{voiceOn=!voiceOn;$('voiceState').textContent=voiceOn?'ON':'OFF';
