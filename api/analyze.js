@@ -18,6 +18,7 @@ export default async function handler(req, res) {
     const body = req.body || {};
     const image = body.image;
     const settings = body.settings || {};
+    const liveData = body.live_data && typeof body.live_data === "object" ? body.live_data : null;
 
     if (typeof image !== "string") return res.status(400).json({ error: "Chart image is required." });
 
@@ -43,6 +44,9 @@ Timeframe: ${timeframe}
 Mode: ${mode}
 Minimum confidence: ${minConfidence}%
 Live mode: ${live ? "YES" : "NO"}
+
+LIVE DATA BRIDGE (if present): ${liveData ? JSON.stringify(liveData).slice(0, 1800) : "none"}
+If live bridge data is present, use it only as an additional current-market reference and never invent missing fields.
 
 Analyze only what is visibly readable:
 recent candles, bodies/wicks, momentum, swing highs/lows, market structure,
@@ -71,7 +75,8 @@ Return ONLY valid JSON:
  "setup":"short setup name",
  "reasons":["reason 1","reason 2","reason 3","reason 4"],
  "risk":"LOW|MEDIUM|HIGH",
- "disclaimer":"Technical analysis is probabilistic; no signal is guaranteed."
+ "disclaimer":"Technical analysis is probabilistic; no signal is guaranteed.",
+ "market_data":{"asset":"","current_price":"","visible_time":"","candle_close":""}
 }`;
 
     const response = await fetch(
@@ -144,6 +149,15 @@ Return ONLY valid JSON:
       ? (live ? "RUNNING CANDLE" : (result.entry_candle || "CURRENT CANDLE"))
       : "WAIT";
 
+    const md = result.market_data && typeof result.market_data === "object" ? result.market_data : {};
+    const marketData = {
+      asset: String(md.asset || liveData?.asset || "UNKNOWN"),
+      current_price: String(md.current_price || liveData?.price || liveData?.close || "UNKNOWN"),
+      visible_time: String(md.visible_time || liveData?.server_time || "UNKNOWN"),
+      candle_close: String(md.candle_close || liveData?.close || "UNKNOWN"),
+      source: liveData ? "QUOTEX LIVE BRIDGE + SCREEN" : "SCREEN SNAPSHOT"
+    };
+
     return res.status(200).json({
       signal: finalSignal,
       confidence,
@@ -158,6 +172,7 @@ Return ONLY valid JSON:
       reasons: Array.isArray(result.reasons) ? result.reasons.slice(0, 6).map(String) : [],
       risk: ["LOW","MEDIUM","HIGH"].includes(String(result.risk || "").toUpperCase())
         ? String(result.risk).toUpperCase() : "HIGH",
+      market_data: marketData,
       disclaimer: "Technical analysis is probabilistic; no signal is guaranteed."
     });
   } catch (error) {
