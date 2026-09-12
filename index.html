@@ -4,123 +4,184 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>NEXT TRADER AI PRO</title>
+
 <style>
 :root{
---bg:#020308;--panel:rgba(8,11,22,.72);--line:rgba(118,145,255,.22);
---text:#f4f7ff;--muted:#8994b5;--cyan:#35e7ff;--blue:#6385ff;
---green:#25f5a0;--red:#ff456d;--purple:#a76bff
+ --bg:#02030a;--panel:rgba(8,12,28,.76);--panel2:rgba(5,8,20,.92);
+ --line:rgba(90,180,255,.22);--text:#f4f8ff;--muted:#7e8baa;
+ --cyan:#27f4ff;--blue:#4d7dff;--violet:#9d63ff;--green:#2affaa;
+ --red:#ff3f72;--gold:#ffd76a;--glass:blur(22px)
 }
-*{box-sizing:border-box}html{scroll-behavior:smooth}
-body{margin:0;min-height:100vh;background:#020308;color:var(--text);
-font-family:Inter,Segoe UI,Arial,sans-serif;overflow-x:hidden}
-body:before{content:"";position:fixed;inset:-25%;z-index:-5;
-background:radial-gradient(circle at 20% 20%,rgba(53,231,255,.14),transparent 24%),
-radial-gradient(circle at 80% 25%,rgba(167,107,255,.16),transparent 25%),
-radial-gradient(circle at 50% 90%,rgba(99,133,255,.12),transparent 28%);
-animation:aurora 14s ease-in-out infinite alternate}
-@keyframes aurora{from{transform:translate3d(-2%,0,0) scale(1)}to{transform:translate3d(3%,-2%,0) scale(1.08)}}
-.grid-bg{position:fixed;inset:0;z-index:-4;pointer-events:none;opacity:.26;
-background-image:linear-gradient(rgba(70,120,255,.13) 1px,transparent 1px),
-linear-gradient(90deg,rgba(70,120,255,.13) 1px,transparent 1px);
-background-size:55px 55px;transform:perspective(650px) rotateX(58deg) scale(1.8) translateY(18%);
-transform-origin:center bottom;animation:gridmove 9s linear infinite}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+ margin:0;min-height:100vh;color:var(--text);overflow-x:hidden;
+ font-family:Inter,Segoe UI,Arial,sans-serif;
+ background:
+ radial-gradient(circle at 10% 0%,rgba(39,244,255,.10),transparent 28%),
+ radial-gradient(circle at 90% 15%,rgba(157,99,255,.12),transparent 30%),
+ radial-gradient(circle at 50% 100%,rgba(77,125,255,.10),transparent 34%),#02030a;
+}
+body:before{
+ content:"";position:fixed;inset:0;pointer-events:none;z-index:-5;
+ background-image:linear-gradient(rgba(39,244,255,.035) 1px,transparent 1px),
+ linear-gradient(90deg,rgba(39,244,255,.035) 1px,transparent 1px);
+ background-size:48px 48px;
+ mask-image:linear-gradient(to bottom,black,transparent 90%);
+}
+body:after{
+ content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.035;
+ background:repeating-linear-gradient(0deg,transparent 0 4px,#fff 5px,transparent 6px);
+}
+.grid-bg{
+ position:fixed;left:-10%;right:-10%;bottom:-28%;height:70%;z-index:-4;
+ background-image:linear-gradient(rgba(39,244,255,.13) 1px,transparent 1px),
+ linear-gradient(90deg,rgba(39,244,255,.13) 1px,transparent 1px);
+ background-size:55px 55px;transform:perspective(550px) rotateX(62deg);
+ transform-origin:center bottom;animation:gridmove 10s linear infinite;
+}
 @keyframes gridmove{to{background-position:0 55px,55px 0}}
-.scanlines{position:fixed;inset:0;z-index:50;pointer-events:none;opacity:.035;
-background:repeating-linear-gradient(0deg,transparent 0 3px,#fff 4px,transparent 5px)}
-.noise{position:fixed;inset:-50%;z-index:-2;pointer-events:none;opacity:.025;
-background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-animation:noise .25s steps(2) infinite}
-@keyframes noise{0%{transform:translate(0,0)}25%{transform:translate(2%,-1%)}50%{transform:translate(-1%,2%)}75%{transform:translate(1%,1%)}100%{transform:translate(-2%,0)}}
-.particles{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
-.particles i{position:absolute;width:2px;height:2px;border-radius:50%;background:#8fdcff;
-box-shadow:0 0 9px #4beaff;opacity:.65;animation:float linear infinite}
-@keyframes float{from{transform:translateY(110vh) translateX(0);opacity:0}15%{opacity:.8}85%{opacity:.55}
-to{transform:translateY(-15vh) translateX(90px);opacity:0}}
-.wrap{width:min(980px,100%);margin:auto;padding:22px 15px 60px}
-.top{position:relative;display:flex;justify-content:space-between;align-items:center;gap:18px;padding:20px 2px 25px}
-.kicker{font-size:10px;letter-spacing:5px;color:var(--cyan);font-weight:900;text-shadow:0 0 15px rgba(53,231,255,.8);margin-bottom:7px}
-h1{margin:0;font-size:clamp(28px,6vw,48px);line-height:.95;letter-spacing:-2px;font-weight:1000;
-text-transform:uppercase;background:linear-gradient(90deg,#fff,var(--cyan),#fff,var(--purple));
-background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
-animation:textflow 5s linear infinite;filter:drop-shadow(0 0 18px rgba(53,231,255,.22))}
-@keyframes textflow{to{background-position:300% 0}}
-.sub{color:#8f9ab8;margin-top:10px;font-size:12px;letter-spacing:1.8px}
-.clock{min-width:118px;text-align:center;padding:12px 14px;border:1px solid var(--line);border-radius:16px;
-background:rgba(8,12,25,.68);backdrop-filter:blur(14px);font-family:ui-monospace,monospace;
-font-weight:900;color:#dffaff;box-shadow:inset 0 0 25px rgba(53,231,255,.04),0 0 25px rgba(53,231,255,.07)}
-.card{position:relative;overflow:hidden;margin:16px 0;padding:20px;
-background:linear-gradient(145deg,rgba(14,18,35,.82),rgba(5,8,17,.72));
-border:1px solid var(--line);border-radius:24px;box-shadow:0 18px 55px rgba(0,0,0,.42),inset 0 0 35px rgba(85,115,255,.035);
-backdrop-filter:blur(18px);animation:cardin .65s ease both}
-.card:before{content:"";position:absolute;inset:-2px;border-radius:25px;padding:1px;
-background:linear-gradient(120deg,transparent 20%,rgba(53,231,255,.5),transparent 45%,rgba(167,107,255,.4),transparent 75%);
--webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
--webkit-mask-composite:xor;mask-composite:exclude;background-size:250% 100%;
-animation:borderflow 7s linear infinite;pointer-events:none}
-@keyframes borderflow{to{background-position:250% 0}}
-@keyframes cardin{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}
-h2{margin:0 0 14px;font-size:15px;letter-spacing:1.5px;text-transform:uppercase}
-h2 .ico{color:var(--cyan);text-shadow:0 0 14px currentColor}
-.small,.muted{color:var(--muted);font-size:12px;line-height:1.65}
+.noise{position:fixed;inset:-50%;z-index:-3;pointer-events:none;opacity:.025;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.particles{position:fixed;inset:0;z-index:-2;pointer-events:none;overflow:hidden}
+.particles i{position:absolute;width:2px;height:2px;border-radius:50%;background:#8ef8ff;
+ box-shadow:0 0 12px #35efff;animation:float linear infinite;opacity:.7}
+@keyframes float{from{transform:translateY(110vh)}to{transform:translateY(-15vh) translateX(90px)}}
+.wrap{width:min(1120px,100%);margin:auto;padding:18px 16px 70px}
+.top{
+ position:relative;display:flex;justify-content:space-between;align-items:center;gap:18px;
+ padding:22px 4px 28px
+}
+.kicker{font-size:9px;letter-spacing:5px;color:var(--cyan);font-weight:1000;text-shadow:0 0 18px rgba(39,244,255,.8)}
+h1{
+ margin:8px 0 0;font-size:clamp(34px,7vw,68px);line-height:.9;letter-spacing:-3px;font-weight:1000;
+ background:linear-gradient(100deg,#fff 0%,var(--cyan) 30%,#fff 52%,var(--violet) 78%,#fff 100%);
+ background-size:280% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+ animation:textflow 6s linear infinite;filter:drop-shadow(0 0 25px rgba(39,244,255,.22))
+}
+@keyframes textflow{to{background-position:280% 0}}
+.sub{color:#8995b3;margin-top:12px;font-size:11px;letter-spacing:2px}
+.clock{
+ min-width:155px;padding:13px 16px;text-align:center;border:1px solid var(--line);border-radius:18px;
+ background:rgba(6,10,24,.7);backdrop-filter:var(--glass);font:1000 14px ui-monospace,monospace;
+ color:#dffcff;box-shadow:0 0 30px rgba(39,244,255,.07),inset 0 0 30px rgba(39,244,255,.035)
+}
+.card{
+ position:relative;overflow:hidden;margin:15px 0;padding:21px;
+ background:linear-gradient(145deg,rgba(12,17,38,.86),rgba(3,6,16,.82));
+ border:1px solid var(--line);border-radius:25px;
+ box-shadow:0 20px 70px rgba(0,0,0,.45),inset 0 0 50px rgba(80,120,255,.035);
+ backdrop-filter:var(--glass)
+}
+.card:before{
+ content:"";position:absolute;inset:0;pointer-events:none;border-radius:25px;
+ background:linear-gradient(120deg,transparent 15%,rgba(39,244,255,.18),transparent 35%,rgba(157,99,255,.16),transparent 70%);
+ transform:translateX(-100%);animation:shine 9s linear infinite
+}
+@keyframes shine{to{transform:translateX(100%)}}
+.card:after{
+ content:"";position:absolute;right:-100px;top:-100px;width:180px;height:180px;border-radius:50%;
+ background:radial-gradient(circle,rgba(39,244,255,.09),transparent 68%);pointer-events:none
+}
+h2{margin:0 0 14px;font-size:14px;letter-spacing:1.7px;text-transform:uppercase}
+h2 .ico{color:var(--cyan);text-shadow:0 0 15px currentColor}
+.small,.muted{color:var(--muted);font-size:11px;line-height:1.7}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-label{display:block;color:#7783a7;font-size:10px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;margin:0 0 7px}
-select,input[type=password],input[type=file]{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(108,132,222,.22);
-background:rgba(3,6,14,.82);color:#fff;outline:none}
-select:focus,input:focus{border-color:rgba(53,231,255,.65);box-shadow:0 0 0 3px rgba(53,231,255,.08)}
-input[type=file]{border-style:dashed;color:#aeb9d6}
-button{position:relative;overflow:hidden;width:100%;padding:14px 16px;margin-top:11px;border:1px solid rgba(255,255,255,.08);
-border-radius:15px;cursor:pointer;color:#eaf3ff;background:rgba(24,30,51,.82);font-weight:1000;letter-spacing:1px;
-transition:.25s;box-shadow:0 8px 22px rgba(0,0,0,.25)}
-button:after{content:"";position:absolute;top:0;left:-110%;width:45%;height:100%;
-background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);transition:.55s}
-button:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(53,231,255,.12)}
-button:hover:after{left:130%}
-button.primary{background:linear-gradient(110deg,#1266ff,#664dff,#12bce8);background-size:220% 100%;
-animation:btnflow 5s linear infinite;box-shadow:0 0 25px rgba(66,111,255,.22)}
-@keyframes btnflow{to{background-position:220% 0}}
+label{display:block;color:#7180a3;font-size:9px;font-weight:1000;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:7px}
+select,input[type=password],input[type=file]{
+ width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(90,150,255,.22);
+ background:rgba(1,4,13,.86);color:#fff;outline:none
+}
+select:focus,input:focus{border-color:rgba(39,244,255,.7);box-shadow:0 0 0 3px rgba(39,244,255,.07)}
+input[type=file]{border-style:dashed}
+button{
+ position:relative;overflow:hidden;width:100%;padding:14px 16px;margin-top:10px;border:1px solid rgba(255,255,255,.08);
+ border-radius:15px;cursor:pointer;color:#eaf6ff;background:rgba(22,29,53,.86);
+ font-weight:1000;letter-spacing:1px;transition:.22s;box-shadow:0 10px 28px rgba(0,0,0,.28)
+}
+button:hover{transform:translateY(-2px);box-shadow:0 15px 35px rgba(39,244,255,.12)}
+button:active{transform:translateY(0)}
+button:after{content:"";position:absolute;top:0;left:-120%;width:45%;height:100%;
+ background:linear-gradient(90deg,transparent,rgba(255,255,255,.38),transparent);transform:skewX(-20deg);transition:.55s}
+button:hover:after{left:135%}
+button.primary{
+ background:linear-gradient(105deg,#087bff,#694bff,#09cde2,#087bff);background-size:300% 100%;
+ animation:btnflow 5s linear infinite;box-shadow:0 0 28px rgba(39,150,255,.18)
+}
+@keyframes btnflow{to{background-position:300% 0}}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.preview,video{width:100%;max-height:430px;object-fit:cover;margin-top:13px;border-radius:18px;
-border:1px solid rgba(80,125,255,.2);background:#01030a;box-shadow:0 12px 40px #0008}
-.preview{display:none}video{display:none}.cambar{display:flex;gap:10px}.cambar button{margin-top:12px}
+.preview,video{width:100%;max-height:440px;object-fit:cover;margin-top:13px;border-radius:19px;
+ border:1px solid rgba(80,170,255,.24);background:#01030a;box-shadow:0 16px 50px #000a}
+.preview{display:none}video{display:none}
+.cambar{display:flex;gap:10px}.cambar button{margin-top:10px}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}
-.pill{padding:8px 11px;border:1px solid rgba(102,130,220,.17);border-radius:999px;background:rgba(19,25,48,.72);
-font-size:11px;color:#aab6d5}
-.pill b{color:#f4f7ff}.status{min-height:20px;margin-top:9px;color:#8f9ab8;font-size:12px}
+.pill{padding:8px 11px;border:1px solid rgba(102,150,240,.18);border-radius:999px;background:rgba(14,21,46,.75);
+ font-size:10px;color:#aab9d8}
+.pill b{color:#f4f8ff}
+.status{min-height:20px;margin-top:9px;color:#93a0bf;font-size:11px}
 .hidden{display:none!important}
 .badge{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;
-background:rgba(53,231,255,.07);border:1px solid rgba(53,231,255,.2);color:var(--cyan);
-font-size:10px;font-weight:1000;letter-spacing:1.3px}
-.badge:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
-.signal{margin:13px 0 3px;font-size:clamp(42px,10vw,76px);line-height:.95;font-weight:1000;
-letter-spacing:5px;text-shadow:0 0 25px currentColor;animation:signalpulse 1.5s ease-in-out infinite}
-.call{color:var(--green)}.put{color:var(--red)}.no{color:#d6ddf5}
-@keyframes signalpulse{50%{transform:scale(1.025);text-shadow:0 0 45px currentColor}}
-.entry{background:linear-gradient(120deg,rgba(11,20,42,.8),rgba(5,10,23,.7));border:1px solid rgba(93,126,230,.22);
-border-radius:17px;padding:15px;margin-top:13px}.entry b{color:#dce8ff}
-ul{padding-left:22px;color:#aeb9d6;line-height:1.8}hr{border:0;border-top:1px solid rgba(90,115,200,.15);margin:17px 0}
+ background:rgba(39,244,255,.07);border:1px solid rgba(39,244,255,.22);color:var(--cyan);
+ font-size:9px;font-weight:1000;letter-spacing:1.4px}
+.badge:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor}
+.signal{margin:14px 0 3px;font-size:clamp(48px,10vw,86px);line-height:.9;font-weight:1000;
+ letter-spacing:6px;text-shadow:0 0 30px currentColor;animation:signalpulse 1.4s ease-in-out infinite}
+.call{color:var(--green)}.put{color:var(--red)}.no{color:#dbe3f7}
+@keyframes signalpulse{50%{transform:scale(1.025);text-shadow:0 0 55px currentColor}}
+.entry{background:linear-gradient(120deg,rgba(10,23,48,.85),rgba(4,9,23,.75));border:1px solid rgba(93,160,255,.22);
+ border-radius:17px;padding:15px;margin-top:13px}
+.entry b{color:#dceaff}
+ul{padding-left:22px;color:#aebbd8;line-height:1.8}
+hr{border:0;border-top:1px solid rgba(90,150,255,.15);margin:17px 0}
 .live-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.live-indicator{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:1000;letter-spacing:1px;color:#65708d}
+.live-indicator{display:flex;align-items:center;gap:8px;font-size:9px;font-weight:1000;letter-spacing:1px;color:#65718e}
 .live-dot{width:9px;height:9px;border-radius:50%;background:#404860}
 .live-dot.on{background:#ff365f;box-shadow:0 0 0 0 rgba(255,54,95,.65);animation:livepulse 1.2s infinite}
 @keyframes livepulse{70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
-.live-active{outline:1px solid rgba(255,54,95,.65);box-shadow:0 0 30px rgba(255,54,95,.15)!important}
-.scan-frame{position:relative}.scan-frame:after{content:"";position:absolute;left:4%;right:4%;top:15%;height:2px;
-background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:0 0 16px var(--cyan);opacity:0;pointer-events:none}
-.scanning:after{opacity:.9;animation:scan 2.2s linear infinite}
-@keyframes scan{from{top:12%}to{top:88%}}
+.live-active{outline:1px solid rgba(255,54,95,.65);box-shadow:0 0 35px rgba(255,54,95,.15)!important}
+.scan-frame{position:relative}
+.scan-frame:after{content:"";position:absolute;left:4%;right:4%;top:15%;height:2px;
+ background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:0 0 18px var(--cyan);opacity:0}
+.scanning:after{opacity:.95;animation:scan 2.1s linear infinite}
+@keyframes scan{from{top:10%}to{top:90%}}
 .wave{display:inline-flex;gap:3px;height:16px;align-items:center;margin-left:7px}
 .wave i{width:3px;height:5px;background:var(--cyan);border-radius:4px;animation:wave .8s ease-in-out infinite}
 .wave i:nth-child(2){animation-delay:.1s}.wave i:nth-child(3){animation-delay:.2s}.wave i:nth-child(4){animation-delay:.3s}.wave i:nth-child(5){animation-delay:.4s}
 @keyframes wave{50%{height:16px;box-shadow:0 0 8px var(--cyan)}}
-.login{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;
-background:rgba(1,2,7,.82);backdrop-filter:blur(22px)}
+.hud{
+ display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 15px
+}
+.hudbox{
+ padding:12px 13px;border:1px solid rgba(70,170,255,.18);border-radius:16px;
+ background:linear-gradient(145deg,rgba(10,18,42,.8),rgba(3,7,18,.75))
+}
+.hudbox span{display:block;color:#64718f;font-size:8px;letter-spacing:1.3px;font-weight:1000}
+.hudbox b{display:block;margin-top:5px;font-size:13px;color:#eafcff}
+.elearn{
+ display:grid;grid-template-columns:repeat(3,1fr);gap:10px
+}
+.lesson{
+ border:1px solid rgba(110,150,255,.18);border-radius:17px;padding:14px;
+ background:rgba(6,12,28,.72);transition:.22s
+}
+.lesson:hover{transform:translateY(-3px);border-color:rgba(39,244,255,.42);box-shadow:0 12px 30px rgba(39,150,255,.08)}
+.lesson b{display:block;color:#eaf7ff;font-size:12px;margin-bottom:6px}
+.lesson span{color:#7e8eae;font-size:10px;line-height:1.6}
+.login{
+ position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;
+ background:rgba(1,2,7,.86);backdrop-filter:blur(25px)
+}
 .login .card{width:min(450px,100%);text-align:center}
 .login-logo{font-size:30px;font-weight:1000;letter-spacing:-1px;margin:12px 0;
-background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-background-clip:text;color:transparent}
-.footer{text-align:center;color:#59637e;font-size:10px;letter-spacing:1px;margin-top:25px}
-@media(max-width:650px){.grid,.two{grid-template-columns:1fr}.top{align-items:flex-start}.clock{min-width:auto;font-size:11px}
-.wrap{padding-top:10px}.card{padding:17px;border-radius:20px}.cambar{flex-direction:column}.cambar button{margin-top:7px}}
+ background:linear-gradient(90deg,#fff,var(--cyan),var(--violet));-webkit-background-clip:text;color:transparent}
+.footer{text-align:center;color:#56627f;font-size:9px;letter-spacing:1.2px;margin-top:25px}
+@media(max-width:760px){
+ .grid,.two,.elearn{grid-template-columns:1fr}.hud{grid-template-columns:repeat(2,1fr)}
+ .top{align-items:flex-start}.clock{min-width:auto}.wrap{padding-top:9px}
+ .card{padding:17px;border-radius:20px}.cambar{flex-direction:column}
+}
 </style>
+
 </head>
 <body>
 <div class="grid-bg"></div><div class="scanlines"></div><div class="noise"></div>
@@ -145,16 +206,23 @@ background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-backgro
 <h1>NEXT TRADER</h1><div class="sub">SCREENSHOT • CAMERA • LIVE VISION • CALL / PUT / NO TRADE</div></div>
 <div id="clock" class="clock">--:--:--</div></header>
 
+<div class="hud">
+  <div class="hudbox"><span>CORE</span><b>GEMINI VISION</b></div>
+  <div class="hudbox"><span>ENGINE</span><b>1M CLOSE→ENTRY</b></div>
+  <div class="hudbox"><span>VOICE</span><b id="hudVoice">ONLINE</b></div>
+  <div class="hudbox"><span>STATUS</span><b>2028 // READY</b></div>
+</div>
+
 <section class="card"><h2><span class="ico">◈</span> Chart Screenshot</h2>
 <input id="file" type="file" accept="image/png,image/jpeg,image/webp"><img id="preview" class="preview">
 <button id="go" class="primary">ANALYZE CHART ↗</button></section>
 
 <section class="card"><div class="live-head"><h2><span class="ico">◉</span> LIVE VISION MODE</h2><div class="small" style="margin-top:8px"><b>⚡ CLOSE-ENTRY ENGINE:</b> AI stays silent during the running candle.</div>
 <div class="live-indicator"><span id="liveDot" class="live-dot"></span><span id="liveStatus">OFFLINE</span></div></div>
-<div class="small">Share your broker/chart window or tab. At :59 the screen is captured once, AI analyzes the closing candle, and CALL/PUT becomes an entry for the new running candle at :00. A result arriving up to about 2 seconds late is accepted. Device clock is used.</div>
+<div class="small">Share your broker/chart window or tab. At ~:58.5 the screen is captured once, Gemini analyzes the just-closed candle, and CALL/PUT becomes an entry for the new running candle at :00. A result arriving through :05 is accepted. Device clock is used.</div>
 <div id="liveFrame" class="scan-frame"><video id="screenPreview" autoplay playsinline muted></video></div>
 <div class="two"><button id="startLive" class="primary">▶ START LIVE VISION</button><button id="stopLive">■ STOP LIVE</button></div>
-<div class="row"><span class="pill">Mode: <b>:59 CAPTURE → :00 RUNNING ENTRY</b></span>
+<div class="row"><span class="pill">Mode: <b>:58.5 CAPTURE → :00–:05 ENTRY</b></span>
 <span class="pill">AI Voice: <b id="voiceState">ON</b></span></div>
 <button id="voiceToggle">🔊 AI VOICE: ON</button><button type="button" onclick="testAIVoice()">🔊 TEST AI VOICE</button></section>
 
@@ -173,6 +241,23 @@ background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));-webkit-backgro
 <div><label>Minimum confidence</label><select id="minConfidence"><option value="50">50%</option><option value="60" selected>60%</option><option value="70">70%</option><option value="80">80%</option></select></div>
 <div><label>Signal filter</label><select id="filter"><option>ALL</option><option>NO TRADE ONLY</option><option>HIGH CONFIDENCE ONLY</option></select></div>
 </div></section>
+
+
+<section class="card">
+  <div class="live-head">
+    <h2><span class="ico">✦</span> E-LEARN // TRADER LAB 2028</h2>
+    <span class="badge">KNOWLEDGE CORE</span>
+  </div>
+  <div class="small">Quick-reference modules for reading the chart before trusting an AI signal.</div>
+  <div class="elearn">
+    <div class="lesson"><b>01 // LIQUIDITY</b><span>Watch equal highs/lows and sweep → reclaim behavior before treating a move as confirmed.</span></div>
+    <div class="lesson"><b>02 // STRUCTURE</b><span>Track swing highs/lows, BOS and CHOCH. Avoid forcing direction in sideways structure.</span></div>
+    <div class="lesson"><b>03 // FVG</b><span>Use visible imbalance only when the chart clearly shows it; never invent hidden zones.</span></div>
+    <div class="lesson"><b>04 // REJECTION</b><span>Wick + close location matters. A rejection at an opposing level is stronger than a random candle color.</span></div>
+    <div class="lesson"><b>05 // CONFIRMATION</b><span>One candle is not certainty. Prefer aligned structure, momentum and location.</span></div>
+    <div class="lesson"><b>06 // NO TRADE</b><span>Conflicting evidence, blurry charts or nearby opposing levels should produce NO TRADE.</span></div>
+  </div>
+</section>
 
 <section id="candleCard" class="card"><h2><span class="ico">◷</span> Candle Clock</h2><div class="row">
 <span class="pill">Current time: <b id="timeNow">—</b></span><span class="pill">Next candle in: <b id="candleCountdown">—</b></span>
@@ -249,9 +334,7 @@ function getBestVoice(){
 function speakSignal(d,context=""){
  if(!voiceOn||!("speechSynthesis" in window))return;
  const signal=String(d?.signal||'NO TRADE').toUpperCase().trim();
- const confidence=Number(d?.confidence||0);
- const entry=String(d?.entry_candle||'WAIT');
- const key=`${context}|${signal}|${confidence}|${entry}`;
+ const key=`${context}|${signal}`;
  if(key===lastVoiceKey)return;
  lastVoiceKey=key;
  const text=signal==='CALL'?'CALL':signal==='PUT'?'PUT':'NO TRADE';
@@ -570,7 +653,7 @@ $('startLive').onclick=()=>{unlockVoice();startLiveVision()};$('stopLive').oncli
 $('voiceToggle').onclick=()=>{
  unlockVoice();
  voiceOn=!voiceOn;
- $('voiceState').textContent=voiceOn?'ON':'OFF';
+ $('voiceState').textContent=voiceOn?'ON':'OFF';$('hudVoice').textContent=voiceOn?'ONLINE':'MUTED';
  $('voiceToggle').textContent=voiceOn?'🔊 AI VOICE: ON':'🔇 AI VOICE: OFF';
  if(!voiceOn&&'speechSynthesis' in window)speechSynthesis.cancel();
 };
@@ -578,7 +661,7 @@ $('voiceToggle').onclick=()=>{
 function testAIVoice(){
  if(!('speechSynthesis' in window)){alert('এই browser-এ AI voice support নেই।');return;}
  voiceOn=true;voiceUnlocked=true;
- $('voiceState').textContent='ON';
+ $('voiceState').textContent='ON';$('hudVoice').textContent='ONLINE';
  $('voiceToggle').textContent='🔊 AI VOICE: ON';
  speechSynthesis.cancel();
  const u=new SpeechSynthesisUtterance('NEXT TRADER AI voice is ready.');
