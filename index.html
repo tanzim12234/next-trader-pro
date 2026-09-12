@@ -254,7 +254,7 @@ function speakSignal(d,context=""){
  const key=`${context}|${signal}`;
  if(key===lastVoiceKey)return;
  lastVoiceKey=key;
- const text=signal==='CALL'?'CALL. Entry now.':signal==='PUT'?'PUT. Entry now.':'NO TRADE. Wait for confirmation.';
+ const text=signal==='CALL'?'CALL':signal==='PUT'?'PUT':'NO TRADE';
  try{
    speechSynthesis.cancel();
    speechSynthesis.resume();
@@ -337,15 +337,17 @@ function stopLiveVision(){
 }
 
 /*
-  LIVE ENGINE v5
-  - Clock-driven, not candle-boundary detection.
-  - Captures at ~:55.5 so the LAST FULLY CLOSED candle is visible and AI has time to respond.
-  - Each minute has its own state, so a slow AI request cannot block the next minute.
-  - CALL/PUT/NO TRADE is spoken once for every candle result that arrives in the :00–:05 entry window.
+  LIVE ENGINE v4
+  - Never depends on catching an exact :59 second tick.
+  - Captures the shared screen at ~:58.5 every minute to give AI extra latency budget.
+  - Sends that frame directly to /api/analyze.
+  - Accepts the AI result from :00 through :05.
+  - If the result is ready before :00, it waits for :00.
+  - If the browser wakes late, the 5-second entry window is still honored.
 */
-let candleCaptureTimer=null,candleEntryPollTimer=null;
+let candleWatcher=null,candleCaptureTimer=null,candleEntryTimer=null,candleEntryPollTimer=null;
 let liveRunId=0;
-const liveMinuteStates=new Map();
+let candleState={captureMinute:null,entryMinute:null,entryStartMs:0,entryDeadlineMs:0,result:null,analyzing:false,spoken:false};
 
 function liveMinuteKey(date){
   return [date.getFullYear(),date.getMonth(),date.getDate(),date.getHours(),date.getMinutes()].join('-');
@@ -353,6 +355,7 @@ function liveMinuteKey(date){
 function minuteStartMs(d=new Date()){
   const x=new Date(d);x.setSeconds(0,0);return x.getTime();
 }
+function nextMinuteStartMs(d=new Date()){return minuteStartMs(d)+60000}
 function captureLiveFrame(){
   if(!screenStream)return null;
   const video=$('screenPreview');
@@ -365,7 +368,7 @@ function captureLiveFrame(){
 }
 function nextCaptureTarget(now=Date.now()){
   const base=Math.floor(now/60000)*60000;
-  let t=base+55500;
+  let t=base+58500;
   if(t<=now+300)t+=60000;
   return t;
 }
@@ -380,117 +383,101 @@ function scheduleNextLiveCapture(){
   },Math.max(50,target-Date.now()));
   $('liveStatus').textContent='LIVE • NEXT CAPTURE '+new Date(target).toLocaleTimeString('en-BD',{hour12:false})+' • ENGINE READY';
 }
-function processDueEntries(){
-  if(!screenStream)return;
-  const now=Date.now();
-  for(const [minuteKey,state] of liveMinuteStates){
-    if(state.run!==liveRunId){liveMinuteStates.delete(minuteKey);continue}
-    if(state.spoken){liveMinuteStates.delete(minuteKey);continue}
-    if(!state.result)continue;
-    if(now<state.entryStartMs)continue;
-    if(now>state.entryDeadlineMs){
-      state.result=null;
-      state.missed=true;
-      liveMinuteStates.delete(minuteKey);
-      continue;
-    }
-    const d=state.result;
-    state.result=null;
-    state.spoken=true;
-    render(d,'LIVE ENTRY',false);
-    $('liveStatus').textContent=d.signal==='CALL'
-      ?'LIVE • CALL ENTRY NOW • '+minuteKey
-      :d.signal==='PUT'
-        ?'LIVE • PUT ENTRY NOW • '+minuteKey
-        :'LIVE • NO TRADE — WAIT • '+minuteKey;
-    speakSignal(d,'LIVE|'+minuteKey);
-    liveMinuteStates.delete(minuteKey);
-  }
-}
-function startEntryPoller(){
+function scheduleEntryPoll(entryMinuteKey,run){
   if(candleEntryPollTimer)clearInterval(candleEntryPollTimer);
-  candleEntryPollTimer=setInterval(processDueEntries,100);
+  candleEntryPollTimer=setInterval(()=>{
+    if(run!==liveRunId||!screenStream){clearInterval(candleEntryPollTimer);candleEntryPollTimer=null;return}
+    const now=Date.now();
+    if(now>candleState.entryDeadlineMs+1000){clearInterval(candleEntryPollTimer);candleEntryPollTimer=null;return}
+    processFixedEntry(entryMinuteKey);
+  },100);
 }
 async function captureAndAnalyzeAtClose(targetMs,run){
   if(run!==liveRunId||!screenStream)return;
+  const captureMinuteKey=liveMinuteKey(new Date(targetMs));
+  if(candleState.captureMinute===captureMinuteKey||candleState.analyzing){scheduleNextLiveCapture();return}
+  candleState.captureMinute=captureMinuteKey;
   const entryStartMs=minuteStartMs(new Date(targetMs))+60000;
   const entryMinuteKey=liveMinuteKey(new Date(entryStartMs));
-  if(liveMinuteStates.has(entryMinuteKey)){
-    scheduleNextLiveCapture();
-    return;
-  }
-  const state={run,entryStartMs,entryDeadlineMs:entryStartMs+5000,result:null,spoken:false,missed:false};
-  liveMinuteStates.set(entryMinuteKey,state);
-
+  candleState.entryMinute=entryMinuteKey;
+  candleState.entryStartMs=entryStartMs;
+  candleState.entryDeadlineMs=entryStartMs+5000;
+  candleState.result=null;candleState.spoken=false;
   let image=captureLiveFrame();
   if(!image){
     $('liveStatus').textContent='LIVE • FRAME NOT READY — RETRYING';
     setTimeout(()=>{
       if(run!==liveRunId||!screenStream)return;
-      const retry=captureLiveFrame();
-      if(!retry){
-        liveMinuteStates.delete(entryMinuteKey);
-        $('liveStatus').textContent='LIVE • SCREEN FRAME FAILED — NEXT MINUTE';
-        return;
-      }
-      sendLiveImage(retry,entryMinuteKey,entryStartMs,run);
-    },500);
-  }else{
-    sendLiveImage(image,entryMinuteKey,entryStartMs,run);
+      image=captureLiveFrame();
+      if(!image){$('liveStatus').textContent='LIVE • SCREEN FRAME FAILED';scheduleNextLiveCapture();return}
+      sendLiveImage(image,entryMinuteKey,entryStartMs,run);
+    },300);
+    return;
   }
-  // Schedule the next minute immediately. A slow API must never stop the clock.
-  scheduleNextLiveCapture();
+  sendLiveImage(image,entryMinuteKey,entryStartMs,run);
 }
 async function sendLiveImage(image,entryMinuteKey,entryStartMs,run){
-  const state=liveMinuteStates.get(entryMinuteKey);
-  if(run!==liveRunId||!screenStream||!state)return;
-  $('liveStatus').textContent='LIVE • '+entryMinuteKey+' • AI ANALYZING LAST CLOSED CANDLE...';
+  if(run!==liveRunId||!screenStream)return;
+  candleState.analyzing=true;
+  $('liveStatus').textContent='LIVE • CAPTURED → AI ANALYZING...';
+  scheduleEntryPoll(entryMinuteKey,run);
   try{
-    const r=await fetch('/api/analyze',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      cache:'no-store',
-      body:JSON.stringify({image,settings:{...settings(),execution_mode:'FIXED_1M_CLOSE_TO_RUNNING_ENTRY',entry_rule:'Analyze ONLY the LAST FULLY CLOSED candle visible in the image. Ignore the currently forming candle. CALL/PUT is for the running 1-minute candle beginning at :00. A result arriving from :00 through :05 is valid. Never label this NEXT CANDLE.',running_candle_only:true,fixed_timing:'CAPTURE ~55.5s -> LAST FULLY CLOSED CANDLE -> RUNNING ENTRY 00.0s -> ACCEPT UNTIL 05.0s'}})
-    });
+    const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify({image,settings:{...settings(),execution_mode:'FIXED_1M_CLOSE_TO_RUNNING_ENTRY',entry_rule:'Analyze the just-closed candle from the image. CALL/PUT is for the running 1-minute candle beginning at :00. A result arriving from :00 through :05 is valid. Never label this NEXT CANDLE.',running_candle_only:true,fixed_timing:'CAPTURE ~58.5s -> RUNNING ENTRY 00.0s -> ACCEPT UNTIL 05.0s'}})});
     let d;
     try{d=await r.json()}catch(_){throw new Error('API returned a non-JSON response (HTTP '+r.status+').')}
     if(!r.ok)throw new Error(d?.error||('API error '+r.status));
-    if(run!==liveRunId||!screenStream)return;
     const raw=String(d.signal||'').toUpperCase().trim();
     d.signal=raw==='CALL'?'CALL':raw==='PUT'?'PUT':'NO TRADE';
     d.entry_candle=(d.signal==='CALL'||d.signal==='PUT')?'RUNNING CANDLE':'WAIT';
-    const current=liveMinuteStates.get(entryMinuteKey);
-    if(!current)return;
-    current.result=d;
-    processDueEntries();
-    if(liveMinuteStates.has(entryMinuteKey)){
+    candleState.result=d;
+    processFixedEntry(entryMinuteKey);
+    if(candleState.result){
       const now=Date.now();
       $('liveStatus').textContent=now<entryStartMs
-        ?'LIVE • AI READY '+entryMinuteKey+' • WAITING FOR '+new Date(entryStartMs).toLocaleTimeString('en-BD',{hour12:false})
+        ?'LIVE • AI READY • WAITING FOR '+new Date(entryStartMs).toLocaleTimeString('en-BD',{hour12:false})
         :'LIVE • SIGNAL READY — ENTRY WINDOW ACTIVE';
     }
   }catch(e){
     console.error('LIVE AI ERROR:',e);
-    const current=liveMinuteStates.get(entryMinuteKey);
-    if(current)current.error=e.message;
     $('result').classList.remove('hidden');
     $('result').innerHTML='<div class="badge">LIVE AI ERROR</div><div class="status">'+escapeHtml(e.message)+'</div>';
-    $('liveStatus').textContent='LIVE • '+entryMinuteKey+' • AI ERROR — NEXT MINUTE STILL RUNNING';
+    $('liveStatus').textContent='LIVE • AI ERROR — SEE RESULT PANEL';
+  }finally{
+    candleState.analyzing=false;
+    scheduleNextLiveCapture();
   }
+}
+function processFixedEntry(minuteKey){
+  if(!screenStream||candleState.entryMinute!==minuteKey||!candleState.result||candleState.spoken)return;
+  const now=Date.now();
+  if(now<candleState.entryStartMs)return;
+  if(now>candleState.entryDeadlineMs){
+    candleState.result=null;
+    $('liveStatus').textContent='LIVE • AI TOO LATE FOR 5s ENTRY — NEXT MINUTE';
+    return;
+  }
+  const d=candleState.result;
+  candleState.result=null;candleState.spoken=true;
+  render(d,'LIVE ENTRY',false);
+  $('liveStatus').textContent=d.signal==='CALL'?'LIVE • CALL ENTRY NOW':d.signal==='PUT'?'LIVE • PUT ENTRY NOW':'LIVE • NO TRADE — WAIT';
+  speakSignal(d,'LIVE|'+minuteKey);
+  $('liveStatus').textContent += ' • VOICE SENT';
+  if(candleEntryPollTimer){clearInterval(candleEntryPollTimer);candleEntryPollTimer=null}
 }
 function startCandleCloseWatcher(){
   stopCandleWatcher();
   liveRunId++;
-  liveMinuteStates.clear();
+  candleState={captureMinute:null,entryMinute:null,entryStartMs:0,entryDeadlineMs:0,result:null,analyzing:false,spoken:false};
   $('liveStatus').textContent='LIVE • CLOCK ENGINE STARTING...';
-  startEntryPoller();
   scheduleNextLiveCapture();
 }
 function stopCandleWatcher(){
+  if(candleWatcher)clearTimeout(candleWatcher);
   if(candleCaptureTimer)clearTimeout(candleCaptureTimer);
+  if(candleEntryTimer)clearTimeout(candleEntryTimer);
   if(candleEntryPollTimer)clearInterval(candleEntryPollTimer);
-  candleCaptureTimer=candleEntryPollTimer=null;
-  liveMinuteStates.clear();
+  candleWatcher=candleCaptureTimer=candleEntryTimer=candleEntryPollTimer=null;
+  candleState.result=null;candleState.analyzing=false;
 }
 
 $('startLive').onclick=()=>{unlockVoice();startLiveVision()};$('stopLive').onclick=stopLiveVision;
