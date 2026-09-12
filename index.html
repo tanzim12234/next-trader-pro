@@ -174,6 +174,25 @@ hr{border:0;border-top:1px solid rgba(90,150,255,.15);margin:17px 0}
 .login .card{width:min(450px,100%);text-align:center}
 .login-logo{font-size:30px;font-weight:1000;letter-spacing:-1px;margin:12px 0;
  background:linear-gradient(90deg,#fff,var(--cyan),var(--violet));-webkit-background-clip:text;color:transparent}
+
+.live-data-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}
+.data-box{padding:12px;border:1px solid rgba(100,220,255,.16);border-radius:12px;background:rgba(4,12,24,.58)}
+.data-box span{display:block;font-size:10px;letter-spacing:1.4px;opacity:.62}.data-box b{display:block;margin-top:5px;font-size:16px}
+.data-note{margin-top:10px;font-size:11px;opacity:.62}
+@media(max-width:760px){.live-data-grid{grid-template-columns:repeat(2,1fr)}}
+
+.qx-bridge-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qx-bridge-row{display:flex;gap:9px;align-items:center}
+.qx-bridge-row input{flex:1}
+.qx-bridge-state{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:1000;letter-spacing:1px}
+.qx-led{width:9px;height:9px;border-radius:50%;background:#414b63}
+.qx-led.on{background:#36ff9a;box-shadow:0 0 16px #36ff9a}
+.qx-led.warn{background:#ffc34d;box-shadow:0 0 16px #ffc34d}
+.qx-stream{max-height:180px;overflow:auto;margin-top:12px;border:1px solid rgba(90,150,255,.14);border-radius:14px;background:rgba(1,4,13,.55)}
+.qx-stream-row{display:grid;grid-template-columns:1.2fr .8fr .8fr .8fr;padding:9px 11px;border-bottom:1px solid rgba(90,150,255,.09);font:10px ui-monospace,monospace;color:#aebbd8}
+.qx-stream-row b{color:#eef8ff}
+@media(max-width:760px){.qx-bridge-grid{grid-template-columns:1fr}.qx-stream-row{grid-template-columns:1fr 1fr}}
+
 .footer{text-align:center;color:#56627f;font-size:9px;letter-spacing:1.2px;margin-top:25px}
 @media(max-width:760px){
  .grid,.two,.elearn{grid-template-columns:1fr}.hud{grid-template-columns:repeat(2,1fr)}
@@ -263,6 +282,40 @@ hr{border:0;border-top:1px solid rgba(90,150,255,.15);margin:17px 0}
 <span class="pill">Current time: <b id="timeNow">—</b></span><span class="pill">Next candle in: <b id="candleCountdown">—</b></span>
 </div><div class="small">Device-time estimate. Always compare it with the broker's own candle timer.</div></section>
 
+<section id="qxBridgeCard" class="card">
+  <div class="live-head">
+    <h2><span class="ico">◉</span> QUOTEX LIVE DATA // REAL-TIME BRIDGE</h2>
+    <div class="qx-bridge-state"><span id="qxLed" class="qx-led"></span><span id="qxBridgeState">OFFLINE</span></div>
+  </div>
+  <div class="small">Unofficial data bridge. Your browser connects to your own bridge server; the website does not store your Quotex session token.</div>
+  <div class="qx-bridge-row">
+    <input id="qxBridgeUrl" value="ws://127.0.0.1:8787" placeholder="wss://your-server.example/ws">
+    <button id="qxConnect" class="primary" style="max-width:220px">CONNECT QUOTEX LIVE</button>
+  </div>
+  <div class="qx-bridge-grid">
+    <div class="data-box"><span>ASSET</span><b id="qxLiveAsset">—</b></div>
+    <div class="data-box"><span>LIVE PRICE</span><b id="qxLivePrice">—</b></div>
+    <div class="data-box"><span>OPEN</span><b id="qxLiveOpen">—</b></div>
+    <div class="data-box"><span>HIGH</span><b id="qxLiveHigh">—</b></div>
+    <div class="data-box"><span>LOW</span><b id="qxLiveLow">—</b></div>
+    <div class="data-box"><span>CLOSE</span><b id="qxLiveClose">—</b></div>
+  </div>
+  <div class="row"><span class="pill">STREAM: <b id="qxStreamType">WAITING</b></span><span class="pill">SERVER TIME: <b id="qxServerTime">—</b></span><span class="pill">LAST UPDATE: <b id="qxLastUpdate">—</b></span></div>
+  <div id="qxStream" class="qx-stream"></div>
+</section>
+
+<section id="quotexData" class="card"><h2><span class="ico">◈</span> QUOTEX LIVE DATA BRIDGE</h2>
+<div class="small">Screen-sourced snapshot from the shared Quotex/chart window. It is not an official Quotex API/tick feed.</div>
+<div class="live-data-grid">
+<div class="data-box"><span>ASSET</span><b id="qxAsset">—</b></div>
+<div class="data-box"><span>CURRENT PRICE</span><b id="qxPrice">—</b></div>
+<div class="data-box"><span>VISIBLE TIME</span><b id="qxTime">—</b></div>
+<div class="data-box"><span>CANDLE CLOSE</span><b id="qxClose">—</b></div>
+<div class="data-box"><span>SOURCE</span><b id="qxSource">WAITING</b></div>
+</div>
+<div class="data-note">Updates when the live engine captures a Quotex/chart frame. For exact tick-by-tick data, an authorized official market-data API would be required.</div>
+</section>
+
 <section id="result" class="card hidden"></section>
 <div class="footer">NEXT TRADER AI PRO // TECHNICAL ANALYSIS IS PROBABILISTIC // NO SIGNAL IS GUARANTEED</div>
 </div>
@@ -306,7 +359,14 @@ async function sendAnalysis(image,source){
  catch(e){showError(e.message);return null}finally{busy=false}
 }
 function showError(msg){$('result').classList.remove('hidden');$('result').innerHTML='<div class="badge">SYSTEM ERROR</div><div class="status">'+escapeHtml(msg)+'</div>'}
+function updateLiveData(d){
+ const m=d?.market_data||{};
+ const set=(id,v)=>{const el=$(id);if(el)el.textContent=(v===undefined||v===null||v==='')?'—':String(v)};
+ set('qxAsset',m.asset);set('qxPrice',m.current_price);set('qxTime',m.visible_time);set('qxClose',m.candle_close);
+ set('qxSource',m.source||'SCREEN SNAPSHOT');
+}
 function render(d,source,shouldSpeak=true,voiceContext=""){
+  updateLiveData(d);
   const sig=d.signal||'NO TRADE',cls=sig==='CALL'?'call':sig==='PUT'?'put':'no';
   const reasons=Array.isArray(d.reasons)?d.reasons.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'';
   $('result').innerHTML=`<div class="badge">${escapeHtml(source)} ANALYSIS</div>
@@ -673,6 +733,68 @@ if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=()=>speechSynthe
 document.addEventListener('click',()=>{if(!voiceUnlocked)unlockVoice()},{once:true});
 $('startLive').addEventListener('click',unlockVoice);
 window.addEventListener('beforeunload',()=>{stopCandleWatcher();stopCamera();stopLiveVision()});
+
+let qxSocket=null;
+let qxLatest=null;
+function qxSetState(text,mode=''){
+  $('qxBridgeState').textContent=text;
+  $('qxLed').className='qx-led'+(mode?' '+mode:'');
+}
+function qxFmt(v){return v===undefined||v===null||v===''?'—':String(v)}
+function qxRender(data){
+  if(!data||!data.asset)return;
+  qxLatest=data;
+  $('qxLiveAsset').textContent=qxFmt(data.asset);
+  $('qxLivePrice').textContent=qxFmt(data.price ?? data.close);
+  $('qxLiveOpen').textContent=qxFmt(data.open);
+  $('qxLiveHigh').textContent=qxFmt(data.high);
+  $('qxLiveLow').textContent=qxFmt(data.low);
+  $('qxLiveClose').textContent=qxFmt(data.close);
+  $('qxStreamType').textContent=String(data.type||'DATA').toUpperCase();
+  $('qxServerTime').textContent=qxFmt(data.server_time);
+  $('qxLastUpdate').textContent=new Date().toLocaleTimeString('en-BD',{hour12:false});
+  $('qxAsset').textContent=qxFmt(data.asset);
+  $('qxPrice').textContent=qxFmt(data.price ?? data.close);
+  $('qxTime').textContent=qxFmt(data.server_time);
+  $('qxClose').textContent=qxFmt(data.close);
+  $('qxSource').textContent='QUOTEX BRIDGE';
+  const row=document.createElement('div');row.className='qx-stream-row';
+  row.innerHTML=`<b>${escapeHtml(data.asset)}</b><span>${escapeHtml(String(data.type||'DATA'))}</span><span>${escapeHtml(String(data.price??data.close??'—'))}</span><span>${escapeHtml(String(data.server_time||'—'))}</span>`;
+  $('qxStream').prepend(row);
+  while($('qxStream').children.length>20)$('qxStream').lastElementChild.remove();
+}
+function connectQuotexBridge(){
+  const url=$('qxBridgeUrl').value.trim();
+  if(!url){qxSetState('ENTER BRIDGE URL','warn');return;}
+  try{if(qxSocket)qxSocket.close();}catch{}
+  qxSetState('CONNECTING...','warn');
+  try{
+    qxSocket=new WebSocket(url);
+    qxSocket.onopen=()=>{
+      qxSetState('LIVE','on');
+      $('qxConnect').textContent='DISCONNECT QUOTEX LIVE';
+      qxSocket.send(JSON.stringify({action:'subscribe',asset:($('qxLiveAsset').textContent||'EURUSD_otc')}));
+    };
+    qxSocket.onmessage=e=>{
+      try{
+        const d=JSON.parse(e.data);
+        if(d.type==='bridge_status'){
+          qxSetState('LIVE','on');
+          if(d.latest)Object.values(d.latest).forEach(qxRender);
+          return;
+        }
+        if(d.type==='candle'||d.type==='tick')qxRender(d);
+      }catch(err){console.warn('Quotex bridge message error',err)}
+    };
+    qxSocket.onerror=()=>qxSetState('BRIDGE ERROR','warn');
+    qxSocket.onclose=()=>{qxSetState('OFFLINE');$('qxConnect').textContent='CONNECT QUOTEX LIVE';};
+  }catch(e){qxSetState('INVALID URL','warn')}
+}
+$('qxConnect').onclick=()=>{
+  if(qxSocket && qxSocket.readyState===WebSocket.OPEN){qxSocket.close();return;}
+  connectQuotexBridge();
+};
+
 </script>
 </body>
-</html>
+</html
