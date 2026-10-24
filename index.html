@@ -1,448 +1,14 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#050814">
-<meta name="description" content="NEXT TRADER AI PRO market analysis terminal">
-<title>NEXT TRADER AI PRO — Trading Terminal</title>
-
-<style>
-:root{
-  color-scheme:dark;
-  --bg:#050814;
-  --panel:#0b1120;
-  --panel2:#0e172a;
-  --line:rgba(120,160,255,.17);
-  --text:#edf4ff;
-  --muted:#8594b3;
-  --cyan:#46f3ff;
-  --blue:#5684ff;
-  --violet:#a36aff;
-  --green:#37e8a4;
-  --red:#ff527c;
-  --gold:#ffd477;
-}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{
-  margin:0;
-  min-height:100vh;
-  color:var(--text);
-  background:
-    radial-gradient(ellipse at 0% 0%,rgba(50,100,255,.13),transparent 35%),
-    radial-gradient(ellipse at 100% 10%,rgba(163,106,255,.10),transparent 35%),
-    var(--bg);
-  font-family:Inter,Segoe UI,Arial,sans-serif;
-}
-button,input,select{font:inherit}
-button{cursor:pointer}
-button:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
-a{color:var(--cyan)}
-.hidden{display:none!important}
-.wrap{max-width:1440px;margin:auto;padding:20px}
-.topbar{
-  display:flex;justify-content:space-between;align-items:center;
-  gap:20px;padding:10px 0 25px;flex-wrap:wrap
-}
-.brand{display:flex;align-items:center;gap:13px}
-.logo{
-  display:grid;place-items:center;width:48px;height:48px;border-radius:15px;
-  background:linear-gradient(135deg,#1a8cff,#714dff);
-  color:white;font-size:24px;font-weight:900;
-  box-shadow:0 0 35px #367fff35
-}
-.eyebrow{
-  color:var(--cyan);font-size:10px;font-weight:900;
-  letter-spacing:3px;text-transform:uppercase
-}
-.brand h1{margin:5px 0;font-size:22px;letter-spacing:1px}
-.brand p{margin:0;color:var(--muted);font-size:11px}
-.top-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.clock{
-  padding:12px 15px;border:1px solid var(--line);border-radius:13px;
-  background:#0c1425;font:700 13px ui-monospace,monospace
-}
-.status-pill,.badge{
-  display:inline-flex;align-items:center;gap:8px;
-  border:1px solid var(--line);border-radius:999px;
-  padding:8px 11px;color:var(--muted);font-size:10px;font-weight:800
-}
-.dot{width:7px;height:7px;border-radius:50%;background:#66728d}
-.dot.on{background:var(--green);box-shadow:0 0 12px var(--green)}
-.dot.warn{background:var(--gold);box-shadow:0 0 12px var(--gold)}
-.hero{
-  display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:16px
-}
-.hero-main,.hero-side,.card{
-  min-width:0;border:1px solid var(--line);border-radius:20px;
-  background:linear-gradient(145deg,rgba(15,24,45,.94),rgba(7,12,25,.94));
-  box-shadow:0 18px 50px #0002
-}
-.hero-main{padding:28px;position:relative;overflow:hidden}
-.hero-main:after{
-  content:"";position:absolute;width:300px;height:300px;right:-120px;top:-160px;
-  background:radial-gradient(circle,#477bff28,transparent 70%);pointer-events:none
-}
-.hero-main h2{
-  font-size:clamp(28px,4vw,48px);letter-spacing:-2px;line-height:1.05;
-  margin:14px 0 10px
-}
-.gradient-text{
-  color:var(--cyan);
-  text-shadow:0 0 30px #46f3ff20
-}
-.hero-main p{color:var(--muted);font-size:13px;line-height:1.8;max-width:620px}
-.hero-side{padding:22px;display:flex;flex-direction:column;justify-content:space-between}
-.metric-label{font-size:10px;color:var(--muted);letter-spacing:1.5px;font-weight:800}
-.big-price{font:800 clamp(26px,4vw,39px) ui-monospace,monospace;margin:12px 0;overflow-wrap:anywhere}
-.metric-sub{color:var(--muted);font-size:11px}
-.stats{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:12px;margin:16px 0
-}
-.stat{
-  border:1px solid var(--line);background:#0a1222;border-radius:15px;padding:16px;
-  min-width:0
-}
-.stat span{display:block;font-size:9px;color:var(--muted);letter-spacing:1.4px;font-weight:800}
-.stat b{display:block;margin-top:8px;font-size:15px;overflow-wrap:anywhere}
-.layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(290px,.8fr);gap:16px}
-.column{min-width:0}
-.card{padding:22px;margin-bottom:16px}
-.card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:17px;flex-wrap:wrap}
-.card h3{margin:0;font-size:13px;letter-spacing:1.3px;text-transform:uppercase}
-.card h3 em{font-style:normal;color:var(--cyan);margin-right:8px}
-.small{font-size:11px;line-height:1.8;color:var(--muted)}
-label{
-  display:block;color:var(--muted);font-size:9px;font-weight:900;
-  letter-spacing:1.2px;text-transform:uppercase;margin-bottom:7px
-}
-input,select{
-  width:100%;min-width:0;padding:12px 13px;border-radius:11px;
-  border:1px solid var(--line);background:#070d1a;color:var(--text);outline:none
-}
-input:focus,select:focus{border-color:#46f3ff80;box-shadow:0 0 0 3px #46f3ff0b}
-button{
-  border:1px solid var(--line);border-radius:11px;padding:12px 15px;
-  color:var(--text);background:#151f35;font-size:10px;font-weight:900;
-  letter-spacing:.7px;transition:transform .15s,border-color .15s
-}
-button:hover{transform:translateY(-1px);border-color:#46f3ff60}
-button.primary{
-  border-color:transparent;background:linear-gradient(110deg,#137ce8,#6654e8);
-  box-shadow:0 8px 24px #365fff20
-}
-button.secondary{background:#0a1324}
-button.danger{background:#2a1221;border-color:#ff527c35}
-.controls{display:grid;grid-template-columns:1.2fr 1fr auto;gap:10px;align-items:end}
-.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
-.btn-row button{flex:1}
-.chart-box{
-  position:relative;background:#050a14;border:1px solid #263451;border-radius:14px;
-  overflow:hidden;min-height:300px
-}
-#marketChart{display:block;width:100%;height:340px}
-.chart-legend{display:flex;gap:15px;flex-wrap:wrap;margin:12px 0}
-.legend{font-size:10px;color:var(--muted)}
-.legend:before{content:"";display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:6px;background:var(--green)}
-.legend.red:before{background:var(--red)}
-.ohlc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
-.ohlc .stat{padding:12px}
-.ohlc .stat b{font:700 12px ui-monospace,monospace}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.upload-box{
-  border:1px dashed #4d6a9c;border-radius:13px;padding:16px;background:#080f1e
-}
-.preview{width:100%;max-height:300px;object-fit:contain;display:none;margin-top:12px;border-radius:10px}
-video{width:100%;max-height:340px;display:none;margin-top:12px;border-radius:12px;background:#02040a}
-.status{margin-top:10px;font-size:11px;color:var(--muted);line-height:1.7;overflow-wrap:anywhere}
-.result-box{margin-top:15px;padding:17px;border:1px solid var(--line);border-radius:14px;background:#070d19}
-.signal{
-  font-size:clamp(40px,7vw,64px);font-weight:1000;letter-spacing:3px;
-  margin:15px 0;text-shadow:0 0 28px currentColor
-}
-.call{color:var(--green)}.put{color:var(--red)}.no{color:var(--gold)}
-.result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.result-mini{padding:11px;background:#101a2c;border-radius:10px}
-.result-mini span{display:block;font-size:9px;color:var(--muted)}
-.result-mini b{display:block;margin-top:6px;font-size:13px}
-.reason-list{padding-left:18px;color:#bdc9e0;font-size:12px;line-height:1.9}
-.feed{max-height:200px;overflow:auto;margin-top:12px}
-.feed-row{
-  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 0;
-  border-bottom:1px solid #ffffff0b;font:10px ui-monospace,monospace;color:#bac8e3
-}
-.feed-row span{overflow-wrap:anywhere}
-.lesson{
-  padding:13px;border:1px solid var(--line);border-radius:12px;
-  background:#0a1221;margin-top:9px
-}
-.lesson b{font-size:11px;color:#e9f2ff}
-.lesson p{margin:7px 0 0;font-size:11px;line-height:1.7;color:var(--muted)}
-.footer{text-align:center;color:#566582;font-size:10px;padding:22px 0 35px;line-height:1.8}
-.login{
-  position:fixed;inset:0;z-index:99;background:#030610ee;backdrop-filter:blur(20px);
-  display:grid;place-items:center;padding:20px
-}
-.login-panel{
-  width:min(430px,100%);border:1px solid #35507c;border-radius:22px;padding:28px;
-  background:linear-gradient(145deg,#101a31,#070c19);box-shadow:0 30px 100px #0008
-}
-.login-panel h2{margin:13px 0 6px;font-size:25px}
-.login-panel p{font-size:12px;color:var(--muted);line-height:1.8}
-@media(max-width:900px){
-  .hero,.layout{grid-template-columns:1fr}
-  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media(max-width:600px){
-  .wrap{padding:12px}
-  .topbar{align-items:flex-start}
-  .brand h1{font-size:18px}
-  .hero-main,.hero-side,.card{padding:17px;border-radius:16px}
-  .controls{grid-template-columns:1fr}
-  .ohlc{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #marketChart{height:280px}
-  .form-grid{grid-template-columns:1fr}
-  .feed-row{grid-template-columns:1fr 1fr}
-}
-</style>
-</head>
-
-<body>
-<div id="login" class="login">
-  <div class="login-panel">
-    <div class="eyebrow">Private trading terminal</div>
-    <h2>NEXT TRADER <span class="gradient-text">AI PRO</span></h2>
-    <p>Secure access to your AI market analysis workspace.</p>
-    <label for="password">Access password</label>
-    <input id="password" type="password" placeholder="Enter access password" autocomplete="current-password">
-    <button id="loginBtn" class="primary" style="width:100%;margin-top:12px">UNLOCK TERMINAL</button>
-    <div id="loginStatus" class="status"></div>
-  </div>
-</div>
-
-<div class="wrap">
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">N</div>
-      <div>
-        <div class="eyebrow">Market intelligence system</div>
-        <h1>NEXT TRADER AI PRO</h1>
-        <p>Technical analysis workspace · Quotex data via OTCharts</p>
-      </div>
-    </div>
-    <div class="top-right">
-      <span class="status-pill"><span id="topDot" class="dot"></span><span id="topStatus">DISCONNECTED</span></span>
-      <div id="clock" class="clock">--:--:--</div>
-    </div>
-  </header>
-
-  <section class="hero">
-    <div class="hero-main">
-      <div class="eyebrow">Precision starts with context</div>
-      <h2>Read the market.<br><span class="gradient-text">Respect the risk.</span></h2>
-      <p>
-        Live market data, chart visualization and AI-assisted technical analysis
-        in one professional workspace. Signals are estimates—not guarantees.
-      </p>
-      <div class="btn-row">
-        <button class="primary" onclick="document.getElementById('marketCard').scrollIntoView({behavior:'smooth'})">OPEN MARKET TERMINAL</button>
-        <button class="secondary" onclick="document.getElementById('analysisCard').scrollIntoView({behavior:'smooth'})">AI ANALYSIS</button>
-      </div>
-    </div>
-    <div class="hero-side">
-      <div>
-        <div class="metric-label">SELECTED MARKET</div>
-        <div id="heroSymbol" style="font-weight:900;font-size:16px;margin-top:9px">EURUSD_otc</div>
-      </div>
-      <div>
-        <div class="metric-label">LATEST PRICE</div>
-        <div id="heroPrice" class="big-price">—</div>
-        <div class="metric-sub">Source: OTCharts third-party feed</div>
-      </div>
-      <div class="status-pill" style="align-self:flex-start"><span class="dot"></span><span id="heroFeedStatus">Waiting for connection</span></div>
-    </div>
-  </section>
-
-  <section class="stats">
-    <div class="stat"><span>MARKET</span><b id="statSymbol">EURUSD_otc</b></div>
-    <div class="stat"><span>TIMEFRAME</span><b id="statTf">1 MINUTE</b></div>
-    <div class="stat"><span>HISTORICAL BARS</span><b id="statBars">0</b></div>
-    <div class="stat"><span>LAST UPDATE</span><b id="statUpdated">—</b></div>
-  </section>
-
-  <main class="layout">
-    <div class="column">
-      <section id="marketCard" class="card">
-        <div class="card-head">
-          <h3><em>◈</em>Market Terminal</h3>
-          <span class="badge"><span class="dot" id="marketDot"></span><span id="marketStatus">OFFLINE</span></span>
-        </div>
-
-        <div class="controls">
-          <div>
-            <label for="symbol">Trading symbol</label>
-            <input id="symbol" value="EURUSD_otc" maxlength="40" autocomplete="off">
-          </div>
-          <div>
-            <label for="tf">Candle timeframe</label>
-            <select id="tf">
-              <option value="60">1 minute</option>
-              <option value="120">2 minutes</option>
-              <option value="300">5 minutes</option>
-              <option value="900">15 minutes</option>
-            </select>
-          </div>
-          <button id="connectBtn" class="primary">CONNECT LIVE</button>
-        </div>
-
-        <div class="chart-legend">
-          <span class="legend">Bullish candle</span>
-          <span class="legend red">Bearish candle</span>
-          <span class="small" id="chartInfo">Waiting for candle data</span>
-        </div>
-
-        <div class="chart-box">
-          <canvas id="marketChart" aria-label="Candlestick chart"></canvas>
-        </div>
-
-        <div class="ohlc">
-          <div class="stat"><span>OPEN</span><b id="open">—</b></div>
-          <div class="stat"><span>HIGH</span><b id="high">—</b></div>
-          <div class="stat"><span>LOW</span><b id="low">—</b></div>
-          <div class="stat"><span>CLOSE / PRICE</span><b id="close">—</b></div>
-        </div>
-
-        <div class="status" id="marketMessage">Connect to load market candles.</div>
-        <div id="feed" class="feed"></div>
-      </section>
-
-      <section id="analysisCard" class="card">
-        <div class="card-head">
-          <h3><em>✦</em>AI Chart Analysis</h3>
-          <span class="badge">GEMINI API</span>
-        </div>
-        <p class="small">
-          Upload a clear chart screenshot. The AI will assess visible structure,
-          candle behavior and the selected analysis settings.
-        </p>
-
-        <div class="upload-box">
-          <label for="chartFile">Chart screenshot</label>
-          <input id="chartFile" type="file" accept="image/png,image/jpeg,image/webp">
-          <img id="preview" class="preview" alt="Uploaded chart preview">
-        </div>
-
-        <div class="form-grid" style="margin-top:14px">
-          <div>
-            <label for="analysisMode">Analysis mode</label>
-            <select id="analysisMode">
-              <option>STRICT SMC</option>
-              <option>PRICE ACTION</option>
-              <option>SCALPING</option>
-              <option>CONSERVATIVE</option>
-            </select>
-          </div>
-          <div>
-            <label for="minConfidence">Minimum confidence</label>
-            <select id="minConfidence">
-              <option value="50">50%</option>
-              <option value="60" selected>60%</option>
-              <option value="70">70%</option>
-              <option value="80">80%</option>
-            </select>
-          </div>
-          <div>
-            <label for="marketType">Market type</label>
-            <select id="marketType">
-              <option>OTC</option>
-              <option>FOREX</option>
-              <option>GENERAL</option>
-            </select>
-          </div>
-          <div>
-            <label for="signalFilter">Signal filter</label>
-            <select id="signalFilter">
-              <option>ALL</option>
-              <option>NO TRADE ONLY</option>
-              <option>HIGH CONFIDENCE ONLY</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="btn-row">
-          <button id="analyzeBtn" class="primary">ANALYZE SCREENSHOT</button>
-          <button id="voiceBtn" class="secondary">VOICE: ON</button>
-        </div>
-
-        <div class="status" id="analysisStatus"></div>
-        <div id="result" class="result-box hidden" aria-live="polite"></div>
-      </section>
-
-      <section class="card">
-        <div class="card-head">
-          <h3><em>▣</em>Screen Share Analysis</h3>
-          <span class="badge">MANUAL CAPTURE</span>
-        </div>
-        <p class="small">
-          Share your broker chart window, then capture a frame when you want
-          the AI to inspect it. The browser cannot guarantee an exact broker candle boundary.
-        </p>
-        <div class="btn-row">
-          <button id="startShare" class="primary">START SCREEN SHARE</button>
-          <button id="captureShare" class="secondary" disabled>ANALYZE SHARED SCREEN</button>
-          <button id="stopShare" class="danger" disabled>STOP SHARE</button>
-        </div>
-        <video id="shareVideo" autoplay muted playsinline></video>
-        <div id="shareStatus" class="status"></div>
-      </section>
-    </div>
-
-    <aside class="column">
-      <section class="card">
-        <div class="card-head"><h3><em>◷</em>Market Clock</h3></div>
-        <div class="stat"><span>LOCAL TIME</span><b id="localTime">—</b></div>
-        <div class="stat" style="margin-top:10px"><span>NEXT SELECTED CANDLE</span><b id="countdown">—</b></div>
-        <p class="small" style="margin-top:12px">
-          The countdown uses your device clock. Compare it with the broker's own timer.
-        </p>
-      </section>
-
-      <section class="card">
-        <div class="card-head"><h3><em>◎</em>Analysis Context</h3></div>
-        <div class="lesson"><b>01 / Liquidity</b><p>Observe equal highs/lows, sweeps and whether price reclaims a level.</p></div>
-        <div class="lesson"><b>02 / Structure</b><p>Check swing highs/lows, BOS and CHOCH. Avoid forcing a direction in a range.</p></div>
-        <div class="lesson"><b>03 / Imbalance</b><p>Only mark FVG or imbalance areas when they are actually visible in the chart.</p></div>
-        <div class="lesson"><b>04 / Confirmation</b><p>A single candle is not certainty. Consider location, structure and momentum together.</p></div>
-        <div class="lesson"><b>05 / No Trade</b><p>Conflicting evidence, blurry charts or nearby opposing levels can justify waiting.</p></div>
-      </section>
-
-      <section class="card">
-        <div class="card-head"><h3><em>⚠</em>Risk Notice</h3></div>
-        <p class="small">
-          AI outputs can be wrong. Market data may differ from the broker's execution
-          feed, particularly for OTC instruments. Do not treat confidence scores as
-          verified win probabilities. Never risk money you cannot afford to lose.
-        </p>
-      </section>
-    </aside>
-  </main>
-
-  <footer class="footer">
-    NEXT TRADER AI PRO · MARKET DATA VIA OTCHARTS · AI ANALYSIS VIA YOUR API<br>
-    NO SIGNAL IS GUARANTEED · THIRD-PARTY DATA MAY DIFFER FROM BROKER PRICES
-  </footer>
-</div>
-
 <script>
 "use strict";
 
 const $ = id => document.getElementById(id);
 
 let stream = null;
+let candlePollTimer = null;
+let candlePollBusy = false;
 let candles = [];
 let latestMarketData = null;
+
 let shareStream = null;
 let analysisBusy = false;
 let voiceEnabled = true;
@@ -450,37 +16,47 @@ let lastVoiceKey = "";
 
 function setText(id, value) {
   const el = $(id);
-  if (el) el.textContent = value == null || value === "" ? "—" : String(value);
+  if (el) {
+    el.textContent =
+      value === null || value === undefined || value === ""
+        ? "—"
+        : String(value);
+  }
 }
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
   })[c]);
 }
 
 function fmt(value) {
-  if (value === null || value === undefined || value === "") return "—";
-  const n = Number(value);
-  return Number.isFinite(n)
-    ? n.toFixed(5).replace(/0+$/,"").replace(/\.$/,"")
-    : String(value);
-}
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
 
-function timeString(value) {
-  if (value == null) return "—";
   const n = Number(value);
-  const date = new Date(n < 1e12 ? n * 1000 : n);
-  return Number.isNaN(date.getTime())
-    ? String(value)
-    : date.toLocaleTimeString("en-GB", {hour12:false});
+
+  return Number.isFinite(n)
+    ? n.toFixed(5).replace(/0+$/, "").replace(/\.$/, "")
+    : String(value);
 }
 
 function setMarketStatus(text, mode = "") {
   setText("marketStatus", text);
   setText("topStatus", text);
-  $("marketDot").className = "dot" + (mode ? " " + mode : "");
-  $("topDot").className = "dot" + (mode ? " " + mode : "");
+
+  if ($("marketDot")) {
+    $("marketDot").className = "dot" + (mode ? " " + mode : "");
+  }
+
+  if ($("topDot")) {
+    $("topDot").className = "dot" + (mode ? " " + mode : "");
+  }
 }
 
 function selectedSymbol() {
@@ -494,40 +70,64 @@ function selectedTF() {
 function setSettings() {
   return {
     market: $("marketType").value,
-    timeframe: $("tf").selectedOptions[0]?.textContent || "1 minute",
+    timeframe:
+      $("tf").selectedOptions[0]?.textContent || "1 minute",
     mode: $("analysisMode").value,
     min_confidence: Number($("minConfidence").value),
     signal_filter: $("signalFilter").value
   };
 }
 
+/* =========================
+   LOGIN
+========================= */
+
 async function login() {
   setText("loginStatus", "Authenticating…");
+
   try {
     const response = await fetch("/api/auth", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({password:$("password").value})
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        password: $("password").value
+      })
     });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Authentication failed");
+
+    if (!response.ok) {
+      throw new Error(data.error || "Authentication failed");
+    }
 
     sessionStorage.setItem("nt_unlocked", "1");
     $("login").classList.add("hidden");
+
   } catch (error) {
-    setText("loginStatus", error.message || "Unable to log in");
+    setText(
+      "loginStatus",
+      error.message || "Unable to log in"
+    );
   }
 }
 
 $("loginBtn").addEventListener("click", login);
+
 $("password").addEventListener("keydown", event => {
-  if (event.key === "Enter") login();
+  if (event.key === "Enter") {
+    login();
+  }
 });
 
 if (sessionStorage.getItem("nt_unlocked") === "1") {
   $("login").classList.add("hidden");
 }
+
+/* =========================
+   MARKET UI
+========================= */
 
 function updateMarketUI(data) {
   const price = data.price ?? data.close;
@@ -536,14 +136,22 @@ function updateMarketUI(data) {
   setText("heroSymbol", symbol);
   setText("statSymbol", symbol);
   setText("heroPrice", fmt(price));
+
   setText("open", fmt(data.open));
   setText("high", fmt(data.high));
   setText("low", fmt(data.low));
   setText("close", fmt(data.close ?? price));
-  setText("statTf", $("tf").selectedOptions[0]?.textContent.toUpperCase());
+
+  setText(
+    "statTf",
+    $("tf").selectedOptions[0]?.textContent.toUpperCase()
+  );
+
   setText("statBars", candles.length);
-  setText("statUpdated", new Date().toLocaleTimeString("en-GB"));
-  setText("heroFeedStatus", "Market data received");
+  setText(
+    "statUpdated",
+    new Date().toLocaleTimeString("en-GB")
+  );
 
   latestMarketData = {
     asset: symbol,
@@ -575,17 +183,26 @@ function addFeedRow(data) {
   });
 
   $("feed").prepend(row);
+
   while ($("feed").children.length > 20) {
     $("feed").lastElementChild.remove();
   }
 }
 
+/* =========================
+   CANDLE CHART
+========================= */
+
 function drawChart() {
   const canvas = $("marketChart");
+  if (!canvas) return;
+
   const rect = canvas.getBoundingClientRect();
+
   if (!rect.width || !rect.height) return;
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
   const width = Math.floor(rect.width * dpr);
   const height = Math.floor(rect.height * dpr);
 
@@ -595,12 +212,16 @@ function drawChart() {
   }
 
   const ctx = canvas.getContext("2d");
+
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  const w = rect.width, h = rect.height;
-  ctx.clearRect(0,0,w,h);
+  const w = rect.width;
+  const h = rect.height;
+
+  ctx.clearRect(0, 0, w, h);
+
   ctx.fillStyle = "#050a14";
-  ctx.fillRect(0,0,w,h);
+  ctx.fillRect(0, 0, w, h);
 
   const list = candles.slice(-55);
 
@@ -611,162 +232,346 @@ function drawChart() {
     return;
   }
 
-  const pad = {top:16,right:62,bottom:18,left:8};
+  const pad = {
+    top: 16,
+    right: 62,
+    bottom: 18,
+    left: 8
+  };
+
   const chartW = w - pad.left - pad.right;
   const chartH = h - pad.top - pad.bottom;
 
-  const prices = list.flatMap(c => [Number(c.high),Number(c.low)])
+  const prices = list
+    .flatMap(c => [Number(c.high), Number(c.low)])
     .filter(Number.isFinite);
+
   if (!prices.length) return;
 
   let min = Math.min(...prices);
   let max = Math.max(...prices);
-  if (min === max) { min -= 0.0001; max += 0.0001; }
+
+  if (min === max) {
+    min -= 0.0001;
+    max += 0.0001;
+  }
 
   const margin = (max - min) * 0.08;
-  min -= margin; max += margin;
 
-  const y = p => pad.top + ((max - p) / (max - min)) * chartH;
+  min -= margin;
+  max += margin;
 
-  ctx.font = "10px ui-monospace,monospace";
+  const y = price =>
+    pad.top + ((max - price) / (max - min)) * chartH;
+
+  ctx.font = "10px ui-monospace, monospace";
   ctx.fillStyle = "#8190ad";
   ctx.strokeStyle = "#26324a";
   ctx.lineWidth = 1;
 
-  for (let i=0; i<=4; i++) {
+  /* Horizontal price grid */
+
+  for (let i = 0; i <= 4; i++) {
     const py = pad.top + chartH * i / 4;
-    const price = max - (max-min) * i / 4;
+    const price = max - (max - min) * i / 4;
+
     ctx.beginPath();
-    ctx.moveTo(pad.left,py);
-    ctx.lineTo(w-pad.right,py);
+    ctx.moveTo(pad.left, py);
+    ctx.lineTo(w - pad.right, py);
     ctx.stroke();
-    ctx.fillText(price.toFixed(5),w-pad.right+6,py+3);
+
+    ctx.fillText(
+      price.toFixed(5),
+      w - pad.right + 6,
+      py + 3
+    );
   }
 
   const step = chartW / list.length;
-  const bodyW = Math.max(2,Math.min(11,step*.58));
+  const bodyW = Math.max(2, Math.min(11, step * 0.58));
 
-  list.forEach((c,i) => {
-    const o=Number(c.open), hi=Number(c.high);
-    const lo=Number(c.low), cl=Number(c.close);
-    if (![o,hi,lo,cl].every(Number.isFinite)) return;
+  /* Candles */
 
-    const x=pad.left+step*(i+.5);
-    const color=cl>=o?"#37e8a4":"#ff527c";
+  list.forEach((c, i) => {
+    const o = Number(c.open);
+    const hi = Number(c.high);
+    const lo = Number(c.low);
+    const cl = Number(c.close);
 
-    ctx.strokeStyle=color;
-    ctx.fillStyle=color;
-    ctx.lineWidth=1.2;
+    if (![o, hi, lo, cl].every(Number.isFinite)) {
+      return;
+    }
+
+    const x = pad.left + step * (i + 0.5);
+    const color = cl >= o ? "#37e8a4" : "#ff527c";
+
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 1.2;
+
+    /* Wick */
 
     ctx.beginPath();
-    ctx.moveTo(x,y(hi));
-    ctx.lineTo(x,y(lo));
+    ctx.moveTo(x, y(hi));
+    ctx.lineTo(x, y(lo));
     ctx.stroke();
 
-    const top=Math.min(y(o),y(cl));
-    const bodyH=Math.max(1.5,Math.abs(y(o)-y(cl)));
-    ctx.fillRect(x-bodyW/2,top,bodyW,bodyH);
+    /* Body */
+
+    const top = Math.min(y(o), y(cl));
+    const bodyH = Math.max(1.5, Math.abs(y(o) - y(cl)));
+
+    ctx.fillRect(
+      x - bodyW / 2,
+      top,
+      bodyW,
+      bodyH
+    );
   });
 
-  const last=list[list.length-1];
-  const p=Number(last.close);
+  /* Latest price line */
 
-  if (Number.isFinite(p)) {
-    ctx.strokeStyle="#46f3ff";
-    ctx.setLineDash([4,4]);
+  const last = list[list.length - 1];
+  const price = Number(last.close);
+
+  if (Number.isFinite(price)) {
+    ctx.strokeStyle = "#46f3ff";
+    ctx.setLineDash([4, 4]);
+
     ctx.beginPath();
-    ctx.moveTo(pad.left,y(p));
-    ctx.lineTo(w-pad.right,y(p));
+    ctx.moveTo(pad.left, y(price));
+    ctx.lineTo(w - pad.right, y(price));
     ctx.stroke();
+
     ctx.setLineDash([]);
   }
 }
 
+/* =========================
+   LOAD HISTORICAL CANDLES
+========================= */
+
 async function loadCandles() {
   const symbol = selectedSymbol();
-  if (!symbol) throw new Error("Enter a symbol first.");
+
+  if (!symbol) {
+    throw new Error("Enter a symbol first.");
+  }
 
   const url = new URL("/api/otcharts", location.origin);
-  url.searchParams.set("mode","candles");
-  url.searchParams.set("symbol",symbol);
-  url.searchParams.set("tf",String(selectedTF()));
-  url.searchParams.set("limit","55");
+
+  url.searchParams.set("mode", "candles");
+  url.searchParams.set("symbol", symbol);
+  url.searchParams.set("tf", String(selectedTF()));
+  url.searchParams.set("limit", "55");
 
   const response = await fetch(url.toString(), {
-    credentials:"same-origin",
-    cache:"no-store"
+    credentials: "same-origin",
+    cache: "no-store"
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Candle request failed");
-  if (!Array.isArray(data.candles)) throw new Error("Invalid candle response");
 
-  candles = data.candles.map(c => ({...c}));
-  setText("chartInfo", `${candles.length} candles · ${symbol}`);
-  setText("marketMessage", "Historical candles loaded.");
+  if (!response.ok) {
+    throw new Error(data.error || "Candle request failed");
+  }
 
-  const last = candles[candles.length-1];
+  if (!Array.isArray(data.candles)) {
+    throw new Error("Invalid candle response");
+  }
+
+  candles = data.candles.map(c => ({ ...c }));
+
+  setText(
+    "chartInfo",
+    `${candles.length} candles · ${symbol}`
+  );
+
+  setText("statBars", candles.length);
+
+  const last = candles[candles.length - 1];
+
   if (last) {
     updateMarketUI({
       ...last,
       symbol: data.symbol || symbol,
-      price: last.close,
-      type:"HISTORICAL"
+      price: last.close
     });
   } else {
     drawChart();
   }
+
+  return data;
 }
 
+/* =========================
+   LIVE TICK PROCESSING
+========================= */
+
 function updateCandleFromTick(tick) {
-  const price = Number(tick.price);
-  if (!Number.isFinite(price)) return;
+  /*
+   * Accept common price field names.
+   */
 
-  const time = Number(tick.time);
+  const price = Number(
+    tick.price ??
+    tick.close ??
+    tick.value
+  );
+
+  if (!Number.isFinite(price)) {
+    console.warn("Tick has no valid price:", tick);
+    return;
+  }
+
+  /*
+   * Accept seconds or milliseconds.
+   */
+
+  let time = Number(
+    tick.time ??
+    tick.timestamp ??
+    tick.server_time
+  );
+
+  if (!Number.isFinite(time)) {
+    time = Date.now() / 1000;
+  } else if (time > 1e12) {
+    time = time / 1000;
+  }
+
   const tf = selectedTF();
-  const bucket = Number.isFinite(time)
-    ? Math.floor(time/tf)*tf
-    : Math.floor(Date.now()/(tf*1000))*tf;
+  const bucket = Math.floor(time / tf) * tf;
 
-  let current = candles[candles.length-1];
+  let current = candles[candles.length - 1];
+
+  /*
+   * Start a new candle when the timeframe changes.
+   */
 
   if (!current || Number(current.time) !== bucket) {
-    current = {time:bucket,open:price,high:price,low:price,close:price};
+    current = {
+      time: bucket,
+      open: price,
+      high: price,
+      low: price,
+      close: price
+    };
+
     candles.push(current);
+
   } else {
-    current.high = Math.max(Number(current.high),price);
-    current.low = Math.min(Number(current.low),price);
+    current.high = Math.max(Number(current.high), price);
+    current.low = Math.min(Number(current.low), price);
     current.close = price;
   }
 
-  if (candles.length > 150) candles.shift();
+  if (candles.length > 150) {
+    candles.shift();
+  }
 
   updateMarketUI({
     ...current,
-    symbol:tick.symbol || selectedSymbol(),
+    symbol: tick.symbol || tick.asset || selectedSymbol(),
     price,
     time,
-    type:"LIVE TICK"
+    type: "LIVE TICK"
   });
 
   addFeedRow({
-    symbol:tick.symbol || selectedSymbol(),
+    symbol: tick.symbol || selectedSymbol(),
     price,
-    type:"TICK"
+    type: "LIVE TICK"
   });
+
+  setMarketStatus("LIVE", "on");
+
+  setText("marketMessage", "Receiving live market updates.");
+  setText("heroFeedStatus", "Live ticks received");
 }
 
-function disconnectLive(message = "Disconnected.") {
+/* =========================
+   POLLING FALLBACK
+========================= */
+
+/*
+ * If the SSE connection opens but does not deliver tick events,
+ * periodically reload candles from the API.
+ *
+ * This fallback can update the chart only when the API returns
+ * updated candle data. It cannot manufacture real market ticks.
+ */
+
+function startCandlePolling(source) {
+  stopCandlePolling();
+
+  candlePollTimer = setInterval(async () => {
+    if (
+      candlePollBusy ||
+      !stream ||
+      stream !== source
+    ) {
+      return;
+    }
+
+    candlePollBusy = true;
+
+    try {
+      await loadCandles();
+
+      setText(
+        "marketMessage",
+        "Connection open. Candle data refreshed from the API."
+      );
+
+    } catch (error) {
+      console.error("Candle refresh failed:", error);
+
+      setText(
+        "marketMessage",
+        "Candle refresh failed: " + error.message
+      );
+
+    } finally {
+      candlePollBusy = false;
+    }
+  }, 4000);
+}
+
+function stopCandlePolling() {
+  if (candlePollTimer) {
+    clearInterval(candlePollTimer);
+    candlePollTimer = null;
+  }
+
+  candlePollBusy = false;
+}
+
+/* =========================
+   DISCONNECT LIVE
+========================= */
+
+function disconnectLive(
+  message = "Disconnected."
+) {
+  stopCandlePolling();
+
   if (stream) {
     stream.close();
     stream = null;
   }
 
   $("connectBtn").textContent = "CONNECT LIVE";
+
   setMarketStatus("OFFLINE");
-  setText("marketMessage",message);
-  setText("heroFeedStatus","Waiting for connection");
+
+  setText("marketMessage", message);
+  setText("heroFeedStatus", "Waiting for connection");
 }
+
+/* =========================
+   CONNECT LIVE
+========================= */
 
 async function connectLive() {
   if (stream) {
@@ -775,140 +580,273 @@ async function connectLive() {
   }
 
   const symbol = selectedSymbol();
+
   if (!symbol) {
-    setText("marketMessage","Enter a trading symbol.");
+    setText("marketMessage", "Enter a trading symbol.");
     return;
   }
 
   $("connectBtn").disabled = true;
   $("connectBtn").textContent = "CONNECTING…";
-  setMarketStatus("LOADING","warn");
-  setText("marketMessage","Loading historical candles…");
+
+  setMarketStatus("LOADING", "warn");
+
+  setText(
+    "marketMessage",
+    "Loading historical candles…"
+  );
 
   try {
     await loadCandles();
 
-    const url = new URL("/api/otcharts",location.origin);
-    url.searchParams.set("mode","stream");
-    url.searchParams.set("symbol",symbol);
+    const url = new URL("/api/otcharts", location.origin);
+
+    url.searchParams.set("mode", "stream");
+    url.searchParams.set("symbol", symbol);
 
     const source = new EventSource(url.toString());
+
     stream = source;
 
-    source.addEventListener("connected", () => {
+    /*
+     * EventSource connection opened.
+     */
+
+    source.onopen = () => {
       if (stream !== source) return;
-      setMarketStatus("LIVE","on");
+
+      setMarketStatus("CONNECTED", "on");
+
       $("connectBtn").textContent = "DISCONNECT LIVE";
-      setText("marketMessage","Live stream connected; waiting for ticks.");
-      setText("heroFeedStatus","Connected");
+
+      setText("heroFeedStatus", "Stream connected");
+
+      setText(
+        "marketMessage",
+        "Stream is open. Waiting for live tick events."
+      );
+
+      startCandlePolling(source);
+    };
+
+    /*
+     * Optional named connected event.
+     */
+
+    source.addEventListener("connected", event => {
+      if (stream !== source) return;
+
+      setMarketStatus("LIVE", "on");
+
+      $("connectBtn").textContent = "DISCONNECT LIVE";
+
+      setText("heroFeedStatus", "Connected");
+
+      setText(
+        "marketMessage",
+        "Live stream connected. Waiting for ticks."
+      );
+
+      console.log("Stream connected:", event.data);
     });
+
+    /*
+     * Live tick event.
+     */
 
     source.addEventListener("tick", event => {
       if (stream !== source) return;
 
       try {
         const tick = JSON.parse(event.data);
+
         updateCandleFromTick(tick);
-        setMarketStatus("LIVE","on");
-        setText("marketMessage","Receiving live market updates.");
+
       } catch (error) {
-        console.error("Tick parse error",error);
+        console.error("Tick parse error:", error, event.data);
       }
     });
 
+    /*
+     * Default message event.
+     * Some SSE servers send data without `event: tick`.
+     */
+
+    source.onmessage = event => {
+      if (stream !== source) return;
+
+      try {
+        const payload = JSON.parse(event.data);
+
+        if (
+          payload.price !== undefined ||
+          payload.close !== undefined ||
+          payload.value !== undefined
+        ) {
+          updateCandleFromTick(payload);
+        }
+
+      } catch (error) {
+        console.warn(
+          "Ignoring non-JSON stream message:",
+          event.data
+        );
+      }
+    };
+
+    /*
+     * Connection error / automatic reconnection.
+     */
+
     source.onerror = () => {
       if (stream !== source) return;
-      setMarketStatus("RECONNECTING","warn");
-      setText("marketMessage","Stream interrupted. Browser may retry automatically.");
+
+      setMarketStatus("RECONNECTING", "warn");
+
+      setText(
+        "marketMessage",
+        "Stream connection interrupted. Browser may retry automatically."
+      );
+
+      setText("heroFeedStatus", "Reconnecting…");
     };
 
   } catch (error) {
     disconnectLive(error.message || "Unable to connect.");
-    setMarketStatus("ERROR","warn");
+
+    setMarketStatus("ERROR", "warn");
+
+    console.error("Live connection error:", error);
+
   } finally {
     $("connectBtn").disabled = false;
-    if (!stream) $("connectBtn").textContent = "CONNECT LIVE";
+
+    if (!stream) {
+      $("connectBtn").textContent = "CONNECT LIVE";
+    }
   }
 }
 
-$("connectBtn").addEventListener("click",connectLive);
+$("connectBtn").addEventListener("click", connectLive);
 
-$("tf").addEventListener("change", async () => {
-  const reconnect = Boolean(stream);
-  if (stream) disconnectLive("Reloading selected timeframe…");
+/* =========================
+   SYMBOL / TIMEFRAME CHANGE
+========================= */
+
+async function reloadMarketSettings() {
+  const wasConnected = Boolean(stream);
+
+  if (stream) {
+    disconnectLive("Reloading market settings…");
+  }
+
   candles = [];
+
   drawChart();
 
   try {
     await loadCandles();
-    if (reconnect) await connectLive();
+
+    if (wasConnected) {
+      await connectLive();
+    }
+
   } catch (error) {
-    setText("marketMessage",error.message);
+    console.error(error);
+
+    setText(
+      "marketMessage",
+      error.message || "Unable to reload market data."
+    );
   }
-});
+}
 
-$("symbol").addEventListener("change", async () => {
-  const reconnect = Boolean(stream);
-  if (stream) disconnectLive("Changing symbol…");
-  candles = [];
-  setText("heroSymbol",selectedSymbol());
-  setText("statSymbol",selectedSymbol());
+$("tf").addEventListener("change", reloadMarketSettings);
+$("symbol").addEventListener("change", reloadMarketSettings);
 
-  try {
-    await loadCandles();
-    if (reconnect) await connectLive();
-  } catch (error) {
-    setText("marketMessage",error.message);
-  }
-});
+window.addEventListener("resize", drawChart);
 
-window.addEventListener("resize",drawChart);
+/* =========================
+   CLOCK / CANDLE COUNTDOWN
+========================= */
 
 function clockTick() {
   const now = new Date();
-  const time = now.toLocaleTimeString("en-GB",{hour12:false});
-  setText("clock",time);
-  setText("localTime",time);
+
+  const time = now.toLocaleTimeString("en-GB", {
+    hour12: false
+  });
+
+  setText("clock", time);
+  setText("localTime", time);
 
   const tf = selectedTF();
-  const epoch = Math.floor(Date.now()/1000);
+  const epoch = Math.floor(Date.now() / 1000);
   const remain = tf - (epoch % tf);
 
-  const mm = String(Math.floor(remain/60)).padStart(2,"0");
-  const ss = String(remain%60).padStart(2,"0");
-  setText("countdown",`${mm}:${ss}`);
+  const mm = String(Math.floor(remain / 60)).padStart(2, "0");
+  const ss = String(remain % 60).padStart(2, "0");
+
+  setText("countdown", `${mm}:${ss}`);
 }
-setInterval(clockTick,1000);
+
+setInterval(clockTick, 1000);
 clockTick();
+
+/* =========================
+   IMAGE UPLOAD PREVIEW
+========================= */
 
 $("chartFile").addEventListener("change", () => {
   const file = $("chartFile").files[0];
+
   if (!file) return;
 
   if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
-    setText("analysisStatus","Use a PNG, JPEG or WebP image.");
+    setText(
+      "analysisStatus",
+      "Use a PNG, JPEG or WebP image."
+    );
+
     return;
   }
 
   const url = URL.createObjectURL(file);
+
   $("preview").src = url;
   $("preview").style.display = "block";
 });
 
+/* =========================
+   IMAGE RESIZE
+========================= */
+
 function resizeImage(file) {
-  return new Promise((resolve,reject) => {
+  return new Promise((resolve, reject) => {
     const image = new Image();
     const url = URL.createObjectURL(file);
 
     image.onload = () => {
-      const scale = Math.min(1,1200/image.width);
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(image.width*scale);
-      canvas.height = Math.round(image.height*scale);
+      const scale = Math.min(1, 1200 / image.width);
 
-      canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
+      const canvas = document.createElement("canvas");
+
+      canvas.width = Math.round(image.width * scale);
+      canvas.height = Math.round(image.height * scale);
+
+      canvas
+        .getContext("2d")
+        .drawImage(
+          image,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
       URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL("image/jpeg",.76));
+
+      resolve(canvas.toDataURL("image/jpeg", 0.76));
     };
 
     image.onerror = () => {
@@ -920,150 +858,292 @@ function resizeImage(file) {
   });
 }
 
-async function analyzeImage(image,source) {
+/* =========================
+   AI ANALYSIS
+========================= */
+
+async function analyzeImage(image, sourceName) {
   if (analysisBusy) return;
 
   analysisBusy = true;
+
   $("analyzeBtn").disabled = true;
-  setText("analysisStatus",`Analyzing ${source}…`);
+
+  setText(
+    "analysisStatus",
+    `Analyzing ${sourceName}…`
+  );
+
   $("result").classList.remove("hidden");
   $("result").textContent = "AI analysis in progress…";
 
   try {
-    const response = await fetch("/api/analyze",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
         image,
-        settings:setSettings(),
-        live_data:latestMarketData || undefined
+        settings: setSettings(),
+        live_data: latestMarketData || undefined
       })
     });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || `Analysis failed (${response.status})`);
 
-    renderResult(data,source);
-    setText("analysisStatus","Analysis complete.");
+    if (!response.ok) {
+      throw new Error(
+        data.error || `Analysis failed (${response.status})`
+      );
+    }
+
+    renderResult(data, sourceName);
+
+    setText("analysisStatus", "Analysis complete.");
+
     return data;
+
   } catch (error) {
-    $("result").textContent = error.message || "Analysis failed.";
-    setText("analysisStatus","Analysis error.");
+    $("result").textContent =
+      error.message || "Analysis failed.";
+
+    setText("analysisStatus", "Analysis error.");
+
   } finally {
     analysisBusy = false;
     $("analyzeBtn").disabled = false;
   }
 }
 
-$("analyzeBtn").addEventListener("click",async () => {
+$("analyzeBtn").addEventListener("click", async () => {
   const file = $("chartFile").files[0];
+
   if (!file) {
-    setText("analysisStatus","Upload a chart screenshot first.");
+    setText(
+      "analysisStatus",
+      "Upload a chart screenshot first."
+    );
+
     return;
   }
 
   try {
-    await analyzeImage(await resizeImage(file),"Screenshot");
+    const image = await resizeImage(file);
+
+    await analyzeImage(image, "Screenshot");
+
   } catch (error) {
-    setText("analysisStatus",error.message);
+    setText("analysisStatus", error.message);
   }
 });
 
-function renderResult(data,source) {
-  const signal = String(data.signal || "NO TRADE").toUpperCase();
-  const cls = signal === "CALL" ? "call" : signal === "PUT" ? "put" : "no";
+/* =========================
+   ANALYSIS RESULT
+========================= */
+
+function renderResult(data, sourceName) {
+  const signal = String(
+    data.signal || "NO TRADE"
+  ).toUpperCase();
+
+  const cls =
+    signal === "CALL"
+      ? "call"
+      : signal === "PUT"
+        ? "put"
+        : "no";
+
   const reasons = Array.isArray(data.reasons)
-    ? data.reasons.map(reason => `<li>${escapeHTML(reason)}</li>`).join("")
+    ? data.reasons
+        .map(reason => `<li>${escapeHTML(reason)}</li>`)
+        .join("")
     : "<li>No detailed reasons returned.</li>";
 
   $("result").innerHTML = `
-    <div class="eyebrow">${escapeHTML(source)} ANALYSIS</div>
-    <div class="signal ${cls}">${escapeHTML(signal)}</div>
-    <div class="result-grid">
-      <div class="result-mini"><span>CONFIDENCE</span><b>${escapeHTML(data.confidence ?? "—")}%</b></div>
-      <div class="result-mini"><span>TREND</span><b>${escapeHTML(data.trend || "—")}</b></div>
-      <div class="result-mini"><span>EXPIRY</span><b>${escapeHTML(data.expiry || "—")}</b></div>
-      <div class="result-mini"><span>ENTRY</span><b>${escapeHTML(data.entry_candle || "WAIT")}</b></div>
+    <div class="eyebrow">
+      ${escapeHTML(sourceName)} ANALYSIS
     </div>
-    <p><b>Setup</b><br>${escapeHTML(data.setup || "—")}</p>
-    <b>Reasons</b><ul class="reason-list">${reasons}</ul>
-    <p class="small">${escapeHTML(data.disclaimer || "Technical analysis is probabilistic. No signal is guaranteed.")}</p>
+
+    <div class="signal ${cls}">
+      ${escapeHTML(signal)}
+    </div>
+
+    <div class="result-grid">
+      <div class="result-mini">
+        <span>CONFIDENCE</span>
+        <b>${escapeHTML(data.confidence ?? "—")}%</b>
+      </div>
+
+      <div class="result-mini">
+        <span>TREND</span>
+        <b>${escapeHTML(data.trend || "—")}</b>
+      </div>
+
+      <div class="result-mini">
+        <span>EXPIRY</span>
+        <b>${escapeHTML(data.expiry || "—")}</b>
+      </div>
+
+      <div class="result-mini">
+        <span>ENTRY</span>
+        <b>${escapeHTML(data.entry_candle || "WAIT")}</b>
+      </div>
+    </div>
+
+    <p>
+      <b>Setup</b><br>
+      ${escapeHTML(data.setup || "—")}
+    </p>
+
+    <b>Reasons</b>
+
+    <ul class="reason-list">
+      ${reasons}
+    </ul>
+
+    <p class="small">
+      ${escapeHTML(
+        data.disclaimer ||
+        "Technical analysis is probabilistic. No signal is guaranteed."
+      )}
+    </p>
   `;
 
-  speakSignal(signal,source);
+  speakSignal(signal, sourceName);
 }
 
-function speakSignal(signal,context) {
-  if (!voiceEnabled || !("speechSynthesis" in window)) return;
+/* =========================
+   VOICE
+========================= */
+
+function speakSignal(signal, context) {
+  if (!voiceEnabled || !("speechSynthesis" in window)) {
+    return;
+  }
 
   const key = `${context}|${signal}`;
+
   if (key === lastVoiceKey) return;
+
   lastVoiceKey = key;
 
-  const text = signal === "CALL" ? "Call"
-    : signal === "PUT" ? "Put" : "No trade";
+  const text =
+    signal === "CALL"
+      ? "Call"
+      : signal === "PUT"
+        ? "Put"
+        : "No trade";
 
   speechSynthesis.cancel();
+
   const utterance = new SpeechSynthesisUtterance(text);
+
   utterance.rate = 1;
   utterance.pitch = 1;
+
   speechSynthesis.speak(utterance);
 }
 
-$("voiceBtn").addEventListener("click",() => {
+$("voiceBtn").addEventListener("click", () => {
   voiceEnabled = !voiceEnabled;
-  $("voiceBtn").textContent = voiceEnabled ? "VOICE: ON" : "VOICE: OFF";
-  if (!voiceEnabled && "speechSynthesis" in window) speechSynthesis.cancel();
+
+  $("voiceBtn").textContent =
+    voiceEnabled ? "VOICE: ON" : "VOICE: OFF";
+
+  if (!voiceEnabled && "speechSynthesis" in window) {
+    speechSynthesis.cancel();
+  }
 });
+
+/* =========================
+   SCREEN SHARE
+========================= */
 
 async function startScreenShare() {
   if (!navigator.mediaDevices?.getDisplayMedia) {
-    setText("shareStatus","Screen sharing is not supported in this browser.");
+    setText(
+      "shareStatus",
+      "Screen sharing is not supported in this browser."
+    );
+
     return;
   }
 
   try {
     shareStream = await navigator.mediaDevices.getDisplayMedia({
-      video:{frameRate:{ideal:5,max:10}},
-      audio:false
+      video: {
+        frameRate: {
+          ideal: 5,
+          max: 10
+        }
+      },
+      audio: false
     });
 
     $("shareVideo").srcObject = shareStream;
     $("shareVideo").style.display = "block";
+
     $("captureShare").disabled = false;
     $("stopShare").disabled = false;
     $("startShare").disabled = true;
-    setText("shareStatus","Screen share active. Capture when your chart is clear.");
+
+    setText(
+      "shareStatus",
+      "Screen share active. Capture when your chart is clear."
+    );
 
     const track = shareStream.getVideoTracks()[0];
-    if (track) track.addEventListener("ended",stopScreenShare);
+
+    if (track) {
+      track.addEventListener("ended", stopScreenShare);
+    }
+
   } catch (error) {
-    setText("shareStatus","Screen share cancelled or unavailable.");
+    setText(
+      "shareStatus",
+      "Screen share cancelled or unavailable."
+    );
   }
 }
 
 function captureScreenFrame() {
   const video = $("shareVideo");
+
   if (!video.videoWidth || !video.videoHeight) {
     throw new Error("Screen frame is not ready yet.");
   }
 
-  const scale = Math.min(1,1200/video.videoWidth);
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(video.videoWidth*scale);
-  canvas.height = Math.round(video.videoHeight*scale);
-  canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);
+  const scale = Math.min(1, 1200 / video.videoWidth);
 
-  return canvas.toDataURL("image/jpeg",.76);
+  const canvas = document.createElement("canvas");
+
+  canvas.width = Math.round(video.videoWidth * scale);
+  canvas.height = Math.round(video.videoHeight * scale);
+
+  canvas
+    .getContext("2d")
+    .drawImage(
+      video,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+  return canvas.toDataURL("image/jpeg", 0.76);
 }
 
 async function analyzeSharedScreen() {
   try {
-    setText("shareStatus","Capturing screen…");
+    setText("shareStatus", "Capturing screen…");
+
     const image = captureScreenFrame();
-    await analyzeImage(image,"Shared screen");
+
+    await analyzeImage(image, "Shared screen");
+
   } catch (error) {
-    setText("shareStatus",error.message);
+    setText("shareStatus", error.message);
   }
 }
 
@@ -1075,22 +1155,33 @@ function stopScreenShare() {
 
   $("shareVideo").srcObject = null;
   $("shareVideo").style.display = "none";
+
   $("captureShare").disabled = true;
   $("stopShare").disabled = true;
   $("startShare").disabled = false;
-  setText("shareStatus","Screen share stopped.");
+
+  setText("shareStatus", "Screen share stopped.");
 }
 
-$("startShare").addEventListener("click",startScreenShare);
-$("captureShare").addEventListener("click",analyzeSharedScreen);
-$("stopShare").addEventListener("click",stopScreenShare);
+$("startShare").addEventListener("click", startScreenShare);
+$("captureShare").addEventListener("click", analyzeSharedScreen);
+$("stopShare").addEventListener("click", stopScreenShare);
 
-window.addEventListener("beforeunload",() => {
-  if (stream) stream.close();
-  if (shareStream) shareStream.getTracks().forEach(track => track.stop());
+/* =========================
+   CLEANUP
+========================= */
+
+window.addEventListener("beforeunload", () => {
+  stopCandlePolling();
+
+  if (stream) {
+    stream.close();
+  }
+
+  if (shareStream) {
+    shareStream.getTracks().forEach(track => track.stop());
+  }
 });
 
 drawChart();
 </script>
-</body>
-</html>
