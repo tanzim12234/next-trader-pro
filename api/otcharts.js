@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     req.query?.symbol || "EURUSD_otc"
   ).trim();
 
-  if (!/^[A-Z0-9#._-]{1,40}$/.test(symbol)) {
+ if (!/^[A-Za-z0-9#._-]{1,40}$/.test(symbol)) {
     return errorResponse(res, 400, "Invalid symbol");
   }
 
