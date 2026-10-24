@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 const COOKIE = "nt_session";
-const PASSWORD = process.env.NEXT_TRADER_PASSWORD || "NEXT2026";
+const PASSWORD = process.env.NEXT_TRADER_PASSWORD || "NEXTADVANCE";
 
 function makeToken() {
   const value = "NEXT-TRADER-AI";
