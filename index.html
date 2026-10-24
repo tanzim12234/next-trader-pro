@@ -1,3 +1,183 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070b14">
+<title>NEXT TRADER PRO</title>
+<style>
+:root {
+  --bg:#070b14; --panel:#101a2b; --line:#22314a;
+  --text:#edf4ff; --muted:#91a4c3; --cyan:#4cecff;
+  --green:#32e6a1; --red:#ff5a7d; --amber:#ffcf70;
+}
+* { box-sizing:border-box }
+body {
+  margin:0; background:radial-gradient(circle at top,#142544,transparent 38%),var(--bg);
+  color:var(--text);font:14px/1.5 system-ui,Arial,sans-serif;
+}
+button,input,select { font:inherit }
+button {
+  cursor:pointer;background:#17243a;color:var(--text);
+  border:1px solid var(--line);border-radius:9px;padding:10px 13px;
+  font-weight:750;
+}
+button:hover { border-color:var(--cyan) }
+button:disabled { opacity:.45;cursor:not-allowed }
+.primary { background:linear-gradient(110deg,#00b8c9,#3767ff);border:0 }
+.danger { background:#401b2a }
+.wrap { max-width:1400px;margin:auto;padding:20px }
+.top { display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:18px }
+.brand { display:flex;align-items:center;gap:12px }
+.logo {
+  width:45px;height:45px;border-radius:13px;display:grid;place-items:center;
+  background:linear-gradient(140deg,#04cbd5,#3d64ff);font-size:20px;font-weight:1000
+}
+h1 { margin:0;font-size:21px;letter-spacing:.07em }
+h2 { margin:0;font-size:14px;letter-spacing:.07em }
+.muted,.small { color:var(--muted) }
+.small { font-size:12px }
+.topright,.actions { display:flex;align-items:center;gap:8px;flex-wrap:wrap }
+.pill { display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:7px 10px }
+.dot { width:8px;height:8px;border-radius:50%;background:#718096 }
+.dot.on { background:var(--green);box-shadow:0 0 10px var(--green) }
+.dot.warn { background:var(--amber) }
+.grid { display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);gap:15px }
+.panel { min-width:0;background:linear-gradient(150deg,#101a2b,#0b1220);border:1px solid var(--line);border-radius:16px;padding:16px }
+.panelhead { display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px }
+.controls { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px }
+.field label { display:block;color:var(--muted);font-size:11px;font-weight:800;margin-bottom:5px }
+.field input,.field select {
+  width:100%;min-width:0;background:#080f1d;color:var(--text);
+  border:1px solid var(--line);border-radius:8px;padding:10px
+}
+.actions { margin:12px 0 }
+.chartwrap { height:340px;background:#050a14;border:1px solid var(--line);border-radius:11px;overflow:hidden }
+canvas { width:100%;height:100%;display:block }
+.chartnote { display:flex;justify-content:space-between;gap:10px;margin-top:8px;color:var(--muted);font-size:12px }
+.stats { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px }
+.stat,.mini { background:#0a1220;border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0 }
+.stat span,.mini span { display:block;color:var(--muted);font-size:10px }
+.stat b,.mini b { display:block;overflow-wrap:anywhere;margin-top:3px }
+.resultbox { min-height:220px;background:#080f1c;border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px }
+.signal { font-size:36px;font-weight:1000;margin:8px 0 }
+.call { color:var(--green) }.put { color:var(--red) }.no { color:var(--amber) }
+.resultgrid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0 }
+.reasons { padding-left:20px }
+.video { width:100%;max-height:280px;object-fit:contain;background:#050a14;border-radius:10px;display:none;margin-top:10px }
+.status { color:var(--muted);font-size:12px;min-height:18px;margin-top:7px;overflow-wrap:anywhere }
+.feed { max-height:220px;overflow:auto }
+.feedrow { display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 3px;border-bottom:1px solid #1b2940;font-size:12px }
+.feedrow span:last-child { text-align:right }
+.footer { margin:18px 0;color:#7285a5;font-size:11px;text-align:center }
+.hidden { display:none!important }
+.login { position:fixed;inset:0;background:#03060bee;z-index:10;display:grid;place-items:center;padding:20px }
+.loginbox { width:min(400px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px }
+@media(max-width:900px) {
+ .grid { grid-template-columns:1fr }
+ .top { align-items:flex-start;flex-direction:column }
+ .chartwrap { height:300px }
+}
+@media(max-width:480px) {
+ .wrap { padding:10px }
+ .controls { grid-template-columns:repeat(2,minmax(0,1fr)) }
+ .stats { grid-template-columns:repeat(2,minmax(0,1fr)) }
+}
+</style>
+</head>
+<body>
+
+<div id="login" class="login hidden">
+  <div class="loginbox">
+    <h1>NEXT TRADER PRO</h1>
+    <p class="muted">Enter dashboard password.</p>
+    <div class="field">
+      <label for="password">PASSWORD</label>
+      <input id="password" type="password" autocomplete="current-password">
+    </div>
+    <div class="actions"><button id="loginBtn" class="primary">UNLOCK</button></div>
+    <div id="loginStatus" class="status"></div>
+  </div>
+</div>
+
+<div class="wrap">
+<header class="top">
+  <div class="brand">
+    <div class="logo">NT</div>
+    <div><h1>NEXT TRADER <span style="color:var(--cyan)">PRO</span></h1>
+    <div class="small">Market monitor · AI analysis · Voice alerts</div></div>
+  </div>
+  <div class="topright">
+    <div class="pill"><i id="topDot" class="dot"></i><span id="topStatus">OFFLINE</span></div>
+    <div class="pill">BD TIME <b id="clock">--:--:--</b></div>
+    <button id="voiceBtn">VOICE: ON</button>
+  </div>
+</header>
+
+<div class="grid">
+<section class="panel">
+  <div class="panelhead"><h2>MARKET MONITOR</h2><span id="heroFeedStatus" class="small">Waiting</span></div>
+  <div class="controls">
+    <div class="field"><label for="symbol">SYMBOL</label><input id="symbol" value="EURUSD"></div>
+    <div class="field"><label for="tf">TIMEFRAME</label>
+      <select id="tf">
+        <option value="60">1 minute</option><option value="120">2 minutes</option>
+        <option value="180">3 minutes</option><option value="300">5 minutes</option>
+      </select>
+    </div>
+    <div class="field"><label for="marketType">MARKET</label>
+      <select id="marketType"><option value="REAL">Real market</option><option value="OTC">OTC</option></select>
+    </div>
+    <div class="field"><label for="analysisMode">ANALYSIS MODE</label>
+      <select id="analysisMode"><option value="balanced">Balanced</option><option value="conservative">Conservative</option><option value="aggressive">Aggressive</option></select>
+    </div>
+    <div class="field"><label for="minConfidence">MIN CONFIDENCE (%)</label><input id="minConfidence" type="number" min="0" max="100" value="55"></div>
+    <div class="field"><label for="signalFilter">SIGNAL FILTER</label>
+      <select id="signalFilter"><option value="all">CALL + PUT</option><option value="call">CALL only</option><option value="put">PUT only</option></select>
+    </div>
+  </div>
+  <div class="actions">
+    <button id="connectBtn" class="primary">CONNECT LIVE</button>
+    <button id="reloadBtn">REFRESH CANDLES</button>
+    <span class="pill">CLOSE IN <b id="countdown">01:00</b></span>
+  </div>
+  <div id="marketMessage" class="status">Connect to load candle data.</div>
+  <div class="chartwrap"><canvas id="marketChart"></canvas></div>
+  <div class="chartnote"><span id="chartInfo">No candle data</span><span id="statUpdated">—</span></div>
+  <div class="stats">
+    <div class="stat"><span>SYMBOL</span><b id="statSymbol">EURUSD</b></div>
+    <div class="stat"><span>LAST PRICE</span><b id="heroPrice">—</b></div>
+    <div class="stat"><span>OPEN</span><b id="open">—</b></div>
+    <div class="stat"><span>HIGH / LOW</span><b id="high">—</b><span id="low"></span></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panelhead"><h2>AI SCREEN ANALYSIS</h2><span id="confidenceLabel" class="small">55%</span></div>
+  <p class="small">Share your trading chart to enable automatic analysis near candle close. Browser permission is required.</p>
+  <div class="actions">
+    <button id="startShare" class="primary">SHARE SCREEN</button>
+    <button id="captureShare" disabled>ANALYZE NOW</button>
+    <button id="stopShare" class="danger" disabled>STOP SHARE</button>
+  </div>
+  <div class="field">
+    <label for="chartFile">OR UPLOAD A CHART SCREENSHOT</label>
+    <input id="chartFile" type="file" accept="image/png,image/jpeg,image/webp">
+  </div>
+  <div class="actions"><button id="analyzeBtn">ANALYZE IMAGE</button></div>
+  <img id="preview" alt="Chart preview" style="display:none;max-width:100%;max-height:180px;border-radius:10px">
+  <video id="shareVideo" class="video" autoplay muted playsinline></video>
+  <div id="shareStatus" class="status">Screen share is off.</div>
+  <div id="analysisStatus" class="status">Ready for analysis.</div>
+  <div id="result" class="resultbox"><span class="muted">Latest AI analysis appears here.</span></div>
+  <div class="panelhead" style="margin-top:17px"><h2>RECENT FEED</h2></div>
+  <div id="feed" class="feed"></div>
+</section>
+</div>
+<div class="footer">Signals are probabilistic, not guaranteed. Never risk money you cannot afford to lose.</div>
+</div>
+
 <script>
 "use strict";
 
@@ -8,1180 +188,564 @@ let candlePollTimer = null;
 let candlePollBusy = false;
 let candles = [];
 let latestMarketData = null;
-
 let shareStream = null;
 let analysisBusy = false;
 let voiceEnabled = true;
 let lastVoiceKey = "";
+let lastAutoSignalCandle = "";
 
 function setText(id, value) {
   const el = $(id);
-  if (el) {
-    el.textContent =
-      value === null || value === undefined || value === ""
-        ? "—"
-        : String(value);
-  }
+  if (el) el.textContent = value === null || value === undefined || value === "" ? "—" : String(value);
 }
 
-function escapeHTML(value) {
+function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
   })[c]);
 }
 
 function fmt(value) {
-  if (value === null || value === undefined || value === "") {
-    return "—";
-  }
-
+  if (value === null || value === undefined || value === "") return "—";
   const n = Number(value);
-
-  return Number.isFinite(n)
-    ? n.toFixed(5).replace(/0+$/, "").replace(/\.$/, "")
-    : String(value);
+  return Number.isFinite(n) ? n.toFixed(5).replace(/0+$/,"").replace(/\.$/,"") : String(value);
 }
 
-function setMarketStatus(text, mode = "") {
-  setText("marketStatus", text);
-  setText("topStatus", text);
-
-  if ($("marketDot")) {
-    $("marketDot").className = "dot" + (mode ? " " + mode : "");
-  }
-
-  if ($("topDot")) {
-    $("topDot").className = "dot" + (mode ? " " + mode : "");
-  }
-}
-
-function selectedSymbol() {
-  return $("symbol").value.trim();
-}
-
-function selectedTF() {
-  return Number($("tf").value || 60);
-}
+function selectedSymbol() { return $("symbol").value.trim(); }
+function selectedTF() { return Number($("tf").value || 60); }
 
 function setSettings() {
   return {
     market: $("marketType").value,
-    timeframe:
-      $("tf").selectedOptions[0]?.textContent || "1 minute",
+    timeframe: $("tf").selectedOptions[0]?.textContent || "1 minute",
     mode: $("analysisMode").value,
-    min_confidence: Number($("minConfidence").value),
+    min_confidence: Number($("minConfidence").value || 55),
     signal_filter: $("signalFilter").value
   };
 }
 
-/* =========================
-   LOGIN
-========================= */
+$("minConfidence").addEventListener("input", () => setText("confidenceLabel", `${$("minConfidence").value || 55}%`));
+
+function setMarketStatus(text, mode = "") {
+  setText("topStatus", text);
+  $("topDot").className = "dot" + (mode ? " " + mode : "");
+}
 
 async function login() {
   setText("loginStatus", "Authenticating…");
-
   try {
     const response = await fetch("/api/auth", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        password: $("password").value
-      })
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({password:$("password").value})
     });
-
     const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Authentication failed");
-    }
-
+    if (!response.ok) throw Error(data.error || "Authentication failed");
     sessionStorage.setItem("nt_unlocked", "1");
     $("login").classList.add("hidden");
-
   } catch (error) {
-    setText(
-      "loginStatus",
-      error.message || "Unable to log in"
-    );
+    setText("loginStatus", error.message || "Login failed");
   }
 }
 
 $("loginBtn").addEventListener("click", login);
+$("password").addEventListener("keydown", e => { if (e.key === "Enter") login(); });
 
-$("password").addEventListener("keydown", event => {
-  if (event.key === "Enter") {
-    login();
-  }
-});
-
-if (sessionStorage.getItem("nt_unlocked") === "1") {
-  $("login").classList.add("hidden");
-}
-
-/* =========================
-   MARKET UI
-========================= */
+/* Market data and chart */
 
 function updateMarketUI(data) {
   const price = data.price ?? data.close;
   const symbol = data.symbol || data.asset || selectedSymbol();
-
-  setText("heroSymbol", symbol);
   setText("statSymbol", symbol);
   setText("heroPrice", fmt(price));
-
   setText("open", fmt(data.open));
   setText("high", fmt(data.high));
   setText("low", fmt(data.low));
-  setText("close", fmt(data.close ?? price));
-
-  setText(
-    "statTf",
-    $("tf").selectedOptions[0]?.textContent.toUpperCase()
-  );
-
-  setText("statBars", candles.length);
-  setText(
-    "statUpdated",
-    new Date().toLocaleTimeString("en-GB")
-  );
+  setText("statUpdated", new Date().toLocaleTimeString("en-GB", {timeZone:"Asia/Dhaka"}));
 
   latestMarketData = {
-    asset: symbol,
-    symbol,
-    price: price ?? null,
-    open: data.open ?? null,
-    high: data.high ?? null,
-    low: data.low ?? null,
-    close: data.close ?? price ?? null,
-    time: data.time ?? data.server_time ?? null,
-    source: "OTCHARTS"
+    symbol, asset:symbol, price:price ?? null,
+    open:data.open ?? null, high:data.high ?? null,
+    low:data.low ?? null, close:data.close ?? price ?? null,
+    time:data.time ?? null, source:"OTCHARTS"
   };
-
   drawChart();
 }
 
 function addFeedRow(data) {
   const row = document.createElement("div");
-  row.className = "feed-row";
-
-  [
-    data.symbol || selectedSymbol(),
-    data.type || "MARKET DATA",
-    fmt(data.price ?? data.close)
-  ].forEach(value => {
+  row.className = "feedrow";
+  [data.symbol || selectedSymbol(), data.type || "MARKET DATA", fmt(data.price ?? data.close)].forEach(value => {
     const span = document.createElement("span");
     span.textContent = String(value);
     row.appendChild(span);
   });
-
   $("feed").prepend(row);
-
-  while ($("feed").children.length > 20) {
-    $("feed").lastElementChild.remove();
-  }
+  while ($("feed").children.length > 20) $("feed").lastElementChild.remove();
 }
-
-/* =========================
-   CANDLE CHART
-========================= */
 
 function drawChart() {
   const canvas = $("marketChart");
   if (!canvas) return;
-
   const rect = canvas.getBoundingClientRect();
-
   if (!rect.width || !rect.height) return;
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-
   const width = Math.floor(rect.width * dpr);
   const height = Math.floor(rect.height * dpr);
-
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;
     canvas.height = height;
   }
 
   const ctx = canvas.getContext("2d");
-
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  const w = rect.width;
-  const h = rect.height;
-
+  const w = rect.width, h = rect.height;
   ctx.clearRect(0, 0, w, h);
-
   ctx.fillStyle = "#050a14";
   ctx.fillRect(0, 0, w, h);
 
   const list = candles.slice(-55);
-
   if (!list.length) {
     ctx.fillStyle = "#8292b1";
-    ctx.font = "12px sans-serif";
+    ctx.font = "13px sans-serif";
     ctx.fillText("Connect to load candle data", 18, 28);
     return;
   }
 
-  const pad = {
-    top: 16,
-    right: 62,
-    bottom: 18,
-    left: 8
-  };
-
+  const pad = {top:16,right:68,bottom:18,left:8};
   const chartW = w - pad.left - pad.right;
   const chartH = h - pad.top - pad.bottom;
-
-  const prices = list
-    .flatMap(c => [Number(c.high), Number(c.low)])
-    .filter(Number.isFinite);
-
+  const prices = list.flatMap(c => [Number(c.high),Number(c.low)]).filter(Number.isFinite);
   if (!prices.length) return;
 
-  let min = Math.min(...prices);
-  let max = Math.max(...prices);
+  let min = Math.min(...prices), max = Math.max(...prices);
+  if (min === max) { min -= 0.0001; max += 0.0001; }
+  const margin = (max-min)*0.08;
+  min -= margin; max += margin;
 
-  if (min === max) {
-    min -= 0.0001;
-    max += 0.0001;
-  }
-
-  const margin = (max - min) * 0.08;
-
-  min -= margin;
-  max += margin;
-
-  const y = price =>
-    pad.top + ((max - price) / (max - min)) * chartH;
-
-  ctx.font = "10px ui-monospace, monospace";
+  const y = price => pad.top + ((max-price)/(max-min))*chartH;
+  ctx.font = "10px monospace";
   ctx.fillStyle = "#8190ad";
   ctx.strokeStyle = "#26324a";
-  ctx.lineWidth = 1;
 
-  /* Horizontal price grid */
-
-  for (let i = 0; i <= 4; i++) {
-    const py = pad.top + chartH * i / 4;
-    const price = max - (max - min) * i / 4;
-
-    ctx.beginPath();
-    ctx.moveTo(pad.left, py);
-    ctx.lineTo(w - pad.right, py);
-    ctx.stroke();
-
-    ctx.fillText(
-      price.toFixed(5),
-      w - pad.right + 6,
-      py + 3
-    );
+  for (let i=0;i<=4;i++) {
+    const py = pad.top + chartH*i/4;
+    const price = max - (max-min)*i/4;
+    ctx.beginPath(); ctx.moveTo(pad.left,py); ctx.lineTo(w-pad.right,py); ctx.stroke();
+    ctx.fillText(price.toFixed(5),w-pad.right+5,py+3);
   }
 
-  const step = chartW / list.length;
-  const bodyW = Math.max(2, Math.min(11, step * 0.58));
+  const step = chartW/list.length;
+  const bodyW = Math.max(2,Math.min(11,step*0.58));
 
-  /* Candles */
-
-  list.forEach((c, i) => {
-    const o = Number(c.open);
-    const hi = Number(c.high);
-    const lo = Number(c.low);
-    const cl = Number(c.close);
-
-    if (![o, hi, lo, cl].every(Number.isFinite)) {
-      return;
-    }
-
-    const x = pad.left + step * (i + 0.5);
-    const color = cl >= o ? "#37e8a4" : "#ff527c";
-
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = 1.2;
-
-    /* Wick */
-
-    ctx.beginPath();
-    ctx.moveTo(x, y(hi));
-    ctx.lineTo(x, y(lo));
-    ctx.stroke();
-
-    /* Body */
-
-    const top = Math.min(y(o), y(cl));
-    const bodyH = Math.max(1.5, Math.abs(y(o) - y(cl)));
-
-    ctx.fillRect(
-      x - bodyW / 2,
-      top,
-      bodyW,
-      bodyH
-    );
+  list.forEach((c,i) => {
+    const o=Number(c.open), hi=Number(c.high), lo=Number(c.low), cl=Number(c.close);
+    if (![o,hi,lo,cl].every(Number.isFinite)) return;
+    const x=pad.left+step*(i+0.5);
+    const color=cl>=o?"#37e8a4":"#ff527c";
+    ctx.strokeStyle=color; ctx.fillStyle=color;
+    ctx.beginPath(); ctx.moveTo(x,y(hi)); ctx.lineTo(x,y(lo)); ctx.stroke();
+    ctx.fillRect(x-bodyW/2,Math.min(y(o),y(cl)),bodyW,Math.max(1.5,Math.abs(y(o)-y(cl))));
   });
 
-  /* Latest price line */
-
-  const last = list[list.length - 1];
-  const price = Number(last.close);
-
-  if (Number.isFinite(price)) {
-    ctx.strokeStyle = "#46f3ff";
-    ctx.setLineDash([4, 4]);
-
-    ctx.beginPath();
-    ctx.moveTo(pad.left, y(price));
-    ctx.lineTo(w - pad.right, y(price));
-    ctx.stroke();
-
+  const last = Number(list[list.length-1].close);
+  if (Number.isFinite(last)) {
+    ctx.strokeStyle="#46f3ff"; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(pad.left,y(last)); ctx.lineTo(w-pad.right,y(last)); ctx.stroke();
     ctx.setLineDash([]);
   }
 }
 
-/* =========================
-   LOAD HISTORICAL CANDLES
-========================= */
-
 async function loadCandles() {
   const symbol = selectedSymbol();
-
-  if (!symbol) {
-    throw new Error("Enter a symbol first.");
-  }
+  if (!symbol) throw Error("Enter a symbol first.");
 
   const url = new URL("/api/otcharts", location.origin);
+  url.searchParams.set("mode","candles");
+  url.searchParams.set("symbol",symbol);
+  url.searchParams.set("tf",String(selectedTF()));
+  url.searchParams.set("limit","55");
 
-  url.searchParams.set("mode", "candles");
-  url.searchParams.set("symbol", symbol);
-  url.searchParams.set("tf", String(selectedTF()));
-  url.searchParams.set("limit", "55");
-
-  const response = await fetch(url.toString(), {
-    credentials: "same-origin",
-    cache: "no-store"
-  });
-
+  const response = await fetch(url.toString(), {cache:"no-store"});
   const data = await response.json();
+  if (!response.ok) throw Error(data.error || "Candle request failed");
+  if (!Array.isArray(data.candles)) throw Error("Invalid candle response");
 
-  if (!response.ok) {
-    throw new Error(data.error || "Candle request failed");
-  }
+  candles = data.candles.map(c => ({...c}));
+  setText("chartInfo",`${candles.length} candles · ${symbol}`);
 
-  if (!Array.isArray(data.candles)) {
-    throw new Error("Invalid candle response");
-  }
-
-  candles = data.candles.map(c => ({ ...c }));
-
-  setText(
-    "chartInfo",
-    `${candles.length} candles · ${symbol}`
-  );
-
-  setText("statBars", candles.length);
-
-  const last = candles[candles.length - 1];
-
-  if (last) {
-    updateMarketUI({
-      ...last,
-      symbol: data.symbol || symbol,
-      price: last.close
-    });
-  } else {
-    drawChart();
-  }
-
+  const last = candles[candles.length-1];
+  if (last) updateMarketUI({...last,symbol:data.symbol || symbol,price:last.close});
+  else drawChart();
   return data;
 }
 
-/* =========================
-   LIVE TICK PROCESSING
-========================= */
-
 function updateCandleFromTick(tick) {
-  /*
-   * Accept common price field names.
-   */
+  const price = Number(tick.price ?? tick.close ?? tick.value);
+  if (!Number.isFinite(price)) return;
 
-  const price = Number(
-    tick.price ??
-    tick.close ??
-    tick.value
-  );
-
-  if (!Number.isFinite(price)) {
-    console.warn("Tick has no valid price:", tick);
-    return;
-  }
-
-  /*
-   * Accept seconds or milliseconds.
-   */
-
-  let time = Number(
-    tick.time ??
-    tick.timestamp ??
-    tick.server_time
-  );
-
-  if (!Number.isFinite(time)) {
-    time = Date.now() / 1000;
-  } else if (time > 1e12) {
-    time = time / 1000;
-  }
+  let time = Number(tick.time ?? tick.timestamp ?? tick.server_time);
+  if (!Number.isFinite(time)) time = Date.now()/1000;
+  else if (time > 1e12) time /= 1000;
 
   const tf = selectedTF();
-  const bucket = Math.floor(time / tf) * tf;
+  const bucket = Math.floor(time/tf)*tf;
+  let current = candles[candles.length-1];
 
-  let current = candles[candles.length - 1];
-
-  /*
-   * Start a new candle when the timeframe changes.
-   */
-
-  if (!current || Number(current.time) !== bucket) {
-    current = {
-      time: bucket,
-      open: price,
-      high: price,
-      low: price,
-      close: price
-    };
-
+  if (!current || Number(current.time)!==bucket) {
+    current = {time:bucket,open:price,high:price,low:price,close:price};
     candles.push(current);
-
   } else {
-    current.high = Math.max(Number(current.high), price);
-    current.low = Math.min(Number(current.low), price);
-    current.close = price;
+    current.high=Math.max(Number(current.high),price);
+    current.low=Math.min(Number(current.low),price);
+    current.close=price;
   }
 
-  if (candles.length > 150) {
-    candles.shift();
-  }
+  if (candles.length>150) candles.shift();
 
-  updateMarketUI({
-    ...current,
-    symbol: tick.symbol || tick.asset || selectedSymbol(),
-    price,
-    time,
-    type: "LIVE TICK"
-  });
-
-  addFeedRow({
-    symbol: tick.symbol || selectedSymbol(),
-    price,
-    type: "LIVE TICK"
-  });
-
-  setMarketStatus("LIVE", "on");
-
-  setText("marketMessage", "Receiving live market updates.");
-  setText("heroFeedStatus", "Live ticks received");
-}
-
-/* =========================
-   POLLING FALLBACK
-========================= */
-
-/*
- * If the SSE connection opens but does not deliver tick events,
- * periodically reload candles from the API.
- *
- * This fallback can update the chart only when the API returns
- * updated candle data. It cannot manufacture real market ticks.
- */
-
-function startCandlePolling(source) {
-  stopCandlePolling();
-
-  candlePollTimer = setInterval(async () => {
-    if (
-      candlePollBusy ||
-      !stream ||
-      stream !== source
-    ) {
-      return;
-    }
-
-    candlePollBusy = true;
-
-    try {
-      await loadCandles();
-
-      setText(
-        "marketMessage",
-        "Connection open. Candle data refreshed from the API."
-      );
-
-    } catch (error) {
-      console.error("Candle refresh failed:", error);
-
-      setText(
-        "marketMessage",
-        "Candle refresh failed: " + error.message
-      );
-
-    } finally {
-      candlePollBusy = false;
-    }
-  }, 4000);
+  updateMarketUI({...current,symbol:tick.symbol || tick.asset || selectedSymbol(),price,time});
+  addFeedRow({symbol:tick.symbol || selectedSymbol(),price,type:"LIVE TICK"});
+  setMarketStatus("LIVE","on");
+  setText("marketMessage","Receiving live market updates.");
+  setText("heroFeedStatus","Live ticks received");
 }
 
 function stopCandlePolling() {
-  if (candlePollTimer) {
-    clearInterval(candlePollTimer);
-    candlePollTimer = null;
-  }
-
-  candlePollBusy = false;
+  if (candlePollTimer) clearInterval(candlePollTimer);
+  candlePollTimer=null;
+  candlePollBusy=false;
 }
 
-/* =========================
-   DISCONNECT LIVE
-========================= */
-
-function disconnectLive(
-  message = "Disconnected."
-) {
+function startCandlePolling(source) {
   stopCandlePolling();
-
-  if (stream) {
-    stream.close();
-    stream = null;
-  }
-
-  $("connectBtn").textContent = "CONNECT LIVE";
-
-  setMarketStatus("OFFLINE");
-
-  setText("marketMessage", message);
-  setText("heroFeedStatus", "Waiting for connection");
+  candlePollTimer=setInterval(async()=>{
+    if (candlePollBusy || !stream || stream!==source) return;
+    candlePollBusy=true;
+    try {
+      await loadCandles();
+      setText("marketMessage","Candle data refreshed from API.");
+    } catch(error) {
+      setText("marketMessage","Refresh failed: "+error.message);
+    } finally {
+      candlePollBusy=false;
+    }
+  },4000);
 }
 
-/* =========================
-   CONNECT LIVE
-========================= */
+function disconnectLive(message="Disconnected.") {
+  stopCandlePolling();
+  if (stream) { stream.close(); stream=null; }
+  $("connectBtn").textContent="CONNECT LIVE";
+  setMarketStatus("OFFLINE");
+  setText("marketMessage",message);
+  setText("heroFeedStatus","Waiting for connection");
+}
 
 async function connectLive() {
-  if (stream) {
-    disconnectLive();
-    return;
-  }
+  if (stream) { disconnectLive(); return; }
+  if (!selectedSymbol()) { setText("marketMessage","Enter a symbol."); return; }
 
-  const symbol = selectedSymbol();
-
-  if (!symbol) {
-    setText("marketMessage", "Enter a trading symbol.");
-    return;
-  }
-
-  $("connectBtn").disabled = true;
-  $("connectBtn").textContent = "CONNECTING…";
-
-  setMarketStatus("LOADING", "warn");
-
-  setText(
-    "marketMessage",
-    "Loading historical candles…"
-  );
+  $("connectBtn").disabled=true;
+  $("connectBtn").textContent="CONNECTING…";
+  setMarketStatus("LOADING","warn");
 
   try {
     await loadCandles();
+    const url=new URL("/api/otcharts",location.origin);
+    url.searchParams.set("mode","stream");
+    url.searchParams.set("symbol",selectedSymbol());
 
-    const url = new URL("/api/otcharts", location.origin);
+    const source=new EventSource(url.toString());
+    stream=source;
 
-    url.searchParams.set("mode", "stream");
-    url.searchParams.set("symbol", symbol);
-
-    const source = new EventSource(url.toString());
-
-    stream = source;
-
-    /*
-     * EventSource connection opened.
-     */
-
-    source.onopen = () => {
-      if (stream !== source) return;
-
-      setMarketStatus("CONNECTED", "on");
-
-      $("connectBtn").textContent = "DISCONNECT LIVE";
-
-      setText("heroFeedStatus", "Stream connected");
-
-      setText(
-        "marketMessage",
-        "Stream is open. Waiting for live tick events."
-      );
-
+    source.onopen=()=>{
+      if (stream!==source) return;
+      setMarketStatus("CONNECTED","on");
+      $("connectBtn").textContent="DISCONNECT LIVE";
+      setText("heroFeedStatus","Stream connected");
       startCandlePolling(source);
     };
 
-    /*
-     * Optional named connected event.
-     */
-
-    source.addEventListener("connected", event => {
-      if (stream !== source) return;
-
-      setMarketStatus("LIVE", "on");
-
-      $("connectBtn").textContent = "DISCONNECT LIVE";
-
-      setText("heroFeedStatus", "Connected");
-
-      setText(
-        "marketMessage",
-        "Live stream connected. Waiting for ticks."
-      );
-
-      console.log("Stream connected:", event.data);
+    source.addEventListener("connected",()=>{
+      if (stream===source) setMarketStatus("LIVE","on");
     });
 
-    /*
-     * Live tick event.
-     */
-
-    source.addEventListener("tick", event => {
-      if (stream !== source) return;
-
-      try {
-        const tick = JSON.parse(event.data);
-
-        updateCandleFromTick(tick);
-
-      } catch (error) {
-        console.error("Tick parse error:", error, event.data);
-      }
+    source.addEventListener("tick",event=>{
+      if (stream!==source) return;
+      try { updateCandleFromTick(JSON.parse(event.data)); }
+      catch(error) { console.error("Tick parse error",error); }
     });
 
-    /*
-     * Default message event.
-     * Some SSE servers send data without `event: tick`.
-     */
-
-    source.onmessage = event => {
-      if (stream !== source) return;
-
+    source.onmessage=event=>{
+      if (stream!==source) return;
       try {
-        const payload = JSON.parse(event.data);
+        const data=JSON.parse(event.data);
+        if (data.price!==undefined || data.close!==undefined || data.value!==undefined) updateCandleFromTick(data);
+      } catch {}
+    };
 
-        if (
-          payload.price !== undefined ||
-          payload.close !== undefined ||
-          payload.value !== undefined
-        ) {
-          updateCandleFromTick(payload);
-        }
-
-      } catch (error) {
-        console.warn(
-          "Ignoring non-JSON stream message:",
-          event.data
-        );
+    source.onerror=()=>{
+      if (stream===source) {
+        setMarketStatus("RECONNECTING","warn");
+        setText("marketMessage","Stream interrupted; browser may retry.");
       }
     };
-
-    /*
-     * Connection error / automatic reconnection.
-     */
-
-    source.onerror = () => {
-      if (stream !== source) return;
-
-      setMarketStatus("RECONNECTING", "warn");
-
-      setText(
-        "marketMessage",
-        "Stream connection interrupted. Browser may retry automatically."
-      );
-
-      setText("heroFeedStatus", "Reconnecting…");
-    };
-
-  } catch (error) {
+  } catch(error) {
     disconnectLive(error.message || "Unable to connect.");
-
-    setMarketStatus("ERROR", "warn");
-
-    console.error("Live connection error:", error);
-
+    setMarketStatus("ERROR","warn");
   } finally {
-    $("connectBtn").disabled = false;
-
-    if (!stream) {
-      $("connectBtn").textContent = "CONNECT LIVE";
-    }
+    $("connectBtn").disabled=false;
+    if (!stream) $("connectBtn").textContent="CONNECT LIVE";
   }
 }
 
-$("connectBtn").addEventListener("click", connectLive);
+$("connectBtn").addEventListener("click",connectLive);
 
-/* =========================
-   SYMBOL / TIMEFRAME CHANGE
-========================= */
+$("reloadBtn").addEventListener("click",async()=>{
+  try { await loadCandles(); setText("marketMessage","Candles refreshed."); }
+  catch(error) { setText("marketMessage",error.message); }
+});
 
 async function reloadMarketSettings() {
-  const wasConnected = Boolean(stream);
-
-  if (stream) {
-    disconnectLive("Reloading market settings…");
-  }
-
-  candles = [];
-
+  const wasConnected=Boolean(stream);
+  if (stream) disconnectLive("Reloading settings…");
+  candles=[];
   drawChart();
-
-  try {
-    await loadCandles();
-
-    if (wasConnected) {
-      await connectLive();
-    }
-
-  } catch (error) {
-    console.error(error);
-
-    setText(
-      "marketMessage",
-      error.message || "Unable to reload market data."
-    );
-  }
+  try { await loadCandles(); if (wasConnected) await connectLive(); }
+  catch(error) { setText("marketMessage",error.message); }
 }
 
-$("tf").addEventListener("change", reloadMarketSettings);
-$("symbol").addEventListener("change", reloadMarketSettings);
+$("tf").addEventListener("change",reloadMarketSettings);
+$("symbol").addEventListener("change",reloadMarketSettings);
+window.addEventListener("resize",drawChart);
 
-window.addEventListener("resize", drawChart);
-
-/* =========================
-   CLOCK / CANDLE COUNTDOWN
-========================= */
+/* Clock and automatic screen analysis trigger */
 
 function clockTick() {
-  const now = new Date();
+  const epoch=Math.floor(Date.now()/1000);
+  const time=new Date().toLocaleTimeString("en-GB",{hour12:false,timeZone:"Asia/Dhaka"});
+  setText("clock",time);
 
-  const time = now.toLocaleTimeString("en-GB", {
-    hour12: false
-  });
+  const tf=selectedTF();
+  const remain=tf-(epoch%tf);
+  setText("countdown",`${String(Math.floor(remain/60)).padStart(2,"0")}:${String(remain%60).padStart(2,"0")}`);
+  setText("confidenceLabel",`${$("minConfidence").value || 55}%`);
 
-  setText("clock", time);
-  setText("localTime", time);
-
-  const tf = selectedTF();
-  const epoch = Math.floor(Date.now() / 1000);
-  const remain = tf - (epoch % tf);
-
-  const mm = String(Math.floor(remain / 60)).padStart(2, "0");
-  const ss = String(remain % 60).padStart(2, "0");
-
-  setText("countdown", `${mm}:${ss}`);
+  const bucket=Math.floor(epoch/tf)*tf;
+  if (shareStream && remain===1 && lastAutoSignalCandle!==String(bucket) && !analysisBusy) {
+    lastAutoSignalCandle=String(bucket);
+    analyzeSharedScreen(true);
+  }
 }
 
-setInterval(clockTick, 1000);
+setInterval(clockTick,1000);
 clockTick();
 
-/* =========================
-   IMAGE UPLOAD PREVIEW
-========================= */
+/* Image upload */
 
-$("chartFile").addEventListener("change", () => {
-  const file = $("chartFile").files[0];
-
+$("chartFile").addEventListener("change",()=>{
+  const file=$("chartFile").files[0];
   if (!file) return;
-
   if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
-    setText(
-      "analysisStatus",
-      "Use a PNG, JPEG or WebP image."
-    );
-
+    setText("analysisStatus","Use PNG, JPEG or WebP.");
     return;
   }
-
-  const url = URL.createObjectURL(file);
-
-  $("preview").src = url;
-  $("preview").style.display = "block";
+  $("preview").src=URL.createObjectURL(file);
+  $("preview").style.display="block";
 });
 
-/* =========================
-   IMAGE RESIZE
-========================= */
-
 function resizeImage(file) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    const url = URL.createObjectURL(file);
+  return new Promise((resolve,reject)=>{
+    const image=new Image();
+    const url=URL.createObjectURL(file);
 
-    image.onload = () => {
-      const scale = Math.min(1, 1200 / image.width);
-
-      const canvas = document.createElement("canvas");
-
-      canvas.width = Math.round(image.width * scale);
-      canvas.height = Math.round(image.height * scale);
-
-      canvas
-        .getContext("2d")
-        .drawImage(
-          image,
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-
+    image.onload=()=>{
+      const scale=Math.min(1,1200/image.width);
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.round(image.width*scale);
+      canvas.height=Math.round(image.height*scale);
+      canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
       URL.revokeObjectURL(url);
-
-      resolve(canvas.toDataURL("image/jpeg", 0.76));
+      resolve(canvas.toDataURL("image/jpeg",0.76));
     };
 
-    image.onerror = () => {
+    image.onerror=()=>{
       URL.revokeObjectURL(url);
-      reject(new Error("Unable to read image."));
+      reject(Error("Unable to read image."));
     };
-
-    image.src = url;
+    image.src=url;
   });
 }
 
-/* =========================
-   AI ANALYSIS
-========================= */
+/* AI analysis */
 
-async function analyzeImage(image, sourceName) {
-  if (analysisBusy) return;
+async function analyzeImage(image,sourceName,automatic=false) {
+  if (analysisBusy) return null;
+  analysisBusy=true;
+  $("analyzeBtn").disabled=true;
 
-  analysisBusy = true;
-
-  $("analyzeBtn").disabled = true;
-
-  setText(
-    "analysisStatus",
-    `Analyzing ${sourceName}…`
-  );
-
-  $("result").classList.remove("hidden");
-  $("result").textContent = "AI analysis in progress…";
+  setText(automatic?"shareStatus":"analysisStatus",automatic?"Automatically analyzing screen…":`Analyzing ${sourceName}…`);
+  $("result").innerHTML='<span class="muted">AI analysis in progress…</span>';
 
   try {
-    const response = await fetch("/api/analyze", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        image,
-        settings: setSettings(),
-        live_data: latestMarketData || undefined
-      })
+    const response=await fetch("/api/analyze",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({image,settings:setSettings(),live_data:latestMarketData || undefined})
     });
 
-    const data = await response.json();
+    const data=await response.json();
+    if (!response.ok) throw Error(data.error || `Analysis failed (${response.status})`);
 
-    if (!response.ok) {
-      throw new Error(
-        data.error || `Analysis failed (${response.status})`
-      );
-    }
-
-    renderResult(data, sourceName);
-
-    setText("analysisStatus", "Analysis complete.");
-
+    renderResult(data,sourceName);
+    setText("analysisStatus","Analysis complete.");
+    if (automatic) setText("shareStatus","Automatic screen analysis complete.");
     return data;
-
-  } catch (error) {
-    $("result").textContent =
-      error.message || "Analysis failed.";
-
-    setText("analysisStatus", "Analysis error.");
-
+  } catch(error) {
+    $("result").textContent=error.message || "Analysis failed.";
+    setText(automatic?"shareStatus":"analysisStatus",error.message || "Analysis error.");
+    return null;
   } finally {
-    analysisBusy = false;
-    $("analyzeBtn").disabled = false;
+    analysisBusy=false;
+    $("analyzeBtn").disabled=false;
   }
 }
 
-$("analyzeBtn").addEventListener("click", async () => {
-  const file = $("chartFile").files[0];
-
-  if (!file) {
-    setText(
-      "analysisStatus",
-      "Upload a chart screenshot first."
-    );
-
-    return;
-  }
-
-  try {
-    const image = await resizeImage(file);
-
-    await analyzeImage(image, "Screenshot");
-
-  } catch (error) {
-    setText("analysisStatus", error.message);
-  }
+$("analyzeBtn").addEventListener("click",async()=>{
+  const file=$("chartFile").files[0];
+  if (!file) { setText("analysisStatus","Upload a screenshot first."); return; }
+  try { await analyzeImage(await resizeImage(file),"Screenshot"); }
+  catch(error) { setText("analysisStatus",error.message); }
 });
 
-/* =========================
-   ANALYSIS RESULT
-========================= */
-
-function renderResult(data, sourceName) {
-  const signal = String(
-    data.signal || "NO TRADE"
-  ).toUpperCase();
-
-  const cls =
-    signal === "CALL"
-      ? "call"
-      : signal === "PUT"
-        ? "put"
-        : "no";
-
-  const reasons = Array.isArray(data.reasons)
-    ? data.reasons
-        .map(reason => `<li>${escapeHTML(reason)}</li>`)
-        .join("")
+function renderResult(data,sourceName) {
+  const signal=String(data.signal || "NO TRADE").toUpperCase();
+  const cls=signal==="CALL"?"call":signal==="PUT"?"put":"no";
+  const reasons=Array.isArray(data.reasons)
+    ? data.reasons.map(reason=>`<li>${esc(reason)}</li>`).join("")
     : "<li>No detailed reasons returned.</li>";
 
-  $("result").innerHTML = `
-    <div class="eyebrow">
-      ${escapeHTML(sourceName)} ANALYSIS
+  $("result").innerHTML=`
+    <div class="small">${esc(sourceName)} ANALYSIS</div>
+    <div class="signal ${cls}">${esc(signal)}</div>
+    <div class="resultgrid">
+      <div class="mini"><span>CONFIDENCE</span><b>${esc(data.confidence ?? "—")}%</b></div>
+      <div class="mini"><span>TREND</span><b>${esc(data.trend || "—")}</b></div>
+      <div class="mini"><span>EXPIRY</span><b>${esc(data.expiry || "—")}</b></div>
+      <div class="mini"><span>ENTRY</span><b>${esc(data.entry_candle || "WAIT")}</b></div>
     </div>
-
-    <div class="signal ${cls}">
-      ${escapeHTML(signal)}
-    </div>
-
-    <div class="result-grid">
-      <div class="result-mini">
-        <span>CONFIDENCE</span>
-        <b>${escapeHTML(data.confidence ?? "—")}%</b>
-      </div>
-
-      <div class="result-mini">
-        <span>TREND</span>
-        <b>${escapeHTML(data.trend || "—")}</b>
-      </div>
-
-      <div class="result-mini">
-        <span>EXPIRY</span>
-        <b>${escapeHTML(data.expiry || "—")}</b>
-      </div>
-
-      <div class="result-mini">
-        <span>ENTRY</span>
-        <b>${escapeHTML(data.entry_candle || "WAIT")}</b>
-      </div>
-    </div>
-
-    <p>
-      <b>Setup</b><br>
-      ${escapeHTML(data.setup || "—")}
-    </p>
-
-    <b>Reasons</b>
-
-    <ul class="reason-list">
-      ${reasons}
-    </ul>
-
-    <p class="small">
-      ${escapeHTML(
-        data.disclaimer ||
-        "Technical analysis is probabilistic. No signal is guaranteed."
-      )}
-    </p>
+    <p><b>Setup</b><br>${esc(data.setup || "—")}</p>
+    <b>Reasons</b><ul class="reasons">${reasons}</ul>
+    <p class="small">${esc(data.disclaimer || "Technical analysis is probabilistic. No signal is guaranteed.")}</p>
   `;
 
-  speakSignal(signal, sourceName);
+  speakSignal(signal,sourceName,data);
 }
 
-/* =========================
-   VOICE
-========================= */
+/* Voice */
 
-function speakSignal(signal, context) {
-  if (!voiceEnabled || !("speechSynthesis" in window)) {
-    return;
-  }
+function speakSignal(signal,sourceName,data={}) {
+  if (!voiceEnabled || !("speechSynthesis" in window)) return;
 
-  const key = `${context}|${signal}`;
+  const key=`${sourceName}|${signal}|${data.confidence ?? ""}|${data.expiry ?? ""}`;
+  if (key===lastVoiceKey) return;
+  lastVoiceKey=key;
 
-  if (key === lastVoiceKey) return;
-
-  lastVoiceKey = key;
-
-  const text =
-    signal === "CALL"
-      ? "Call"
-      : signal === "PUT"
-        ? "Put"
-        : "No trade";
+  const direction=signal==="CALL"?"CALL signal":signal==="PUT"?"PUT signal":"No trade";
+  const message=`${direction}. Confidence ${data.confidence ?? "not available"} percent. Trend ${data.trend || "not available"}. Expiry ${data.expiry || "not available"}. Entry ${data.entry_candle || "wait for confirmation"}. ${data.setup || ""}`;
 
   speechSynthesis.cancel();
-
-  const utterance = new SpeechSynthesisUtterance(text);
-
-  utterance.rate = 1;
-  utterance.pitch = 1;
-
+  const utterance=new SpeechSynthesisUtterance(message);
+  utterance.lang="en-US";
+  utterance.rate=0.95;
   speechSynthesis.speak(utterance);
 }
 
-$("voiceBtn").addEventListener("click", () => {
-  voiceEnabled = !voiceEnabled;
-
-  $("voiceBtn").textContent =
-    voiceEnabled ? "VOICE: ON" : "VOICE: OFF";
-
-  if (!voiceEnabled && "speechSynthesis" in window) {
-    speechSynthesis.cancel();
-  }
+$("voiceBtn").addEventListener("click",()=>{
+  voiceEnabled=!voiceEnabled;
+  $("voiceBtn").textContent=voiceEnabled?"VOICE: ON":"VOICE: OFF";
+  if (!voiceEnabled && "speechSynthesis" in window) speechSynthesis.cancel();
 });
 
-/* =========================
-   SCREEN SHARE
-========================= */
+/* Screen sharing */
 
 async function startScreenShare() {
   if (!navigator.mediaDevices?.getDisplayMedia) {
-    setText(
-      "shareStatus",
-      "Screen sharing is not supported in this browser."
-    );
-
+    setText("shareStatus","Screen sharing is not supported in this browser.");
     return;
   }
 
   try {
-    shareStream = await navigator.mediaDevices.getDisplayMedia({
-      video: {
-        frameRate: {
-          ideal: 5,
-          max: 10
-        }
-      },
-      audio: false
+    shareStream=await navigator.mediaDevices.getDisplayMedia({
+      video:{frameRate:{ideal:5,max:10}},
+      audio:false
     });
 
-    $("shareVideo").srcObject = shareStream;
-    $("shareVideo").style.display = "block";
+    $("shareVideo").srcObject=shareStream;
+    $("shareVideo").style.display="block";
+    $("captureShare").disabled=false;
+    $("stopShare").disabled=false;
+    $("startShare").disabled=true;
+    setText("shareStatus","Screen share active. Automatic analysis is enabled.");
 
-    $("captureShare").disabled = false;
-    $("stopShare").disabled = false;
-    $("startShare").disabled = true;
-
-    setText(
-      "shareStatus",
-      "Screen share active. Capture when your chart is clear."
-    );
-
-    const track = shareStream.getVideoTracks()[0];
-
-    if (track) {
-      track.addEventListener("ended", stopScreenShare);
-    }
-
-  } catch (error) {
-    setText(
-      "shareStatus",
-      "Screen share cancelled or unavailable."
-    );
+    const track=shareStream.getVideoTracks()[0];
+    if (track) track.addEventListener("ended",stopScreenShare);
+  } catch(error) {
+    setText("shareStatus","Screen share cancelled or unavailable.");
   }
 }
 
 function captureScreenFrame() {
-  const video = $("shareVideo");
+  const video=$("shareVideo");
+  if (!video.videoWidth || !video.videoHeight) throw Error("Screen frame is not ready yet.");
 
-  if (!video.videoWidth || !video.videoHeight) {
-    throw new Error("Screen frame is not ready yet.");
-  }
-
-  const scale = Math.min(1, 1200 / video.videoWidth);
-
-  const canvas = document.createElement("canvas");
-
-  canvas.width = Math.round(video.videoWidth * scale);
-  canvas.height = Math.round(video.videoHeight * scale);
-
-  canvas
-    .getContext("2d")
-    .drawImage(
-      video,
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
-
-  return canvas.toDataURL("image/jpeg", 0.76);
+  const scale=Math.min(1,1200/video.videoWidth);
+  const canvas=document.createElement("canvas");
+  canvas.width=Math.round(video.videoWidth*scale);
+  canvas.height=Math.round(video.videoHeight*scale);
+  canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);
+  return canvas.toDataURL("image/jpeg",0.76);
 }
 
-async function analyzeSharedScreen() {
+async function analyzeSharedScreen(automatic=false) {
   try {
-    setText("shareStatus", "Capturing screen…");
-
-    const image = captureScreenFrame();
-
-    await analyzeImage(image, "Shared screen");
-
-  } catch (error) {
-    setText("shareStatus", error.message);
+    const image=captureScreenFrame();
+    return await analyzeImage(image,"Shared screen",automatic);
+  } catch(error) {
+    setText("shareStatus",error.message);
+    return null;
   }
 }
 
 function stopScreenShare() {
   if (shareStream) {
-    shareStream.getTracks().forEach(track => track.stop());
-    shareStream = null;
+    shareStream.getTracks().forEach(track=>track.stop());
+    shareStream=null;
   }
-
-  $("shareVideo").srcObject = null;
-  $("shareVideo").style.display = "none";
-
-  $("captureShare").disabled = true;
-  $("stopShare").disabled = true;
-  $("startShare").disabled = false;
-
-  setText("shareStatus", "Screen share stopped.");
+  $("shareVideo").srcObject=null;
+  $("shareVideo").style.display="none";
+  $("captureShare").disabled=true;
+  $("stopShare").disabled=true;
+  $("startShare").disabled=false;
+  setText("shareStatus","Screen share stopped.");
 }
 
-$("startShare").addEventListener("click", startScreenShare);
-$("captureShare").addEventListener("click", analyzeSharedScreen);
-$("stopShare").addEventListener("click", stopScreenShare);
+$("startShare").addEventListener("click",startScreenShare);
+$("captureShare").addEventListener("click",()=>analyzeSharedScreen(false));
+$("stopShare").addEventListener("click",stopScreenShare);
 
-/* =========================
-   CLEANUP
-========================= */
+/* Cleanup */
 
-window.addEventListener("beforeunload", () => {
+window.addEventListener("beforeunload",()=>{
   stopCandlePolling();
-
-  if (stream) {
-    stream.close();
-  }
-
-  if (shareStream) {
-    shareStream.getTracks().forEach(track => track.stop());
-  }
+  if (stream) stream.close();
+  if (shareStream) shareStream.getTracks().forEach(track=>track.stop());
 });
 
+if (sessionStorage.getItem("nt_unlocked")!=="1") $("login").classList.remove("hidden");
 drawChart();
 </script>
+</body>
+</html>
+```
