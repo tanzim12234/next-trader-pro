@@ -1,751 +1,982 @@
-```html
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#070b14">
-<title>NEXT TRADER PRO</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#050817">
+<meta name="description" content="NEXT TRADER PRO — futuristic AI chart analysis console">
+<title>NEXT TRADER PRO | Neural Trading Console</title>
+
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@500;600;700;800;900&display=swap');
+
 :root {
-  --bg:#070b14; --panel:#101a2b; --line:#22314a;
-  --text:#edf4ff; --muted:#91a4c3; --cyan:#4cecff;
-  --green:#32e6a1; --red:#ff5a7d; --amber:#ffcf70;
+  color-scheme: dark;
+  --bg:#050817;
+  --glass:rgba(11,20,44,.74);
+  --line:rgba(104,173,255,.19);
+  --text:#ecf7ff;
+  --muted:#89a1bd;
+  --cyan:#40f1ff;
+  --violet:#a06bff;
+  --green:#31efb6;
+  --red:#ff5b93;
+  --gold:#ffd47a;
 }
-* { box-sizing:border-box }
+
+* { box-sizing:border-box; }
+
+html { scroll-behavior:smooth; }
+
 body {
-  margin:0; background:radial-gradient(circle at top,#142544,transparent 38%),var(--bg);
-  color:var(--text);font:14px/1.5 system-ui,Arial,sans-serif;
+  margin:0;
+  color:var(--text);
+  font:14px/1.55 'Space Grotesk',system-ui,sans-serif;
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse at 13% 5%,#163263 0,transparent 34%),
+    radial-gradient(ellipse at 90% 10%,#2a154c 0,transparent 32%),
+    #050817;
+  overflow-x:hidden;
 }
-button,input,select { font:inherit }
+
+body:before {
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background-image:
+    linear-gradient(rgba(74,144,225,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(74,144,225,.045) 1px,transparent 1px);
+  background-size:48px 48px;
+  mask-image:linear-gradient(to bottom,black,transparent 90%);
+}
+
+body:after {
+  content:"";
+  position:fixed;
+  z-index:-1;
+  inset:-20%;
+  pointer-events:none;
+  background:conic-gradient(
+    from 90deg at 50% 50%,
+    transparent,#08e5ff09,transparent,#8859ff09,transparent
+  );
+  animation:rotate 45s linear infinite;
+}
+
+@keyframes rotate {
+  to { transform:rotate(360deg); }
+}
+
+.shell {
+  max-width:1510px;
+  margin:auto;
+  padding:26px 30px 55px;
+}
+
+.nav {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding:0 0 24px;
+  border-bottom:1px solid var(--line);
+}
+
+.brand {
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.mark {
+  width:53px;
+  height:53px;
+  display:grid;
+  place-items:center;
+  border-radius:15px;
+  font:900 21px Orbitron,sans-serif;
+  color:#02131c;
+  background:linear-gradient(135deg,var(--cyan),#6b85ff);
+  box-shadow:0 0 40px #17c7f950;
+}
+
+.brand-name {
+  font:800 clamp(16px,2vw,23px) Orbitron,sans-serif;
+  letter-spacing:.065em;
+}
+
+.brand-name em {
+  font-style:normal;
+  color:var(--cyan);
+}
+
+.eyebrow {
+  font-size:10px;
+  letter-spacing:.26em;
+  color:var(--muted);
+  font-weight:700;
+  text-transform:uppercase;
+}
+
+.navright {
+  display:flex;
+  gap:14px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.live-tag {
+  font:700 10px Orbitron,sans-serif;
+  letter-spacing:.07em;
+  padding:10px 13px;
+  border-radius:30px;
+  background:#1d1730;
+  color:var(--gold);
+  border:1px solid #d9b8673d;
+}
+
+.live-tag.ready {
+  color:var(--green);
+  border-color:#3bedad70;
+  background:#0c3229;
+}
+
+.live-tag.processing {
+  color:var(--cyan);
+  border-color:#3eeaff77;
+  background:#08303b;
+  animation:pulse 1.3s infinite;
+}
+
+@keyframes pulse {
+  50% { opacity:.58; }
+}
+
+.nav-clock {
+  text-align:right;
+  font:600 20px Orbitron,sans-serif;
+}
+
+.nav-clock small {
+  display:block;
+  font:500 10px 'Space Grotesk';
+  color:var(--muted);
+  letter-spacing:.18em;
+  margin-bottom:3px;
+}
+
+.hero {
+  display:grid;
+  grid-template-columns:1.45fr 1fr;
+  gap:22px;
+  margin:28px 0 20px;
+}
+
+.hero-main {
+  padding:29px 32px;
+  position:relative;
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:24px;
+  background:linear-gradient(120deg,#102443b8,#0b1025b5 75%);
+  box-shadow:0 15px 50px #0005;
+}
+
+.hero-main:after {
+  content:"";
+  position:absolute;
+  right:-90px;
+  top:-100px;
+  width:350px;
+  height:350px;
+  border:1px solid #35dafa30;
+  border-radius:50%;
+  box-shadow:0 0 0 45px #43dafa08,0 0 0 90px #43dafa06;
+  pointer-events:none;
+}
+
+.hero h1 {
+  position:relative;
+  margin:10px 0;
+  font:800 clamp(29px,4.2vw,60px)/1.14 Orbitron,sans-serif;
+  letter-spacing:-.03em;
+  max-width:740px;
+}
+
+.hero h1 span {
+  color:var(--cyan);
+  text-shadow:0 0 32px #34eaff50;
+}
+
+.hero p {
+  position:relative;
+  color:var(--muted);
+  max-width:620px;
+  margin:13px 0 0;
+}
+
+.hero-stat {
+  border:1px solid var(--line);
+  border-radius:24px;
+  padding:25px 27px;
+  background:linear-gradient(140deg,#151536c9,#091e32a8);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.hero-stat .big {
+  font:800 clamp(35px,5vw,68px) Orbitron,sans-serif;
+  color:var(--cyan);
+  text-shadow:0 0 32px #3eefff55;
+  letter-spacing:-.06em;
+}
+
+.hero-stat .bottom {
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+  margin-top:17px;
+  border-top:1px solid var(--line);
+  padding-top:15px;
+}
+
+.hero-stat b { font-size:13px; }
+.hero-stat span { color:var(--muted);font-size:11px; }
+
+.metrics {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+  margin-bottom:20px;
+}
+
+.metric {
+  padding:16px 18px;
+  background:#0d1730a8;
+  border:1px solid var(--line);
+  border-radius:16px;
+}
+
+.metric .value {
+  font:700 18px Orbitron,sans-serif;
+  margin-top:7px;
+  color:#e8f9ff;
+}
+
+.metric .hint {
+  font-size:11px;
+  color:var(--muted);
+}
+
+.grid {
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+  gap:20px;
+}
+
+.panel {
+  background:var(--glass);
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:25px;
+  backdrop-filter:blur(20px);
+  box-shadow:0 14px 60px #0004;
+  min-width:0;
+}
+
+.panel-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:20px;
+}
+
+.panel h2 {
+  margin:0;
+  font:700 15px Orbitron,sans-serif;
+  letter-spacing:.06em;
+}
+
+.panel h2:before {
+  content:"";
+  display:inline-block;
+  width:7px;
+  height:18px;
+  vertical-align:-4px;
+  margin-right:11px;
+  background:var(--cyan);
+  border-radius:4px;
+  box-shadow:0 0 18px var(--cyan);
+}
+
+.sub {
+  color:var(--muted);
+  font-size:12px;
+}
+
+.fields {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+
+.field label {
+  display:block;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.12em;
+  color:#a6bddd;
+  margin-bottom:7px;
+  text-transform:uppercase;
+}
+
+input,select,button { font:inherit; }
+
+input,select {
+  width:100%;
+  min-width:0;
+  background:#060f25;
+  color:var(--text);
+  border:1px solid #2a4162;
+  border-radius:11px;
+  padding:12px 13px;
+  outline:none;
+}
+
+input:focus,select:focus {
+  border-color:var(--cyan);
+  box-shadow:0 0 0 3px #39dfff17;
+}
+
 button {
-  cursor:pointer;background:#17243a;color:var(--text);
-  border:1px solid var(--line);border-radius:9px;padding:10px 13px;
-  font-weight:750;
+  border:1px solid #355475;
+  background:#14243f;
+  color:var(--text);
+  border-radius:11px;
+  padding:12px 15px;
+  font-weight:700;
+  cursor:pointer;
+  transition:transform .18s,border-color .18s,box-shadow .18s;
 }
-button:hover { border-color:var(--cyan) }
-button:disabled { opacity:.45;cursor:not-allowed }
-.primary { background:linear-gradient(110deg,#00b8c9,#3767ff);border:0 }
-.danger { background:#401b2a }
-.wrap { max-width:1400px;margin:auto;padding:20px }
-.top { display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:18px }
-.brand { display:flex;align-items:center;gap:12px }
-.logo {
-  width:45px;height:45px;border-radius:13px;display:grid;place-items:center;
-  background:linear-gradient(140deg,#04cbd5,#3d64ff);font-size:20px;font-weight:1000
+
+button:hover {
+  transform:translateY(-2px);
+  border-color:var(--cyan);
+  box-shadow:0 0 22px #37e9ff22;
 }
-h1 { margin:0;font-size:21px;letter-spacing:.07em }
-h2 { margin:0;font-size:14px;letter-spacing:.07em }
-.muted,.small { color:var(--muted) }
-.small { font-size:12px }
-.topright,.actions { display:flex;align-items:center;gap:8px;flex-wrap:wrap }
-.pill { display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:7px 10px }
-.dot { width:8px;height:8px;border-radius:50%;background:#718096 }
-.dot.on { background:var(--green);box-shadow:0 0 10px var(--green) }
-.dot.warn { background:var(--amber) }
-.grid { display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);gap:15px }
-.panel { min-width:0;background:linear-gradient(150deg,#101a2b,#0b1220);border:1px solid var(--line);border-radius:16px;padding:16px }
-.panelhead { display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px }
-.controls { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px }
-.field label { display:block;color:var(--muted);font-size:11px;font-weight:800;margin-bottom:5px }
-.field input,.field select {
-  width:100%;min-width:0;background:#080f1d;color:var(--text);
-  border:1px solid var(--line);border-radius:8px;padding:10px
+
+button:disabled {
+  opacity:.45;
+  cursor:not-allowed;
+  transform:none;
 }
-.actions { margin:12px 0 }
-.chartwrap { height:340px;background:#050a14;border:1px solid var(--line);border-radius:11px;overflow:hidden }
-canvas { width:100%;height:100%;display:block }
-.chartnote { display:flex;justify-content:space-between;gap:10px;margin-top:8px;color:var(--muted);font-size:12px }
-.stats { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px }
-.stat,.mini { background:#0a1220;border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0 }
-.stat span,.mini span { display:block;color:var(--muted);font-size:10px }
-.stat b,.mini b { display:block;overflow-wrap:anywhere;margin-top:3px }
-.resultbox { min-height:220px;background:#080f1c;border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px }
-.signal { font-size:36px;font-weight:1000;margin:8px 0 }
-.call { color:var(--green) }.put { color:var(--red) }.no { color:var(--amber) }
-.resultgrid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0 }
-.reasons { padding-left:20px }
-.video { width:100%;max-height:280px;object-fit:contain;background:#050a14;border-radius:10px;display:none;margin-top:10px }
-.status { color:var(--muted);font-size:12px;min-height:18px;margin-top:7px;overflow-wrap:anywhere }
-.feed { max-height:220px;overflow:auto }
-.feedrow { display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 3px;border-bottom:1px solid #1b2940;font-size:12px }
-.feedrow span:last-child { text-align:right }
-.footer { margin:18px 0;color:#7285a5;font-size:11px;text-align:center }
-.hidden { display:none!important }
-.login { position:fixed;inset:0;background:#03060bee;z-index:10;display:grid;place-items:center;padding:20px }
-.loginbox { width:min(400px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px }
-@media(max-width:900px) {
- .grid { grid-template-columns:1fr }
- .top { align-items:flex-start;flex-direction:column }
- .chartwrap { height:300px }
+
+.primary {
+  color:#021c2a;
+  background:linear-gradient(105deg,#4af5ff,#6c8fff);
+  border:0;
+  box-shadow:0 8px 27px #1cafff33;
 }
-@media(max-width:480px) {
- .wrap { padding:10px }
- .controls { grid-template-columns:repeat(2,minmax(0,1fr)) }
- .stats { grid-template-columns:repeat(2,minmax(0,1fr)) }
+
+.actions {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:17px;
+}
+
+.actions button {
+  flex:1;
+  min-width:135px;
+}
+
+.upload {
+  margin-top:22px;
+  padding:17px;
+  border:1px dashed #467096;
+  border-radius:15px;
+  background:#0b1832a0;
+}
+
+.upload label {
+  display:block;
+  margin-bottom:9px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.upload input { padding:8px; }
+
+.status {
+  font-size:12px;
+  color:#9fb8d5;
+  margin:15px 0 0;
+  min-height:18px;
+}
+
+.signal-screen {
+  position:relative;
+  overflow:hidden;
+  border:1px solid #34577a;
+  border-radius:18px;
+  background:radial-gradient(ellipse at top,#102b4b,#070e21 67%);
+  padding:25px;
+  min-height:300px;
+}
+
+.signal-screen:after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent 5px,#ffffff03 6px);
+}
+
+.signal-label {
+  font:600 10px Orbitron,sans-serif;
+  letter-spacing:.17em;
+  color:var(--muted);
+}
+
+.signal {
+  font:900 clamp(43px,5vw,80px) Orbitron,sans-serif;
+  letter-spacing:-.04em;
+  margin:16px 0 12px;
+  text-shadow:0 0 30px currentColor;
+}
+
+.CALL { color:var(--green); }
+.PUT { color:var(--red); }
+.WAIT,.EXPIRED { color:var(--gold); }
+
+.signal-screen p { margin:8px 0; }
+
+.signal-screen ul {
+  padding-left:18px;
+  color:#9db4ce;
+  font-size:12px;
+}
+
+.signal-screen b { color:#e9f7ff; }
+
+.readout {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 0;
+  border-bottom:1px solid var(--line);
+  font-size:12px;
+}
+
+.readout b {
+  font:700 13px Orbitron,sans-serif;
+}
+
+.feed {
+  max-height:190px;
+  overflow:auto;
+  margin-top:12px;
+  font-size:12px;
+}
+
+.feed div {
+  padding:10px 3px;
+  border-bottom:1px solid var(--line);
+  color:#a8bfdc;
+}
+
+.foot {
+  color:#718baa;
+  text-align:center;
+  font-size:11px;
+  margin-top:26px;
+}
+
+.foot strong { color:#b3cde5; }
+
+video {
+  display:none;
+  width:100%;
+  max-height:240px;
+  object-fit:contain;
+  background:#020611;
+  border-radius:12px;
+  margin-top:15px;
+}
+
+#login {
+  position:fixed;
+  inset:0;
+  z-index:99;
+  background:#030714ed;
+  display:grid;
+  place-items:center;
+  backdrop-filter:blur(20px);
+}
+
+#login .panel {
+  width:min(410px,92vw);
+  padding:32px;
+}
+
+#login h2 { margin-bottom:22px; }
+#login input { margin-bottom:12px; }
+
+[hidden] { display:none!important; }
+
+@media(max-width:1000px) {
+  .hero,.grid { grid-template-columns:1fr; }
+  .metrics { grid-template-columns:repeat(2,1fr); }
+}
+
+@media(max-width:580px) {
+  .shell { padding:15px; }
+  .nav { align-items:flex-start; }
+  .navright { justify-content:flex-end; }
+  .nav-clock { font-size:15px; }
+  .hero-main,.hero-stat,.panel { padding:19px; }
+  .hero h1 { font-size:31px; }
+  .fields { grid-template-columns:1fr; }
+  .metrics { gap:8px; }
+  .metric { padding:13px; }
+  .metric .value { font-size:14px; }
+  .hero-stat .big { font-size:43px; }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  *,*:before,*:after {
+    animation:none!important;
+    transition:none!important;
+  }
 }
 </style>
 </head>
-<body>
 
-<div id="login" class="login hidden">
-  <div class="loginbox">
-    <h1>NEXT TRADER PRO</h1>
-    <p class="muted">Enter dashboard password.</p>
+<body>
+<div id="login">
+  <div class="panel">
+    <div class="eyebrow">SECURE ACCESS // 01</div>
+    <h2>NEURAL ACCESS</h2>
     <div class="field">
-      <label for="password">PASSWORD</label>
+      <label for="password">ACCESS PASSWORD</label>
       <input id="password" type="password" autocomplete="current-password">
     </div>
-    <div class="actions"><button id="loginBtn" class="primary">UNLOCK</button></div>
-    <div id="loginStatus" class="status"></div>
+    <button id="loginBtn" class="primary" style="width:100%">UNLOCK CONSOLE →</button>
+    <p id="loginError" class="status"></p>
   </div>
 </div>
 
-<div class="wrap">
-<header class="top">
+<div class="shell">
+<header class="nav">
   <div class="brand">
-    <div class="logo">NT</div>
-    <div><h1>NEXT TRADER <span style="color:var(--cyan)">PRO</span></h1>
-    <div class="small">Market monitor · AI analysis · Voice alerts</div></div>
+    <div class="mark">NT</div>
+    <div>
+      <div class="brand-name">NEXT TRADER <em>PRO</em></div>
+      <div class="eyebrow">Neural intelligence / trading console</div>
+    </div>
   </div>
-  <div class="topright">
-    <div class="pill"><i id="topDot" class="dot"></i><span id="topStatus">OFFLINE</span></div>
-    <div class="pill">BD TIME <b id="clock">--:--:--</b></div>
-    <button id="voiceBtn">VOICE: ON</button>
+  <div class="navright">
+    <span class="live-tag" id="systemState">STANDBY</span>
+    <div class="nav-clock">
+      <small>ASIA / DHAKA</small>
+      <span id="clock">--:--:--</span>
+    </div>
   </div>
 </header>
 
-<div class="grid">
-<section class="panel">
-  <div class="panelhead"><h2>MARKET MONITOR</h2><span id="heroFeedStatus" class="small">Waiting</span></div>
-  <div class="controls">
-    <div class="field"><label for="symbol">SYMBOL</label><input id="symbol" value="EURUSD"></div>
-    <div class="field"><label for="tf">TIMEFRAME</label>
-      <select id="tf">
-        <option value="60">1 minute</option><option value="120">2 minutes</option>
-        <option value="180">3 minutes</option><option value="300">5 minutes</option>
-      </select>
-    </div>
-    <div class="field"><label for="marketType">MARKET</label>
-      <select id="marketType"><option value="REAL">Real market</option><option value="OTC">OTC</option></select>
-    </div>
-    <div class="field"><label for="analysisMode">ANALYSIS MODE</label>
-      <select id="analysisMode"><option value="balanced">Balanced</option><option value="conservative">Conservative</option><option value="aggressive">Aggressive</option></select>
-    </div>
-    <div class="field"><label for="minConfidence">MIN CONFIDENCE (%)</label><input id="minConfidence" type="number" min="0" max="100" value="55"></div>
-    <div class="field"><label for="signalFilter">SIGNAL FILTER</label>
-      <select id="signalFilter"><option value="all">CALL + PUT</option><option value="call">CALL only</option><option value="put">PUT only</option></select>
-    </div>
+<section class="hero">
+  <div class="hero-main">
+    <div class="eyebrow">◆ &nbsp; THE NEXT GENERATION OF CHART INTELLIGENCE</div>
+    <h1>PRECISION.<br><span>REIMAGINED.</span></h1>
+    <p>Futuristic screenshot-based AI analysis. Focused signals, rapid voice alerts and strict expiry protection — in one immersive trading cockpit.</p>
   </div>
-  <div class="actions">
-    <button id="connectBtn" class="primary">CONNECT LIVE</button>
-    <button id="reloadBtn">REFRESH CANDLES</button>
-    <span class="pill">CLOSE IN <b id="countdown">01:00</b></span>
-  </div>
-  <div id="marketMessage" class="status">Connect to load candle data.</div>
-  <div class="chartwrap"><canvas id="marketChart"></canvas></div>
-  <div class="chartnote"><span id="chartInfo">No candle data</span><span id="statUpdated">—</span></div>
-  <div class="stats">
-    <div class="stat"><span>SYMBOL</span><b id="statSymbol">EURUSD</b></div>
-    <div class="stat"><span>LAST PRICE</span><b id="heroPrice">—</b></div>
-    <div class="stat"><span>OPEN</span><b id="open">—</b></div>
-    <div class="stat"><span>HIGH / LOW</span><b id="high">—</b><span id="low"></span></div>
+  <div class="hero-stat">
+    <div class="eyebrow">NEXT CANDLE IN</div>
+    <div class="big" id="heroCountdown">01:00</div>
+    <div class="eyebrow">TIME IS YOUR EDGE</div>
+    <div class="bottom">
+      <div><span>SCREEN CAPTURE</span><br><b id="shareState">STANDBY</b></div>
+      <div><span>LAST AI LATENCY</span><br><b id="lastLatency">—</b></div>
+    </div>
   </div>
 </section>
 
+<section class="metrics">
+  <div class="metric"><div class="eyebrow">ENGINE</div><div class="value">GEMINI AI</div><div class="hint">Screenshot interpretation</div></div>
+  <div class="metric"><div class="eyebrow">SIGNAL MODE</div><div class="value">FAST / SAFE</div><div class="hint">Late results rejected</div></div>
+  <div class="metric"><div class="eyebrow">VOICE ORDER</div><div class="value">3-STEP</div><div class="hint">Trend → Entry → Confidence</div></div>
+  <div class="metric"><div class="eyebrow">CANDLE CLOSE</div><div class="value" id="countdown">--:--</div><div class="hint">Bangladesh time aligned</div></div>
+</section>
+
+<div class="grid">
 <section class="panel">
-  <div class="panelhead"><h2>AI SCREEN ANALYSIS</h2><span id="confidenceLabel" class="small">55%</span></div>
-  <p class="small">Share your trading chart to enable automatic analysis near candle close. Browser permission is required.</p>
+  <div class="panel-head"><h2>CONTROL CENTER</h2><span class="eyebrow">01 / INPUT</span></div>
+  <p class="sub">Share the chart window or upload an image. Browser permission is required for automatic capture.</p>
+
+  <div class="fields">
+    <div class="field"><label for="symbol">ASSET / SYMBOL</label><input id="symbol" value="EURUSD" maxlength="30"></div>
+    <div class="field"><label for="tf">TIMEFRAME</label><select id="tf"><option value="60">1 MINUTE</option><option value="120">2 MINUTES</option><option value="180">3 MINUTES</option><option value="300">5 MINUTES</option></select></div>
+    <div class="field"><label for="market">MARKET</label><select id="market"><option>REAL</option><option>OTC</option></select></div>
+    <div class="field"><label for="confidence">MINIMUM CONFIDENCE</label><input id="confidence" type="number" value="55" min="0" max="100"></div>
+    <div class="field"><label for="mode">AI STRATEGY</label><select id="mode"><option value="balanced">BALANCED</option><option value="conservative">CONSERVATIVE</option><option value="aggressive">AGGRESSIVE</option></select></div>
+  </div>
+
   <div class="actions">
-    <button id="startShare" class="primary">SHARE SCREEN</button>
-    <button id="captureShare" disabled>ANALYZE NOW</button>
-    <button id="stopShare" class="danger" disabled>STOP SHARE</button>
+    <button id="start" class="primary">◉ SHARE SCREEN + AUTO</button>
+    <button id="stop" disabled>■ STOP SHARE</button>
   </div>
-  <div class="field">
-    <label for="chartFile">OR UPLOAD A CHART SCREENSHOT</label>
-    <input id="chartFile" type="file" accept="image/png,image/jpeg,image/webp">
+  <div class="actions">
+    <button id="now">⚡ ANALYZE NOW</button>
+    <button id="voice">VOICE ON</button>
+    <button id="testVoice">TEST VOICE</button>
   </div>
-  <div class="actions"><button id="analyzeBtn">ANALYZE IMAGE</button></div>
-  <img id="preview" alt="Chart preview" style="display:none;max-width:100%;max-height:180px;border-radius:10px">
-  <video id="shareVideo" class="video" autoplay muted playsinline></video>
-  <div id="shareStatus" class="status">Screen share is off.</div>
-  <div id="analysisStatus" class="status">Ready for analysis.</div>
-  <div id="result" class="resultbox"><span class="muted">Latest AI analysis appears here.</span></div>
-  <div class="panelhead" style="margin-top:17px"><h2>RECENT FEED</h2></div>
-  <div id="feed" class="feed"></div>
+
+  <div class="upload">
+    <label for="file">DROP-IN CHART SCREENSHOT / PNG • JPG • WEBP</label>
+    <input id="file" type="file" accept="image/png,image/jpeg,image/webp">
+    <div class="actions"><button id="upload" class="primary">ANALYZE UPLOAD →</button></div>
+  </div>
+
+  <video id="video" autoplay muted playsinline></video>
+  <p id="status" class="status">System ready. Awaiting chart input.</p>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2>NEURAL SIGNAL</h2><span class="eyebrow">02 / OUTPUT</span></div>
+  <div id="result" class="signal-screen">
+    <div class="signal-label">AWAITING ANALYSIS</div>
+    <div class="signal WAIT">—</div>
+    <p class="sub">Your next signal appears here.</p>
+  </div>
+  <div class="readout"><span class="sub">AI RESPONSE TIME</span><b id="timing">—</b></div>
+  <div class="readout"><span class="sub">SIGNAL AGE</span><b id="age">—</b></div>
+  <div class="readout"><span class="sub">AUTO ENTRY RULE</span><b>5s MAX</b></div>
+  <p class="sub">Auto screenshot near candle close. Results that arrive too late are marked expired; never treat them as a fresh entry.</p>
+  <div class="panel-head" style="margin-top:28px;margin-bottom:8px"><h2>ACTIVITY STREAM</h2><span class="eyebrow">REAL-TIME LOG</span></div>
+  <div id="log" class="feed"></div>
 </section>
 </div>
-<div class="footer">Signals are probabilistic, not guaranteed. Never risk money you cannot afford to lose.</div>
+
+<footer class="foot"><strong>NEXT TRADER PRO</strong> / FUTURE INTERFACE EDITION • AI analysis is probabilistic; no guaranteed returns.</footer>
 </div>
 
 <script>
-"use strict";
+'use strict';
 
 const $ = id => document.getElementById(id);
-
 let stream = null;
-let candlePollTimer = null;
-let candlePollBusy = false;
-let candles = [];
-let latestMarketData = null;
-let shareStream = null;
-let analysisBusy = false;
-let voiceEnabled = true;
-let lastVoiceKey = "";
-let lastAutoSignalCandle = "";
+let video = $('video');
+let busy = false;
+let voiceOn = true;
+let lastBucket = -1;
+let lastSignal = null;
+let activeController = null;
 
-function setText(id, value) {
-  const el = $(id);
-  if (el) el.textContent = value === null || value === undefined || value === "" ? "—" : String(value);
+const nowSec = () => Date.now() / 1000;
+const tf = () => Number($('tf').value);
+const sym = () => $('symbol').value.trim().toUpperCase();
+
+function log(s) {
+  const d = document.createElement('div');
+  d.textContent = new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Dhaka'}) + ' • ' + s;
+  $('log').prepend(d);
+  while ($('log').children.length > 35) $('log').lastChild.remove();
 }
 
-function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
-  })[c]);
+function status(s) {
+  $('status').textContent = s;
 }
 
-function fmt(value) {
-  if (value === null || value === undefined || value === "") return "—";
-  const n = Number(value);
-  return Number.isFinite(n) ? n.toFixed(5).replace(/0+$/,"").replace(/\.$/,"") : String(value);
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
 }
 
-function selectedSymbol() { return $("symbol").value.trim(); }
-function selectedTF() { return Number($("tf").value || 60); }
+/* Voice speaks exactly: TREND → ENTRY → CONFIDENCE */
+function speakSignal(trend, entry, confidence) {
+  if (!voiceOn || !('speechSynthesis' in window)) return;
 
-function setSettings() {
-  return {
-    market: $("marketType").value,
-    timeframe: $("tf").selectedOptions[0]?.textContent || "1 minute",
-    mode: $("analysisMode").value,
-    min_confidence: Number($("minConfidence").value || 55),
-    signal_filter: $("signalFilter").value
-  };
-}
+  const t = String(trend || 'UNCLEAR').toUpperCase();
+  const e = String(entry || 'WAIT').toUpperCase();
+  const c = Math.max(0, Math.min(100, Math.round(Number(confidence) || 0)));
 
-$("minConfidence").addEventListener("input", () => setText("confidenceLabel", `${$("minConfidence").value || 55}%`));
+  speechSynthesis.cancel();
 
-function setMarketStatus(text, mode = "") {
-  setText("topStatus", text);
-  $("topDot").className = "dot" + (mode ? " " + mode : "");
+  const u = new SpeechSynthesisUtterance(`${t}. ${e}. ${c} percent.`);
+  u.lang = 'en-US';
+  u.rate = 1.35;
+  u.pitch = 1.02;
+  speechSynthesis.speak(u);
 }
 
 async function login() {
-  setText("loginStatus", "Authenticating…");
   try {
-    const response = await fetch("/api/auth", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({password:$("password").value})
-    });
-    const data = await response.json();
-    if (!response.ok) throw Error(data.error || "Authentication failed");
-    sessionStorage.setItem("nt_unlocked", "1");
-    $("login").classList.add("hidden");
-  } catch (error) {
-    setText("loginStatus", error.message || "Login failed");
-  }
-}
-
-$("loginBtn").addEventListener("click", login);
-$("password").addEventListener("keydown", e => { if (e.key === "Enter") login(); });
-
-/* Market data and chart */
-
-function updateMarketUI(data) {
-  const price = data.price ?? data.close;
-  const symbol = data.symbol || data.asset || selectedSymbol();
-  setText("statSymbol", symbol);
-  setText("heroPrice", fmt(price));
-  setText("open", fmt(data.open));
-  setText("high", fmt(data.high));
-  setText("low", fmt(data.low));
-  setText("statUpdated", new Date().toLocaleTimeString("en-GB", {timeZone:"Asia/Dhaka"}));
-
-  latestMarketData = {
-    symbol, asset:symbol, price:price ?? null,
-    open:data.open ?? null, high:data.high ?? null,
-    low:data.low ?? null, close:data.close ?? price ?? null,
-    time:data.time ?? null, source:"OTCHARTS"
-  };
-  drawChart();
-}
-
-function addFeedRow(data) {
-  const row = document.createElement("div");
-  row.className = "feedrow";
-  [data.symbol || selectedSymbol(), data.type || "MARKET DATA", fmt(data.price ?? data.close)].forEach(value => {
-    const span = document.createElement("span");
-    span.textContent = String(value);
-    row.appendChild(span);
-  });
-  $("feed").prepend(row);
-  while ($("feed").children.length > 20) $("feed").lastElementChild.remove();
-}
-
-function drawChart() {
-  const canvas = $("marketChart");
-  if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  if (!rect.width || !rect.height) return;
-
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const width = Math.floor(rect.width * dpr);
-  const height = Math.floor(rect.height * dpr);
-  if (canvas.width !== width || canvas.height !== height) {
-    canvas.width = width;
-    canvas.height = height;
-  }
-
-  const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const w = rect.width, h = rect.height;
-  ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = "#050a14";
-  ctx.fillRect(0, 0, w, h);
-
-  const list = candles.slice(-55);
-  if (!list.length) {
-    ctx.fillStyle = "#8292b1";
-    ctx.font = "13px sans-serif";
-    ctx.fillText("Connect to load candle data", 18, 28);
-    return;
-  }
-
-  const pad = {top:16,right:68,bottom:18,left:8};
-  const chartW = w - pad.left - pad.right;
-  const chartH = h - pad.top - pad.bottom;
-  const prices = list.flatMap(c => [Number(c.high),Number(c.low)]).filter(Number.isFinite);
-  if (!prices.length) return;
-
-  let min = Math.min(...prices), max = Math.max(...prices);
-  if (min === max) { min -= 0.0001; max += 0.0001; }
-  const margin = (max-min)*0.08;
-  min -= margin; max += margin;
-
-  const y = price => pad.top + ((max-price)/(max-min))*chartH;
-  ctx.font = "10px monospace";
-  ctx.fillStyle = "#8190ad";
-  ctx.strokeStyle = "#26324a";
-
-  for (let i=0;i<=4;i++) {
-    const py = pad.top + chartH*i/4;
-    const price = max - (max-min)*i/4;
-    ctx.beginPath(); ctx.moveTo(pad.left,py); ctx.lineTo(w-pad.right,py); ctx.stroke();
-    ctx.fillText(price.toFixed(5),w-pad.right+5,py+3);
-  }
-
-  const step = chartW/list.length;
-  const bodyW = Math.max(2,Math.min(11,step*0.58));
-
-  list.forEach((c,i) => {
-    const o=Number(c.open), hi=Number(c.high), lo=Number(c.low), cl=Number(c.close);
-    if (![o,hi,lo,cl].every(Number.isFinite)) return;
-    const x=pad.left+step*(i+0.5);
-    const color=cl>=o?"#37e8a4":"#ff527c";
-    ctx.strokeStyle=color; ctx.fillStyle=color;
-    ctx.beginPath(); ctx.moveTo(x,y(hi)); ctx.lineTo(x,y(lo)); ctx.stroke();
-    ctx.fillRect(x-bodyW/2,Math.min(y(o),y(cl)),bodyW,Math.max(1.5,Math.abs(y(o)-y(cl))));
-  });
-
-  const last = Number(list[list.length-1].close);
-  if (Number.isFinite(last)) {
-    ctx.strokeStyle="#46f3ff"; ctx.setLineDash([4,4]);
-    ctx.beginPath(); ctx.moveTo(pad.left,y(last)); ctx.lineTo(w-pad.right,y(last)); ctx.stroke();
-    ctx.setLineDash([]);
-  }
-}
-
-async function loadCandles() {
-  const symbol = selectedSymbol();
-  if (!symbol) throw Error("Enter a symbol first.");
-
-  const url = new URL("/api/otcharts", location.origin);
-  url.searchParams.set("mode","candles");
-  url.searchParams.set("symbol",symbol);
-  url.searchParams.set("tf",String(selectedTF()));
-  url.searchParams.set("limit","55");
-
-  const response = await fetch(url.toString(), {cache:"no-store"});
-  const data = await response.json();
-  if (!response.ok) throw Error(data.error || "Candle request failed");
-  if (!Array.isArray(data.candles)) throw Error("Invalid candle response");
-
-  candles = data.candles.map(c => ({...c}));
-  setText("chartInfo",`${candles.length} candles · ${symbol}`);
-
-  const last = candles[candles.length-1];
-  if (last) updateMarketUI({...last,symbol:data.symbol || symbol,price:last.close});
-  else drawChart();
-  return data;
-}
-
-function updateCandleFromTick(tick) {
-  const price = Number(tick.price ?? tick.close ?? tick.value);
-  if (!Number.isFinite(price)) return;
-
-  let time = Number(tick.time ?? tick.timestamp ?? tick.server_time);
-  if (!Number.isFinite(time)) time = Date.now()/1000;
-  else if (time > 1e12) time /= 1000;
-
-  const tf = selectedTF();
-  const bucket = Math.floor(time/tf)*tf;
-  let current = candles[candles.length-1];
-
-  if (!current || Number(current.time)!==bucket) {
-    current = {time:bucket,open:price,high:price,low:price,close:price};
-    candles.push(current);
-  } else {
-    current.high=Math.max(Number(current.high),price);
-    current.low=Math.min(Number(current.low),price);
-    current.close=price;
-  }
-
-  if (candles.length>150) candles.shift();
-
-  updateMarketUI({...current,symbol:tick.symbol || tick.asset || selectedSymbol(),price,time});
-  addFeedRow({symbol:tick.symbol || selectedSymbol(),price,type:"LIVE TICK"});
-  setMarketStatus("LIVE","on");
-  setText("marketMessage","Receiving live market updates.");
-  setText("heroFeedStatus","Live ticks received");
-}
-
-function stopCandlePolling() {
-  if (candlePollTimer) clearInterval(candlePollTimer);
-  candlePollTimer=null;
-  candlePollBusy=false;
-}
-
-function startCandlePolling(source) {
-  stopCandlePolling();
-  candlePollTimer=setInterval(async()=>{
-    if (candlePollBusy || !stream || stream!==source) return;
-    candlePollBusy=true;
-    try {
-      await loadCandles();
-      setText("marketMessage","Candle data refreshed from API.");
-    } catch(error) {
-      setText("marketMessage","Refresh failed: "+error.message);
-    } finally {
-      candlePollBusy=false;
-    }
-  },4000);
-}
-
-function disconnectLive(message="Disconnected.") {
-  stopCandlePolling();
-  if (stream) { stream.close(); stream=null; }
-  $("connectBtn").textContent="CONNECT LIVE";
-  setMarketStatus("OFFLINE");
-  setText("marketMessage",message);
-  setText("heroFeedStatus","Waiting for connection");
-}
-
-async function connectLive() {
-  if (stream) { disconnectLive(); return; }
-  if (!selectedSymbol()) { setText("marketMessage","Enter a symbol."); return; }
-
-  $("connectBtn").disabled=true;
-  $("connectBtn").textContent="CONNECTING…";
-  setMarketStatus("LOADING","warn");
-
-  try {
-    await loadCandles();
-    const url=new URL("/api/otcharts",location.origin);
-    url.searchParams.set("mode","stream");
-    url.searchParams.set("symbol",selectedSymbol());
-
-    const source=new EventSource(url.toString());
-    stream=source;
-
-    source.onopen=()=>{
-      if (stream!==source) return;
-      setMarketStatus("CONNECTED","on");
-      $("connectBtn").textContent="DISCONNECT LIVE";
-      setText("heroFeedStatus","Stream connected");
-      startCandlePolling(source);
-    };
-
-    source.addEventListener("connected",()=>{
-      if (stream===source) setMarketStatus("LIVE","on");
+    const r = await fetch('/api/auth', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:$('password').value})
     });
 
-    source.addEventListener("tick",event=>{
-      if (stream!==source) return;
-      try { updateCandleFromTick(JSON.parse(event.data)); }
-      catch(error) { console.error("Tick parse error",error); }
-    });
+    const j = await r.json();
+    if (!r.ok) throw Error(j.error || 'Login failed');
 
-    source.onmessage=event=>{
-      if (stream!==source) return;
-      try {
-        const data=JSON.parse(event.data);
-        if (data.price!==undefined || data.close!==undefined || data.value!==undefined) updateCandleFromTick(data);
-      } catch {}
-    };
-
-    source.onerror=()=>{
-      if (stream===source) {
-        setMarketStatus("RECONNECTING","warn");
-        setText("marketMessage","Stream interrupted; browser may retry.");
-      }
-    };
-  } catch(error) {
-    disconnectLive(error.message || "Unable to connect.");
-    setMarketStatus("ERROR","warn");
-  } finally {
-    $("connectBtn").disabled=false;
-    if (!stream) $("connectBtn").textContent="CONNECT LIVE";
+    $('login').hidden = true;
+    log('Authenticated');
+  } catch (e) {
+    $('loginError').textContent = e.message;
   }
 }
 
-$("connectBtn").addEventListener("click",connectLive);
+$('loginBtn').onclick = login;
+$('password').onkeydown = e => {
+  if (e.key === 'Enter') login();
+};
 
-$("reloadBtn").addEventListener("click",async()=>{
-  try { await loadCandles(); setText("marketMessage","Candles refreshed."); }
-  catch(error) { setText("marketMessage",error.message); }
-});
-
-async function reloadMarketSettings() {
-  const wasConnected=Boolean(stream);
-  if (stream) disconnectLive("Reloading settings…");
-  candles=[];
-  drawChart();
-  try { await loadCandles(); if (wasConnected) await connectLive(); }
-  catch(error) { setText("marketMessage",error.message); }
-}
-
-$("tf").addEventListener("change",reloadMarketSettings);
-$("symbol").addEventListener("change",reloadMarketSettings);
-window.addEventListener("resize",drawChart);
-
-/* Clock and automatic screen analysis trigger */
-
-function clockTick() {
-  const epoch=Math.floor(Date.now()/1000);
-  const time=new Date().toLocaleTimeString("en-GB",{hour12:false,timeZone:"Asia/Dhaka"});
-  setText("clock",time);
-
-  const tf=selectedTF();
-  const remain=tf-(epoch%tf);
-  setText("countdown",`${String(Math.floor(remain/60)).padStart(2,"0")}:${String(remain%60).padStart(2,"0")}`);
-  setText("confidenceLabel",`${$("minConfidence").value || 55}%`);
-
-  const bucket=Math.floor(epoch/tf)*tf;
-  if (shareStream && remain===1 && lastAutoSignalCandle!==String(bucket) && !analysisBusy) {
-    lastAutoSignalCandle=String(bucket);
-    analyzeSharedScreen(true);
-  }
-}
-
-setInterval(clockTick,1000);
-clockTick();
-
-/* Image upload */
-
-$("chartFile").addEventListener("change",()=>{
-  const file=$("chartFile").files[0];
-  if (!file) return;
-  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
-    setText("analysisStatus","Use PNG, JPEG or WebP.");
-    return;
-  }
-  $("preview").src=URL.createObjectURL(file);
-  $("preview").style.display="block";
-});
-
-function resizeImage(file) {
-  return new Promise((resolve,reject)=>{
-    const image=new Image();
-    const url=URL.createObjectURL(file);
-
-    image.onload=()=>{
-      const scale=Math.min(1,1200/image.width);
-      const canvas=document.createElement("canvas");
-      canvas.width=Math.round(image.width*scale);
-      canvas.height=Math.round(image.height*scale);
-      canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL("image/jpeg",0.76));
-    };
-
-    image.onerror=()=>{
-      URL.revokeObjectURL(url);
-      reject(Error("Unable to read image."));
-    };
-    image.src=url;
-  });
-}
-
-/* AI analysis */
-
-async function analyzeImage(image,sourceName,automatic=false) {
-  if (analysisBusy) return null;
-  analysisBusy=true;
-  $("analyzeBtn").disabled=true;
-
-  setText(automatic?"shareStatus":"analysisStatus",automatic?"Automatically analyzing screen…":`Analyzing ${sourceName}…`);
-  $("result").innerHTML='<span class="muted">AI analysis in progress…</span>';
-
+async function start() {
   try {
-    const response=await fetch("/api/analyze",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({image,settings:setSettings(),live_data:latestMarketData || undefined})
-    });
-
-    const data=await response.json();
-    if (!response.ok) throw Error(data.error || `Analysis failed (${response.status})`);
-
-    renderResult(data,sourceName);
-    setText("analysisStatus","Analysis complete.");
-    if (automatic) setText("shareStatus","Automatic screen analysis complete.");
-    return data;
-  } catch(error) {
-    $("result").textContent=error.message || "Analysis failed.";
-    setText(automatic?"shareStatus":"analysisStatus",error.message || "Analysis error.");
-    return null;
-  } finally {
-    analysisBusy=false;
-    $("analyzeBtn").disabled=false;
-  }
-}
-
-$("analyzeBtn").addEventListener("click",async()=>{
-  const file=$("chartFile").files[0];
-  if (!file) { setText("analysisStatus","Upload a screenshot first."); return; }
-  try { await analyzeImage(await resizeImage(file),"Screenshot"); }
-  catch(error) { setText("analysisStatus",error.message); }
-});
-
-function renderResult(data,sourceName) {
-  const signal=String(data.signal || "NO TRADE").toUpperCase();
-  const cls=signal==="CALL"?"call":signal==="PUT"?"put":"no";
-  const reasons=Array.isArray(data.reasons)
-    ? data.reasons.map(reason=>`<li>${esc(reason)}</li>`).join("")
-    : "<li>No detailed reasons returned.</li>";
-
-  $("result").innerHTML=`
-    <div class="small">${esc(sourceName)} ANALYSIS</div>
-    <div class="signal ${cls}">${esc(signal)}</div>
-    <div class="resultgrid">
-      <div class="mini"><span>CONFIDENCE</span><b>${esc(data.confidence ?? "—")}%</b></div>
-      <div class="mini"><span>TREND</span><b>${esc(data.trend || "—")}</b></div>
-      <div class="mini"><span>EXPIRY</span><b>${esc(data.expiry || "—")}</b></div>
-      <div class="mini"><span>ENTRY</span><b>${esc(data.entry_candle || "WAIT")}</b></div>
-    </div>
-    <p><b>Setup</b><br>${esc(data.setup || "—")}</p>
-    <b>Reasons</b><ul class="reasons">${reasons}</ul>
-    <p class="small">${esc(data.disclaimer || "Technical analysis is probabilistic. No signal is guaranteed.")}</p>
-  `;
-
-  speakSignal(signal,sourceName,data);
-}
-
-/* Voice */
-
-function speakSignal(signal,sourceName,data={}) {
-  if (!voiceEnabled || !("speechSynthesis" in window)) return;
-
-  const key=`${sourceName}|${signal}|${data.confidence ?? ""}|${data.expiry ?? ""}`;
-  if (key===lastVoiceKey) return;
-  lastVoiceKey=key;
-
-  const direction=signal==="CALL"?"CALL signal":signal==="PUT"?"PUT signal":"No trade";
-  const message=`${direction}. Confidence ${data.confidence ?? "not available"} percent. Trend ${data.trend || "not available"}. Expiry ${data.expiry || "not available"}. Entry ${data.entry_candle || "wait for confirmation"}. ${data.setup || ""}`;
-
-  speechSynthesis.cancel();
-  const utterance=new SpeechSynthesisUtterance(message);
-  utterance.lang="en-US";
-  utterance.rate=0.95;
-  speechSynthesis.speak(utterance);
-}
-
-$("voiceBtn").addEventListener("click",()=>{
-  voiceEnabled=!voiceEnabled;
-  $("voiceBtn").textContent=voiceEnabled?"VOICE: ON":"VOICE: OFF";
-  if (!voiceEnabled && "speechSynthesis" in window) speechSynthesis.cancel();
-});
-
-/* Screen sharing */
-
-async function startScreenShare() {
-  if (!navigator.mediaDevices?.getDisplayMedia) {
-    setText("shareStatus","Screen sharing is not supported in this browser.");
-    return;
-  }
-
-  try {
-    shareStream=await navigator.mediaDevices.getDisplayMedia({
-      video:{frameRate:{ideal:5,max:10}},
+    stream = await navigator.mediaDevices.getDisplayMedia({
+      video:{frameRate:5},
       audio:false
     });
 
-    $("shareVideo").srcObject=shareStream;
-    $("shareVideo").style.display="block";
-    $("captureShare").disabled=false;
-    $("stopShare").disabled=false;
-    $("startShare").disabled=true;
-    setText("shareStatus","Screen share active. Automatic analysis is enabled.");
+    video.srcObject = stream;
+    video.style.display = 'block';
+    await video.play();
 
-    const track=shareStream.getVideoTracks()[0];
-    if (track) track.addEventListener("ended",stopScreenShare);
-  } catch(error) {
-    setText("shareStatus","Screen share cancelled or unavailable.");
+    $('start').disabled = true;
+    $('stop').disabled = false;
+    status('Auto analysis armed.');
+    $('shareState').textContent = 'ACTIVE';
+    log('Screen sharing started');
+
+    stream.getVideoTracks()[0].addEventListener('ended', stop);
+  } catch (e) {
+    status('Screen share failed: ' + e.message);
   }
 }
 
-function captureScreenFrame() {
-  const video=$("shareVideo");
-  if (!video.videoWidth || !video.videoHeight) throw Error("Screen frame is not ready yet.");
+function stop() {
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
 
-  const scale=Math.min(1,1200/video.videoWidth);
-  const canvas=document.createElement("canvas");
-  canvas.width=Math.round(video.videoWidth*scale);
-  canvas.height=Math.round(video.videoHeight*scale);
-  canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);
-  return canvas.toDataURL("image/jpeg",0.76);
+  video.srcObject = null;
+  video.style.display = 'none';
+  $('start').disabled = false;
+  $('stop').disabled = true;
+  status('Screen sharing stopped');
+  $('shareState').textContent = 'STANDBY';
 }
 
-async function analyzeSharedScreen(automatic=false) {
+$('start').onclick = start;
+$('stop').onclick = stop;
+
+function screenshot() {
+  if (!stream || video.readyState < 2) throw Error('Share a chart first');
+
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+  if (!w || !h) throw Error('Video not ready');
+
+  const scale = Math.min(1, 1050 / w);
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w * scale));
+  c.height = Math.max(1, Math.round(h * scale));
+  c.getContext('2d').drawImage(video,0,0,c.width,c.height);
+
+  return c.toDataURL('image/jpeg',.67);
+}
+
+async function uploadImage(f) {
+  if (!f || !/^image\/(png|jpeg|webp)$/.test(f.type)) {
+    throw Error('Choose PNG/JPEG/WebP');
+  }
+
+  const img = await createImageBitmap(f);
+  const scale = Math.min(1, 1050 / img.width);
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.width * scale);
+  c.height = Math.round(img.height * scale);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  img.close();
+
+  return c.toDataURL('image/jpeg',.67);
+}
+
+async function analyze(image, automatic=false) {
+  if (busy) {
+    log('Skipped: prior analysis running');
+    return;
+  }
+
+  busy = true;
+  $('now').disabled = true;
+  $('upload').disabled = true;
+
+  const started = performance.now();
+  const requestTime = Date.now();
+  const period = tf();
+  const captureBucket = Math.floor(requestTime / 1000 / period);
+  const targetBucket = automatic ? captureBucket + 1 : captureBucket;
+
+  const ctrl = new AbortController();
+  activeController = ctrl;
+  const timeout = setTimeout(() => ctrl.abort(), 8500);
+
+  status('AI analyzing…');
+  $('systemState').textContent = 'PROCESSING';
+  $('systemState').className = 'live-tag processing';
+
   try {
-    const image=captureScreenFrame();
-    return await analyzeImage(image,"Shared screen",automatic);
-  } catch(error) {
-    setText("shareStatus",error.message);
-    return null;
+    const r = await fetch('/api/analyze', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      signal:ctrl.signal,
+      body:JSON.stringify({
+        image,
+        settings:{
+          market:$('market').value,
+          timeframe:period+' seconds',
+          mode:$('mode').value,
+          min_confidence:Number($('confidence').value),
+          symbol:sym(),
+          execution_mode:automatic?'AUTO_NEXT_CANDLE':'MANUAL'
+        },
+        capture_time:requestTime,
+        target_bucket:targetBucket,
+        timeframe_seconds:period
+      })
+    });
+
+    const j = await r.json();
+    if (!r.ok) throw Error(j.error || 'Analysis failed');
+
+    const elapsed = Math.round(performance.now() - started);
+    const nowBucket = Math.floor(nowSec() / period);
+
+    $('timing').textContent = (elapsed / 1000).toFixed(2) + 's';
+
+    const stale = automatic && (
+      nowBucket > targetBucket ||
+      (nowBucket === targetBucket && nowSec() - targetBucket * period > 5)
+    );
+
+    if (stale) {
+      log('Rejected late signal ('+(elapsed/1000).toFixed(2)+'s)');
+      status('Signal expired. No entry.');
+      $('systemState').textContent = 'EXPIRED';
+      $('systemState').className = 'live-tag';
+      $('result').innerHTML =
+        '<div class="signal EXPIRED">EXPIRED</div><p>AI replied too late for the target candle. Do not enter.</p>';
+      lastSignal = null;
+      return;
+    }
+
+    const signal = ['CALL','PUT'].includes(String(j.signal).toUpperCase())
+      ? String(j.signal).toUpperCase()
+      : 'WAIT';
+
+    const reasons = (Array.isArray(j.reasons) ? j.reasons : [])
+      .slice(0,4)
+      .map(x => '<li>'+escapeHTML(x)+'</li>')
+      .join('');
+
+    $('result').innerHTML =
+      '<div class="small">'+(automatic?'AUTO • TARGET CANDLE':'MANUAL ANALYSIS')+'</div>'+
+      '<div class="signal '+signal+'">'+signal+'</div>'+
+      '<p><b>Confidence:</b> '+escapeHTML(j.confidence)+'% &nbsp; <b>Trend:</b> '+escapeHTML(j.trend)+'</p>'+
+      '<p><b>Setup:</b> '+escapeHTML(j.setup)+'</p>'+
+      '<p><b>Entry:</b> '+escapeHTML(j.entry_candle)+'</p>'+
+      '<ul>'+reasons+'</ul>';
+
+    lastSignal = {at:Date.now(),bucket:targetBucket};
+
+    status('Completed in '+(elapsed/1000).toFixed(2)+'s');
+    $('systemState').textContent = 'ANALYSIS READY';
+    $('systemState').className = 'live-tag ready';
+    $('lastLatency').textContent = (elapsed/1000).toFixed(2)+'s';
+    log('Signal '+signal+' • '+(elapsed/1000).toFixed(2)+'s');
+
+    if (signal !== 'WAIT') speakSignal(j.trend,signal,j.confidence);
+
+  } catch (e) {
+    const msg = e.name === 'AbortError'
+      ? 'Timed out after 8.5 seconds'
+      : e.message;
+
+    status(msg);
+    $('systemState').textContent = 'ERROR';
+    $('systemState').className = 'live-tag';
+    log('Analysis error: '+msg);
+
+  } finally {
+    clearTimeout(timeout);
+    busy = false;
+    activeController = null;
+    $('now').disabled = false;
+    $('upload').disabled = false;
   }
 }
 
-function stopScreenShare() {
-  if (shareStream) {
-    shareStream.getTracks().forEach(track=>track.stop());
-    shareStream=null;
+$('now').onclick = () => {
+  try { analyze(screenshot(),false); }
+  catch(e) { status(e.message); }
+};
+
+$('upload').onclick = async () => {
+  try {
+    const f = $('file').files[0];
+    const image = await uploadImage(f);
+    await analyze(image,false);
+  } catch(e) {
+    status(e.message);
   }
-  $("shareVideo").srcObject=null;
-  $("shareVideo").style.display="none";
-  $("captureShare").disabled=true;
-  $("stopShare").disabled=true;
-  $("startShare").disabled=false;
-  setText("shareStatus","Screen share stopped.");
+};
+
+$('voice').onclick = () => {
+  voiceOn = !voiceOn;
+  $('voice').textContent = voiceOn ? 'VOICE ON' : 'VOICE OFF';
+};
+
+function tick() {
+  const date = new Date();
+  const s = Math.floor(date.getTime()/1000);
+  const period = tf();
+  const remaining = period - (s % period);
+  const bucket = Math.floor(s/period);
+
+  $('clock').textContent = date.toLocaleTimeString('en-GB',{
+    timeZone:'Asia/Dhaka',
+    hour12:false
+  });
+
+  $('countdown').textContent =
+    String(Math.floor(remaining/60)).padStart(2,'0')+':'+
+    String(remaining%60).padStart(2,'0');
+
+  $('heroCountdown').textContent = $('countdown').textContent;
+  $('age').textContent = lastSignal
+    ? ((Date.now()-lastSignal.at)/1000).toFixed(1)+'s'
+    : '—';
+
+  if (stream && remaining === 1 && bucket !== lastBucket) {
+    lastBucket = bucket;
+    try { analyze(screenshot(),true); }
+    catch(e) { status(e.message); }
+  }
 }
 
-$("startShare").addEventListener("click",startScreenShare);
-$("captureShare").addEventListener("click",()=>analyzeSharedScreen(false));
-$("stopShare").addEventListener("click",stopScreenShare);
+setInterval(tick,250);
+tick();
 
-/* Cleanup */
-
-window.addEventListener("beforeunload",()=>{
-  stopCandlePolling();
-  if (stream) stream.close();
-  if (shareStream) shareStream.getTracks().forEach(track=>track.stop());
-});
-
-if (sessionStorage.getItem("nt_unlocked")!=="1") $("login").classList.remove("hidden");
-drawChart();
+$('testVoice').onclick = () => speakSignal('BULLISH','CALL',78);
 </script>
 </body>
 </html>
-```
