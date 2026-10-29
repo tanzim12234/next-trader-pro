@@ -1,15 +1,16 @@
 import {
   redis,
   json,
-  currentUser
+  currentUser,
+  subscriptionActive
 } from "./store.js";
 
 const ALLOWED_NETWORKS = ["TRC20", "BEP20", "ERC20"];
 
 export default async function handler(req, res) {
   try {
-    if (req.method !== "POST") {
-      res.setHeader("Allow", "POST");
+    if (!["GET", "POST"].includes(req.method)) {
+      res.setHeader("Allow", "GET, POST");
       return json(res, 405, { error: "Method not allowed." });
     }
 
@@ -17,6 +18,39 @@ export default async function handler(req, res) {
 
     if (!user) {
       return json(res, 401, { error: "Please log in again." });
+    }
+
+    if (req.method === "GET") {
+      const raw = await redis.get(`payment-user:${user.username}`);
+      let payment = null;
+
+      if (raw) {
+        try {
+          const saved = JSON.parse(raw);
+          payment = {
+            status: saved.status || "unknown",
+            network: saved.network || null,
+            txid: saved.txid || null,
+            amountUSD: saved.amountUSD || 50,
+            durationMonths: saved.durationMonths || 2,
+            submittedAt: saved.submittedAt || null,
+            reviewedAt: saved.reviewedAt || null,
+            subscriptionExpiresAt: saved.subscriptionExpiresAt || null
+          };
+        } catch {
+          payment = null;
+        }
+      }
+
+      return json(res, 200, {
+        user: {
+          username: user.username,
+          status: user.status,
+          subscriptionActive: subscriptionActive(user),
+          subscriptionExpiresAt: user.subscriptionExpiresAt || null
+        },
+        payment
+      });
     }
 
     const body = req.body || {};
@@ -29,7 +63,7 @@ export default async function handler(req, res) {
       });
     }
 
-    if (!/^[a-fA-F0-9]{32,128}$/.test(txid)) {
+    if (!/^(?:0x)?[a-fA-F0-9]{32,128}$/.test(txid)) {
       return json(res, 400, {
         error: "Enter a valid transaction hash/TxID."
       });
