@@ -139,7 +139,11 @@ async function apiRequest(url, options = {}) {
     }
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw Error(data.error || ('Request failed (' + response.status + ')'));
+  if (!response.ok) {
+    const error = Error(data.error || ('Request failed (' + response.status + ')'));
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 function setMessage(text, kind = '') {
@@ -190,15 +194,20 @@ async function loadAccount() {
     showPaymentState(data.payment);
   } catch (error) {
     signedIn = false;
-    $('accountEnglish').textContent = 'Not signed in. Log in on the main website first.';
-    $('accountBangla').textContent = 'লগইন করা নেই। আগে মূল ওয়েবসাইটে লগইন করুন।';
-    $('loginRequired').classList.remove('hidden');
     $('paymentForm').classList.add('hidden');
     $('submitBtn').disabled = true;
-    $('paymentStatus').textContent =
-      error.message.includes('Redis') || error.message.includes('service')
-        ? 'Account service is not ready yet. / অ্যাকাউন্ট সার্ভিস এখনো প্রস্তুত নয়।'
-        : 'Please sign in to submit payment. / পেমেন্ট জমা দিতে লগইন করুন।';
+
+    if (error.status === 401) {
+      $('accountEnglish').textContent = 'Not signed in. Log in on the main website first.';
+      $('accountBangla').textContent = 'লগইন করা নেই। আগে মূল ওয়েবসাইটে লগইন করুন।';
+      $('loginRequired').classList.remove('hidden');
+      $('paymentStatus').textContent = 'Please sign in to submit payment. / পেমেন্ট জমা দিতে লগইন করুন।';
+    } else {
+      $('accountEnglish').textContent = 'Could not verify the account or payment service. Please do not send funds until service is available.';
+      $('accountBangla').textContent = 'অ্যাকাউন্ট বা পেমেন্ট সার্ভিস যাচাই করা যায়নি। সার্ভিস চালু না হওয়া পর্যন্ত টাকা পাঠাবেন না।';
+      $('loginRequired').classList.add('hidden');
+      $('paymentStatus').textContent = error.message + ' / পেমেন্ট সার্ভিসে সমস্যা হয়েছে।';
+    }
   }
 }
 $('copyUid').addEventListener('click', async () => {
