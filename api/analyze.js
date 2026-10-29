@@ -2,7 +2,7 @@ import {
   json,
   currentUser,
   subscriptionActive
-} from "./lib/store.js";
+} from "./store.js";
 
 const MODEL = "gemini-3.5-flash-lite";
 
