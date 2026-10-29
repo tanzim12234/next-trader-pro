@@ -48,6 +48,32 @@ main{max-width:1080px;margin:auto;padding:22px 18px 48px}.top{display:flex;align
   <div class="datum" style="margin-top:12px">
     <div class="uidrow"><div><small class="muted">BINANCE ID / BINANCE আইডি</small><br><code id="binanceUid">946277738</code></div><button id="copyUid" type="button">Copy ID / কপি</button></div>
   </div>
+  <div class="info-grid" style="margin-top:12px">
+    <div class="datum">
+      <div class="uidrow">
+        <div>
+          <small>BEP20 / BNB SMART CHAIN</small>
+          <code id="bep20Address">0xba7fc68d9f4599c70a3cbde4f1ad5af4510da80c</code>
+        </div>
+        <button id="copyBep20" type="button">Copy address / কপি</button>
+      </div>
+    </div>
+    <div class="datum">
+      <div class="uidrow">
+        <div>
+          <small>ERC20 / ETHEREUM</small>
+          <code id="erc20Address">0xba7fc68d9f4599c70a3cbde4f1ad5af4510da80c</code>
+        </div>
+        <button id="copyErc20" type="button">Copy address / কপি</button>
+      </div>
+    </div>
+  </div>
+  <div class="note">
+    <div class="bilingual">
+      <div class="lang" style="border:0;background:transparent;padding:0"><h3 style="color:var(--gold)">NETWORK WARNING — ENGLISH</h3><p>These are the wallet details supplied for BEP20 and ERC20. Choose the exact same network in the sending wallet. The address text is the same for both networks, but only send on a network the receiving wallet supports. Wrong-network transfers may be permanently lost. Check the address and any fees before confirming.</p></div>
+      <div class="lang" style="border:0;background:transparent;padding:0"><h3 style="color:var(--gold)">নেটওয়ার্ক সতর্কতা — বাংলা</h3><p>BEP20 ও ERC20-এর জন্য দেওয়া ওয়ালেট অ্যাড্রেস নিচে আছে। টাকা পাঠানোর সময় প্রেরক ওয়ালেটে ঠিক একই নেটওয়ার্ক নির্বাচন করুন। দুই নেটওয়ার্কে অ্যাড্রেসটি একই হলেও রিসিভিং ওয়ালেট যে নেটওয়ার্ক সমর্থন করে, শুধু সেই নেটওয়ার্কেই পাঠাবেন। ভুল নেটওয়ার্কে পাঠালে টাকা স্থায়ীভাবে হারাতে পারেন। কনফার্ম করার আগে অ্যাড্রেস ও ফি যাচাই করুন।</p></div>
+    </div>
+  </div>
   <div class="note">
     <div class="bilingual">
       <div class="lang" style="border:0;background:transparent;padding:0"><h3 style="color:var(--gold)">IMPORTANT — ENGLISH</h3><p>Before sending money, confirm the recipient's displayed name and the accepted transfer method inside Binance. A Binance ID is not an on-chain wallet address. For TRC20, BEP20 or ERC20, use only a verified wallet address that matches the selected network. Never send funds to an address or person you cannot verify.</p></div>
@@ -218,6 +244,17 @@ $('copyUid').addEventListener('click', async () => {
     $('copyUid').textContent = 'ID: 946277738';
   }
 });
+async function copyWalletAddress(address, buttonId) {
+  const button = $(buttonId);
+  try {
+    await navigator.clipboard.writeText(address);
+    button.textContent = 'Copied / কপি হয়েছে';
+  } catch {
+    button.textContent = 'Select address / অ্যাড্রেস সিলেক্ট করুন';
+  }
+}
+$('copyBep20').addEventListener('click', () => copyWalletAddress('0xba7fc68d9f4599c70a3cbde4f1ad5af4510da80c', 'copyBep20'));
+$('copyErc20').addEventListener('click', () => copyWalletAddress('0xba7fc68d9f4599c70a3cbde4f1ad5af4510da80c', 'copyErc20'));
 $('network').addEventListener('change', () => {
   $('txid').placeholder = $('network').value === 'BINANCE_PAY'
     ? 'Binance Pay reference / পেমেন্ট রেফারেন্স'
