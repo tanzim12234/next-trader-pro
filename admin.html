@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#050817">
+<meta name="robots" content="noindex,nofollow">
+<title>NEXT TRADER • Admin Panel</title>
+<style>
+:root{color-scheme:dark;--bg:#050817;--panel:rgba(11,20,44,.9);--line:rgba(104,173,255,.25);--text:#ecf7ff;--muted:#91a8c4;--cyan:#40f1ff;--green:#31efb6;--red:#ff5b93;--gold:#ffd47a}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 12% 4%,#163263 0,transparent 35%),radial-gradient(ellipse at 90% 10%,#2a154c 0,transparent 32%),var(--bg);color:var(--text);font:14px/1.55 system-ui,"Noto Sans Bengali",sans-serif}
+main{max-width:1100px;margin:auto;padding:24px 16px 48px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:22px}.brand{font:800 20px system-ui,sans-serif;letter-spacing:.04em}.brand span{color:var(--cyan)}.muted{color:var(--muted)}.eyebrow{font-size:10px;letter-spacing:.18em;color:var(--muted);font-weight:700}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:18px;box-shadow:0 15px 50px #0003}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row .fixed{flex:0 0 auto}label{display:block;margin:0 0 6px;font-size:12px;color:var(--muted)}input{width:100%;padding:12px;border:1px solid #2a4162;border-radius:10px;background:#060f25;color:var(--text);font:inherit;min-width:0}button{font:inherit;font-weight:700;border:1px solid #355475;background:#14243f;color:var(--text);border-radius:10px;padding:11px 14px;cursor:pointer}button:hover{border-color:var(--cyan)}button:disabled{opacity:.5;cursor:not-allowed}.primary{border:0;color:#021c2a;background:linear-gradient(105deg,#4af5ff,#6c8fff)}.approve{color:#021b14;background:var(--green);border-color:var(--green)}.reject{color:#2b0613;background:var(--red);border-color:var(--red)}.status{min-height:20px;color:var(--muted);overflow-wrap:anywhere;margin-bottom:0}.error{color:var(--red)}.good{color:var(--green)}.hidden{display:none!important}.stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}.stat{border:1px solid var(--line);border-radius:12px;padding:12px 15px;min-width:130px;background:#091329}.stat b{font-size:22px;display:block}.payment{border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0;background:#081329}.payment h3{margin:0 0 8px;font-size:16px;overflow-wrap:anywhere}.data{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.item{padding:9px;background:#050c1d;border-radius:8px;min-width:0}.item small{display:block;color:var(--muted);font-size:11px}.item strong{display:block;overflow-wrap:anywhere;word-break:break-word}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.actions button{flex:1;min-width:110px}.empty{text-align:center;padding:30px;color:var(--muted)}code{color:var(--cyan);overflow-wrap:anywhere}footer{text-align:center;color:var(--muted);font-size:11px;padding-top:10px}
+@media(max-width:580px){main{padding:16px 10px 34px}.panel{padding:15px}.data{grid-template-columns:1fr}.actions button{min-width:100%}.row>*{flex-basis:100%}.row .fixed{flex:1}}
+</style>
+</head>
+<body>
+<main>
+<header class="top">
+  <div><div class="brand">NEXT TRADER <span>PRO</span></div><div class="eyebrow">ADMIN CONTROL PANEL</div></div>
+  <a href="/" style="color:var(--cyan)">← মূল সাইটে ফিরে যাও</a>
+</header>
+<section class="panel" id="loginPanel">
+  <div class="eyebrow">ADMIN AUTHENTICATION</div>
+  <h2 style="margin:6px 0 4px">অ্যাডমিন লগইন</h2>
+  <p class="muted">Vercel-এর <code>NEXT_TRADER_ADMIN_PASSWORD</code> environment variable-এ যে পাসওয়ার্ড সেট করা আছে সেটি দাও। এটি কাস্টমার লগইন পাসওয়ার্ড নয়।</p>
+  <label for="adminPassword">অ্যাডমিন পাসওয়ার্ড</label>
+  <div class="row"><input id="adminPassword" class="fixed" type="password" autocomplete="current-password" placeholder="Admin password"><button id="loginBtn" class="primary fixed">প্রবেশ করো</button></div>
+  <p id="loginStatus" class="status" role="status"></p>
+</section>
+<section id="dashboard" class="hidden">
+  <div class="stats">
+    <div class="stat"><span class="muted">অপেক্ষমাণ পেমেন্ট</span><b id="pendingCount">—</b></div>
+    <div class="stat"><span class="muted">পেমেন্ট মূল্য</span><b>$50</b></div>
+    <div class="stat"><span class="muted">সাবস্ক্রিপশন</span><b>২ মাস</b></div>
+  </div>
+  <div class="panel">
+    <div class="row"><div><h2 style="margin:0">পেমেন্ট যাচাই</h2><p class="muted" style="margin:4px 0 0">TxID Binance-এ সঠিকভাবে যাচাই করার পরেই Approve করবে। Approve করলে ২ মাসের সাবস্ক্রিপশন চালু হবে।</p></div><button id="refreshBtn" class="fixed">↻ রিফ্রেশ</button><button id="logoutBtn" class="fixed">লগআউট</button></div>
+    <p id="dashboardStatus" class="status" role="status"></p>
+    <div id="payments"><div class="empty">এখনও লোড হয়নি।</div></div>
+  </div>
+</section>
+<footer>Secure admin view • পাসওয়ার্ড অন্য কারও সঙ্গে শেয়ার কোরো না।</footer>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+let adminPassword='';
+function msg(id,text,type=''){const el=$(id);el.textContent=text;el.className='status '+type;}
+async function request(url,options={}){
+  const res=await fetch(url,{...options,cache:'no-store',headers:{'X-Admin-Password':adminPassword,...(options.headers||{}),...(options.body?{'Content-Type':'application/json'}:{})}});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw Error(data.error||('Request failed ('+res.status+')'));
+  return data;
+}
+function cell(label,value){
+  const box=document.createElement('div');box.className='item';
+  const small=document.createElement('small');small.textContent=label;
+  const strong=document.createElement('strong');strong.textContent=value==null||value===''?'—':String(value);
+  box.append(small,strong);return box;
+}
+function addActionButton(text,cls,handler){const b=document.createElement('button');b.textContent=text;b.className=cls;b.onclick=handler;return b;}
+async function review(username,action,button){
+  const verb=action==='approve'?'অনুমোদন':'প্রত্যাখ্যান';
+  if(action==='approve'&&!confirm(username+' — Binance-এ TxID যাচাই করেছ? নিশ্চিত হলে সাবস্ক্রিপশন ২ মাস চালু হবে।'))return;
+  if(action==='reject'&&!confirm(username+'-এর পেমেন্ট প্রত্যাখ্যান করবে?'))return;
+  button.disabled=true;
+  try{const d=await request('/api/admin',{method:'POST',body:JSON.stringify({username,action})});msg('dashboardStatus',d.message||verb+' সম্পন্ন হয়েছে','good');await loadPayments();}
+  catch(e){msg('dashboardStatus',e.message,'error');button.disabled=false;}
+}
+async function loadPayments(){
+  $('refreshBtn').disabled=true;msg('dashboardStatus','পেমেন্ট তালিকা লোড হচ্ছে…');
+  try{
+    const d=await request('/api/admin');
+    const payments=Array.isArray(d.payments)?d.payments:[];
+    $('pendingCount').textContent=payments.length;
+    const root=$('payments');root.replaceChildren();
+    if(!payments.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='কোনো পেমেন্ট অপেক্ষমাণ নেই।';root.append(empty);}
+    payments.forEach(p=>{
+      const card=document.createElement('article');card.className='payment';
+      const title=document.createElement('h3');title.textContent='কাস্টমার: '+p.username;card.append(title);
+      const grid=document.createElement('div');grid.className='data';
+      grid.append(cell('পরিমাণ', '$'+(p.amountUSD||50)+' USD'));
+      grid.append(cell('নেটওয়ার্ক',p.network));
+      grid.append(cell('TxID',p.txid));
+      grid.append(cell('জমা দেওয়ার সময়',p.submittedAt?new Date(p.submittedAt).toLocaleString('bn-BD',{timeZone:'Asia/Dhaka'}):'—'));
+      card.append(grid);
+      const actions=document.createElement('div');actions.className='actions';
+      actions.append(addActionButton('TxID কপি','',async()=>{try{await navigator.clipboard.writeText(p.txid||'');msg('dashboardStatus','TxID কপি হয়েছে','good')}catch{msg('dashboardStatus','TxID সিলেক্ট করে কপি করো।')}}));
+      actions.append(addActionButton('✓ Approve','approve',e=>{}));
+      const approve=actions.children[1];approve.onclick=()=>review(p.username,'approve',approve);
+      actions.append(addActionButton('✕ Reject','reject',e=>{}));
+      const reject=actions.children[2];reject.onclick=()=>review(p.username,'reject',reject);
+      card.append(actions);root.append(card);
+    });
+    msg('dashboardStatus','তালিকা আপডেট হয়েছে। প্রতিটি TxID Binance-এ আলাদাভাবে যাচাই করো.','good');
+  }catch(e){
+    msg('dashboardStatus',e.message,'error');
+    if(/authorization|required|password|401/i.test(e.message)){ $('dashboard').classList.add('hidden');$('loginPanel').classList.remove('hidden');}
+  }finally{$('refreshBtn').disabled=false;}
+}
+function login(){adminPassword=$('adminPassword').value;if(!adminPassword){msg('loginStatus','অ্যাডমিন পাসওয়ার্ড দাও।','error');return;}loadInitial();}
+async function loadInitial(){
+  $('loginBtn').disabled=true;msg('loginStatus','যাচাই হচ্ছে…');
+  try{const d=await request('/api/admin');$('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');const payments=Array.isArray(d.payments)?d.payments:[];renderInitial(payments);msg('dashboardStatus','অ্যাডমিন লগইন সফল।','good');}
+  catch(e){msg('loginStatus',e.message,'error');adminPassword='';$('adminPassword').value='';}
+  finally{$('loginBtn').disabled=false;}
+}
+function renderInitial(payments){
+  $('pendingCount').textContent=payments.length;
+  const root=$('payments');root.replaceChildren();
+  if(!payments.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='কোনো পেমেন্ট অপেক্ষমাণ নেই।';root.append(empty);return;}
+  // Keep rendering logic consistent with refresh.
+  loadPayments();
+}
+$('loginBtn').addEventListener('click',login);
+$('adminPassword').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+$('refreshBtn').addEventListener('click',loadPayments);
+$('logoutBtn').addEventListener('click',()=>{adminPassword='';$('adminPassword').value='';$('dashboard').classList.add('hidden');$('loginPanel').classList.remove('hidden');msg('loginStatus','লগআউট হয়েছে।');});
+</script>
+</body>
+</html>
