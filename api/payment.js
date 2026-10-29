@@ -2,7 +2,7 @@ import {
   redis,
   json,
   currentUser
-} from "./lib/store.js";
+} from "./store.js";
 
 const ALLOWED_NETWORKS = ["TRC20", "BEP20", "ERC20"];
 
