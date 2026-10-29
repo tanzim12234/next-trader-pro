@@ -5,7 +5,7 @@ import {
   subscriptionActive
 } from "./store.js";
 
-const ALLOWED_NETWORKS = ["TRC20", "BEP20", "ERC20"];
+const ALLOWED_NETWORKS = ["BINANCE_PAY", "TRC20", "BEP20", "ERC20"];
 
 export default async function handler(req, res) {
   try {
@@ -63,9 +63,15 @@ export default async function handler(req, res) {
       });
     }
 
-    if (!/^(?:0x)?[a-fA-F0-9]{32,128}$/.test(txid)) {
+    const validTxid = network === "BINANCE_PAY"
+      ? /^[a-zA-Z0-9_-]{8,128}$/.test(txid)
+      : /^(?:0x)?[a-fA-F0-9]{32,128}$/.test(txid);
+
+    if (!validTxid) {
       return json(res, 400, {
-        error: "Enter a valid transaction hash/TxID."
+        error: network === "BINANCE_PAY"
+          ? "Enter the Binance Pay transaction reference (8–128 letters/numbers)."
+          : "Enter a valid blockchain transaction hash (32–128 hexadecimal characters)."
       });
     }
 
