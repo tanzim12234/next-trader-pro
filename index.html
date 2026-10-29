@@ -191,27 +191,11 @@ code{color:var(--cyan);overflow-wrap:anywhere}
   </div>
   <p id="accountInfo" class="sub"></p>
   <div id="paymentArea">
-    <p><b>Subscription:</b> $50 USD / 2 months</p>
-    <p><b>Binance ID:</b> <code>946277738</code></p>
-    <p class="sub">পেমেন্ট করার পর সঠিক network ও TxID জমা দাও। অ্যাডমিন যাচাই করে অনুমোদন না দেওয়া পর্যন্ত AI analysis চালু হবে না।</p>
-    <div class="fields">
-      <div class="field">
-        <label for="paymentNetwork">NETWORK</label>
-        <select id="paymentNetwork">
-          <option value="TRC20">TRC20</option>
-          <option value="BEP20">BEP20</option>
-          <option value="ERC20">ERC20</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="paymentTxid">TRANSACTION ID / HASH</label>
-        <input id="paymentTxid" maxlength="128" placeholder="Paste your TxID">
-      </div>
-    </div>
+    <p><b>Subscription:</b> $50 USD / 2 calendar months</p>
+    <p class="sub">Payment and subscription details are handled on a separate secure page. / পেমেন্ট ও সাবস্ক্রিপশনের বিস্তারিত আলাদা পেজে দেখুন।</p>
     <div class="actions">
-      <button id="submitPayment" class="primary">SUBMIT PAYMENT FOR REVIEW</button>
+      <button id="openPaymentPage" class="primary" onclick="window.location.href='/payment.html'">OPEN PAYMENT PAGE / পেমেন্ট পেজ খুলুন →</button>
     </div>
-    <p id="paymentMessage" class="status" role="status"></p>
   </div>
 </section>
 
@@ -364,7 +348,7 @@ function showAccount(user) {
       ? new Date(user.subscriptionExpiresAt).toLocaleString('en-GB', {timeZone:'Asia/Dhaka'})
       : 'Not activated');
 
-  $('paymentArea').hidden = active;
+  $('paymentArea').hidden = false;
   setAnalysisEnabled(active);
 
   if (active) {
@@ -443,30 +427,9 @@ async function restoreSession() {
   }
 }
 
-async function submitPayment() {
-  $('paymentMessage').textContent = '';
-
-  try {
-    const result = await apiRequest('/api/payment', {
-      method:'POST',
-      body:JSON.stringify({
-        network:$('paymentNetwork').value,
-        txid:$('paymentTxid').value.trim()
-      })
-    });
-
-    $('paymentMessage').textContent = result.message || 'Payment submitted.';
-    $('paymentTxid').value = '';
-    log('Payment submitted for review');
-  } catch (error) {
-    $('paymentMessage').textContent = error.message;
-  }
-}
-
 $('loginBtn').onclick = login;
 $('registerBtn').onclick = register;
 $('logoutBtn').onclick = logout;
-$('submitPayment').onclick = submitPayment;
 
 $('password').onkeydown = event => {
   if (event.key === 'Enter') login();
