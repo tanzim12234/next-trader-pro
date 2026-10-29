@@ -3,8 +3,16 @@ import { promisify } from "node:util";
 
 const scrypt = promisify(crypto.scrypt);
 
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+// Support both Upstash's standard variable names and Vercel Marketplace's KV names.
+const redisUrl =
+  process.env.UPSTASH_REDIS_REST_URL ||
+  process.env.KV_REST_API_URL ||
+  process.env.REDIS_URL ||
+  process.env.KV_URL;
+
+const redisToken =
+  process.env.UPSTASH_REDIS_REST_TOKEN ||
+  process.env.KV_REST_API_TOKEN;
 
 export async function command(...args) {
   if (!redisUrl || !redisToken) {
