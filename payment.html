@@ -92,7 +92,7 @@ main{max-width:1080px;margin:auto;padding:22px 18px 48px}.top{display:flex;align
     </div>
     <div class="actions"><a class="btn btn-primary" href="/">Go to login / লগইন করতে যান →</a></div>
   </div>
-  <form id="paymentForm">
+  <form id="paymentForm" class="hidden">
     <div class="bilingual" style="margin-bottom:13px">
       <div class="lang"><h3>ENGLISH</h3><p>Submit the transaction ID only after the transfer is completed. Check the TxID carefully; a duplicate reference cannot be reused.</p></div>
       <div class="lang"><h3>বাংলা</h3><p>ট্রান্সফার সম্পন্ন হওয়ার পরেই ট্রানজ্যাকশন আইডি জমা দিন। TxID ভালোভাবে যাচাই করুন; একই রেফারেন্স দ্বিতীয়বার জমা দেওয়া যাবে না।</p></div>
@@ -193,6 +193,7 @@ async function loadAccount() {
     $('accountEnglish').textContent = 'Not signed in. Log in on the main website first.';
     $('accountBangla').textContent = 'লগইন করা নেই। আগে মূল ওয়েবসাইটে লগইন করুন।';
     $('loginRequired').classList.remove('hidden');
+    $('paymentForm').classList.add('hidden');
     $('submitBtn').disabled = true;
     $('paymentStatus').textContent =
       error.message.includes('Redis') || error.message.includes('service')
