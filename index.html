@@ -109,6 +109,22 @@ button:disabled{opacity:.45;cursor:not-allowed}
 video{display:none;width:100%;max-height:230px;object-fit:contain;background:#020611;border-radius:12px;margin-top:13px}
 code{color:var(--cyan);overflow-wrap:anywhere}
 [hidden]{display:none!important}
+/* Assisted compounding calculator — manual execution only */
+.compound-panel{margin-top:20px}
+.compound-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.compound-field label{display:block;color:#a6bddd;font-size:10px;font-weight:700;letter-spacing:.08em;margin:0 0 6px}
+.compound-field input{width:100%}
+.compound-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.compound-box{border:1px solid var(--line);border-radius:14px;background:#071329;padding:16px;min-width:0}
+.compound-amount{font:800 clamp(25px,4vw,38px) Orbitron,sans-serif;color:var(--cyan);overflow-wrap:anywhere}
+.compound-note{font-size:11px;color:var(--muted)}
+.compound-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}
+.compound-actions button{flex:1;min-width:150px}
+.compound-warning{border-left:3px solid var(--gold);background:#221c103b;border-radius:0 10px 10px 0;padding:12px 14px;color:#c6d5e7;font-size:12px;margin-top:13px}
+.compound-state{font-size:12px;min-height:18px;margin-top:10px;overflow-wrap:anywhere}
+.compound-state.good{color:var(--green)}.compound-state.error{color:var(--red)}
+@media(max-width:850px){.compound-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.compound-grid,.compound-summary{grid-template-columns:1fr}.compound-actions button{min-width:100%}}
 @media(max-width:1000px){.hero,.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:580px){
   .shell{padding:14px}.nav{align-items:flex-start}.navright{flex-direction:column;align-items:flex-end;gap:8px}
@@ -223,6 +239,39 @@ code{color:var(--cyan);overflow-wrap:anywhere}
 </section>
 </div>
 
+<section id="compoundPanel" class="panel compound-panel">
+  <div class="panel-head"><h2>AI COMPOUND ASSISTANT</h2><span class="eyebrow">03 / MANUAL EXECUTION</span></div>
+  <p class="sub">The assistant calculates a suggested stake from your balance and risk settings. It never clicks, submits or places broker orders. You must place each trade manually and record the result here.</p>
+  <div class="compound-grid">
+    <div class="compound-field"><label for="compoundStart">STARTING BALANCE ($)</label><input id="compoundStart" type="number" min="0" step="0.01" value="0"></div>
+    <div class="compound-field"><label for="compoundMin">MINIMUM STAKE ($)</label><input id="compoundMin" type="number" min="0" step="0.01" value="1"></div>
+    <div class="compound-field"><label for="compoundMax">MAXIMUM STAKE ($)</label><input id="compoundMax" type="number" min="0" step="0.01" value="5"></div>
+    <div class="compound-field"><label for="compoundRisk">RISK PER TRADE (%)</label><input id="compoundRisk" type="number" min="0.1" max="100" step="0.1" value="2"></div>
+    <div class="compound-field"><label for="compoundPayout">PAYOUT RATE (%)</label><input id="compoundPayout" type="number" min="0" max="100" step="0.1" value="80"></div>
+    <div class="compound-field"><label for="compoundDailyStop">DAILY LOSS LIMIT (%)</label><input id="compoundDailyStop" type="number" min="0" max="100" step="0.1" value="5"></div>
+    <div class="compound-field"><label for="compoundMaxTrades">MAX TRADES / DAY</label><input id="compoundMaxTrades" type="number" min="1" max="500" step="1" value="10"></div>
+    <div class="compound-field"><label for="compoundCurrency">ACCOUNT CURRENCY</label><input id="compoundCurrency" value="USD" maxlength="8" readonly></div>
+  </div>
+  <div class="compound-actions">
+    <button id="compoundApply" class="primary">SET / RESET TRACKED BALANCE</button>
+    <button id="compoundRefresh">RECALCULATE STAKE</button>
+  </div>
+  <div class="compound-summary">
+    <div class="compound-box"><div class="eyebrow">TRACKED BALANCE</div><div class="compound-amount" id="compoundBalance">$0.00</div><div class="compound-note">Manual tracker — not synced to broker</div></div>
+    <div class="compound-box"><div class="eyebrow">SUGGESTED STAKE</div><div class="compound-amount" id="compoundStake">$0.00</div><div class="compound-note" id="compoundRiskText">Waiting for a fresh CALL / PUT signal</div></div>
+  </div>
+  <div class="readout"><span class="sub">TODAY'S TRACKED TRADES</span><b id="compoundTradeCount">0</b></div>
+  <div class="readout"><span class="sub">TODAY'S TRACKED LOSS</span><b id="compoundLoss">$0.00</b></div>
+  <div class="compound-actions">
+    <button id="compoundConfirm" class="primary" disabled>CONFIRM & TRACK MANUAL TRADE</button>
+    <button id="compoundWin" disabled>MARK WIN</button>
+    <button id="compoundLossBtn" disabled>MARK LOSS</button>
+    <button id="compoundCancel" disabled>CANCEL TRACKING</button>
+  </div>
+  <p id="compoundState" class="compound-state" role="status">Set your starting balance to begin.</p>
+  <div class="compound-warning"><b>Risk notice:</b> This is a stake calculator and local tracker only. It does not connect to Quotex, read your live broker balance, or place trades. A displayed CALL/PUT is not a profit guarantee. Never risk money you cannot afford to lose.</div>
+</section>
+
 <footer class="foot"><strong>NEXT TRADER PRO</strong> / NEURAL TRADING CONSOLE • No signal guarantees returns.</footer>
 </div>
 
@@ -237,6 +286,8 @@ let busy = false;
 let voiceOn = true;
 let lastBucket = -1;
 let lastSignal = null;
+let compoundState = null;
+let compoundActiveTrade = null;
 let currentAccount = null;
 let activeController = null;
 
@@ -518,7 +569,8 @@ async function analyze(image, automatic = false) {
       '<p class="sub">' + escapeHTML(result.disclaimer ||
         'Technical analysis is probabilistic; no signal is guaranteed.') + '</p>';
 
-    lastSignal = {at:Date.now(),bucket:targetBucket};
+    lastSignal = {at:Date.now(),bucket:targetBucket,signal,confidence:Number(result.confidence)||0,symbol:sym()};
+    updateCompoundPanel();
 
     status('Completed in ' + (elapsed / 1000).toFixed(2) + 's');
     $('systemState').textContent = 'ANALYSIS READY';
@@ -576,6 +628,217 @@ $('voice').onclick = () => {
 };
 
 $('testVoice').onclick = () => speakSignal('BULLISH', 'CALL', 78);
+
+
+/* Risk-based compounding assistant. It only tracks manually executed trades. */
+function dhakaDayKey() {
+  return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+}
+function money(value) { return '
+  const now = Date.now();
+  const seconds = Math.floor(now / 1000);
+  const period = tf();
+  const remaining = period - (seconds % period);
+  const bucket = Math.floor(seconds / period);
+
+  $('clock').textContent = new Date().toLocaleTimeString('en-GB', {
+    timeZone:'Asia/Dhaka',
+    hour12:false
+  });
+
+  const countdown =
+    String(Math.floor(remaining / 60)).padStart(2,'0') + ':' +
+    String(remaining % 60).padStart(2,'0');
+
+  $('countdown').textContent = countdown;
+  $('heroCountdown').textContent = countdown;
+  $('age').textContent = lastSignal
+    ? ((now - lastSignal.at) / 1000).toFixed(1) + 's'
+    : '—';
+
+  if (
+    stream &&
+    remaining === 1 &&
+    bucket !== lastBucket &&
+    subscriptionIsActive(currentAccount)
+  ) {
+    lastBucket = bucket;
+    try {
+      analyze(screenshot(), true);
+    } catch (error) {
+      status(error.message);
+    }
+  }
+}
+
+setInterval(tick, 250);
+tick();
+compoundInit();
+restoreSession();
+</script>
+</body>
+</html>
+ + (Number(value)||0).toFixed(2); }
+function compoundLoad() {
+  try {
+    const raw=localStorage.getItem('nt_compound_assist_v1');
+    if(raw) compoundState=JSON.parse(raw);
+  } catch (_) { compoundState=null; }
+  const today=dhakaDayKey();
+  if(!compoundState || typeof compoundState!=='object') {
+    compoundState={balance:0,startingBalance:0,dayKey:today,dayStartBalance:0,lossToday:0,tradesToday:0,history:[]};
+  }
+  if(compoundState.dayKey!==today) {
+    compoundState.dayKey=today;
+    compoundState.dayStartBalance=Number(compoundState.balance)||0;
+    compoundState.lossToday=0;
+    compoundState.tradesToday=0;
+    compoundActiveTrade=null;
+  }
+  if(!Array.isArray(compoundState.history)) compoundState.history=[];
+  compoundSave();
+}
+function compoundSave() {
+  try { localStorage.setItem('nt_compound_assist_v1',JSON.stringify(compoundState)); } catch (_) {}
+}
+function compoundConfig() {
+  return {
+    start:Math.max(0,Number($('compoundStart').value)||0),
+    min:Math.max(0,Number($('compoundMin').value)||0),
+    max:Math.max(0,Number($('compoundMax').value)||0),
+    risk:Math.max(0,Math.min(100,Number($('compoundRisk').value)||0)),
+    payout:Math.max(0,Math.min(100,Number($('compoundPayout').value)||0)),
+    dailyStop:Math.max(0,Math.min(100,Number($('compoundDailyStop').value)||0)),
+    maxTrades:Math.max(1,Math.floor(Number($('compoundMaxTrades').value)||1))
+  };
+}
+function compoundFreshSignal() {
+  if(!lastSignal || !['CALL','PUT'].includes(lastSignal.signal)) return false;
+  const age=Date.now()-lastSignal.at;
+  return age>=0 && age<tf()*1000 && Math.floor(Date.now()/1000/tf())===lastSignal.bucket;
+}
+function compoundStopReason() {
+  const cfg=compoundConfig();
+  if(!compoundState || compoundState.balance<=0) return 'Set a starting balance above zero.';
+  if(compoundActiveTrade) return 'Settle or cancel the open tracked trade first.';
+  if(compoundState.tradesToday>=cfg.maxTrades) return 'Daily trade limit reached.';
+  const limit=compoundState.dayStartBalance*cfg.dailyStop/100;
+  if(cfg.dailyStop>0 && compoundState.lossToday>=limit) return 'Daily loss limit reached. Stop for today.';
+  if(!compoundFreshSignal()) return 'Run a fresh AI analysis and wait for CALL / PUT.';
+  if(cfg.min<=0 || cfg.max<=0 || cfg.max<cfg.min) return 'Set valid minimum and maximum stake limits.';
+  if(cfg.risk<=0) return 'Set risk per trade above zero.';
+  const raw=compoundState.balance*cfg.risk/100;
+  if(raw<cfg.min) return 'Risk-based stake is below your minimum. Reduce minimum/risk or update balance.';
+  return '';
+}
+function compoundSuggestedStake() {
+  const cfg=compoundConfig();
+  const raw=compoundState ? compoundState.balance*cfg.risk/100 : 0;
+  return Math.min(raw,cfg.max);
+}
+function compoundRender() {
+  if(!compoundState) return;
+  const cfg=compoundConfig();
+  $('compoundBalance').textContent=money(compoundState.balance);
+  $('compoundTradeCount').textContent=compoundState.tradesToday+' / '+cfg.maxTrades;
+  $('compoundLoss').textContent=money(compoundState.lossToday);
+  const stop=compoundStopReason();
+  const stake=compoundSuggestedStake();
+  const blocked=Boolean(stop);
+  $('compoundStake').textContent=money(blocked?0:stake);
+  $('compoundRiskText').textContent=compoundFreshSignal()
+    ? 'AI '+lastSignal.signal+' • '+lastSignal.confidence+'% • '+lastSignal.symbol
+    : 'Waiting for a fresh CALL / PUT signal';
+  $('compoundConfirm').disabled=blocked;
+  $('compoundWin').disabled=!compoundActiveTrade;
+  $('compoundLossBtn').disabled=!compoundActiveTrade;
+  $('compoundCancel').disabled=!compoundActiveTrade;
+  if(compoundActiveTrade) {
+    $('compoundState').textContent='Open manual trade: '+compoundActiveTrade.signal+' / '+money(compoundActiveTrade.stake)+'. After you settle it at your broker, mark WIN or LOSS here.';
+    $('compoundState').className='compound-state good';
+  } else {
+    $('compoundState').textContent=stop||('Suggested stake is '+money(stake)+'. You must place it manually on your broker.');
+    $('compoundState').className='compound-state '+(stop?'error':'good');
+  }
+}
+function updateCompoundPanel() {
+  if(compoundState) compoundRender();
+}
+function compoundApply() {
+  const cfg=compoundConfig();
+  if(!Number.isFinite(cfg.start) || cfg.start<=0) {
+    $('compoundState').textContent='Enter a starting balance greater than zero.';
+    $('compoundState').className='compound-state error'; return;
+  }
+  if(compoundActiveTrade) {
+    $('compoundState').textContent='Settle or cancel the open tracked trade before resetting.';
+    $('compoundState').className='compound-state error'; return;
+  }
+  if(!confirm('Reset the local balance tracker to '+money(cfg.start)+'? This does not change your real broker balance.')) return;
+  compoundState.balance=cfg.start;
+  compoundState.startingBalance=cfg.start;
+  compoundState.dayStartBalance=cfg.start;
+  compoundState.lossToday=0;
+  compoundState.tradesToday=0;
+  compoundState.dayKey=dhakaDayKey();
+  compoundState.history=[];
+  compoundSave();
+  compoundRender();
+}
+function compoundConfirm() {
+  const stop=compoundStopReason();
+  if(stop) { $('compoundState').textContent=stop; $('compoundState').className='compound-state error'; return; }
+  const stake=compoundSuggestedStake();
+  const signal=lastSignal.signal;
+  const symbol=lastSignal.symbol;
+  const confidence=lastSignal.confidence;
+  if(!confirm('AI '+signal+' on '+symbol+'. Suggested stake '+money(stake)+'. Place this trade manually at your broker, then confirm here to track its result. Continue?')) return;
+  compoundActiveTrade={stake,signal,symbol,confidence,openedAt:Date.now()};
+  compoundState.tradesToday+=1;
+  compoundSave();
+  compoundRender();
+  log('Manual trade tracking started: '+signal+' '+money(stake));
+}
+function compoundSettle(outcome) {
+  if(!compoundActiveTrade) return;
+  const trade=compoundActiveTrade;
+  if(outcome==='win') {
+    const profit=trade.stake*compoundConfig().payout/100;
+    compoundState.balance+=profit;
+    compoundState.history.push({outcome,stake:trade.stake,profit,at:Date.now(),signal:trade.signal});
+    log('Manual WIN recorded • '+money(profit)+' profit');
+  } else {
+    compoundState.balance=Math.max(0,compoundState.balance-trade.stake);
+    compoundState.lossToday+=trade.stake;
+    compoundState.history.push({outcome:'loss',stake:trade.stake,at:Date.now(),signal:trade.signal});
+    log('Manual LOSS recorded • '+money(trade.stake));
+  }
+  compoundActiveTrade=null;
+  compoundSave();
+  compoundRender();
+}
+function compoundCancel() {
+  if(!compoundActiveTrade) return;
+  if(!confirm('Cancel this local tracking entry? Only use this if you did not place the broker trade.')) return;
+  compoundState.tradesToday=Math.max(0,compoundState.tradesToday-1);
+  compoundActiveTrade=null;
+  compoundSave();
+  compoundRender();
+}
+function compoundInit() {
+  compoundLoad();
+  $('compoundStart').value=String(compoundState.startingBalance||0);
+  ['compoundMin','compoundMax','compoundRisk','compoundPayout','compoundDailyStop','compoundMaxTrades'].forEach(id=>{
+    $(id).addEventListener('input',compoundRender);
+  });
+  $('compoundApply').addEventListener('click',compoundApply);
+  $('compoundRefresh').addEventListener('click',compoundRender);
+  $('compoundConfirm').addEventListener('click',compoundConfirm);
+  $('compoundWin').addEventListener('click',()=>compoundSettle('win'));
+  $('compoundLossBtn').addEventListener('click',()=>compoundSettle('loss'));
+  $('compoundCancel').addEventListener('click',compoundCancel);
+  compoundRender();
+}
 
 function tick() {
   const now = Date.now();
