@@ -125,6 +125,19 @@ code{color:var(--cyan);overflow-wrap:anywhere}
 .compound-state.good{color:var(--green)}.compound-state.error{color:var(--red)}
 @media(max-width:850px){.compound-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:580px){.compound-grid,.compound-summary{grid-template-columns:1fr}.compound-actions button{min-width:100%}}
+
+/* Multi-market TradingView chart */
+.market-chart-panel{margin:20px 0}
+.chart-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px}
+.chart-toolbar .field label{display:block;font-size:10px;letter-spacing:.1em;color:#a6bddd;font-weight:700;margin-bottom:6px}
+.chart-wrap{height:540px;min-height:360px;overflow:hidden;border:1px solid #294766;border-radius:14px;background:#070e20}
+.tradingview-widget-container,.tradingview-widget-container__widget{width:100%;height:100%}
+.chart-status{font-size:11px;color:var(--muted);min-height:18px;margin:7px 0 0}
+.tv-disclaimer{font-size:11px;color:var(--muted);margin:10px 0 0}
+.algorithm-badge{display:inline-flex;gap:7px;align-items:center;border:1px solid #3b6b8a;border-radius:20px;padding:5px 9px;font-size:10px;color:var(--cyan);letter-spacing:.08em}
+@media(max-width:800px){.chart-toolbar{grid-template-columns:1fr 1fr}.chart-wrap{height:440px}}
+@media(max-width:520px){.chart-toolbar{grid-template-columns:1fr}.chart-wrap{height:390px}}
+
 @media(max-width:1000px){.hero,.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:580px){
   .shell{padding:14px}.nav{align-items:flex-start}.navright{flex-direction:column;align-items:flex-end;gap:8px}
@@ -173,6 +186,45 @@ code{color:var(--cyan);overflow-wrap:anywhere}
   <div class="metric"><div class="eyebrow">VOICE ORDER</div><div class="value">3-STEP</div><div class="hint">Trend → Entry → Confidence</div></div>
   <div class="metric"><div class="eyebrow">CANDLE CLOSE</div><div class="value" id="countdown">--:--</div><div class="hint">Bangladesh time aligned</div></div>
 </section>
+
+
+<section class="panel market-chart-panel">
+  <div class="panel-head">
+    <h2>GLOBAL REAL-MARKET CHART</h2>
+    <span class="algorithm-badge">MULTI-ASSET • CHART FEED</span>
+  </div>
+  <p class="sub">Choose a supported Forex, Crypto, Index, Commodity or Stock instrument. Use this chart as the visual source for AI analysis; share this browser tab in Control Center.</p>
+  <div class="chart-toolbar">
+    <div class="field"><label for="chartMarketClass">MARKET CLASS</label>
+      <select id="chartMarketClass">
+        <option value="forex">FOREX</option>
+        <option value="crypto">CRYPTO</option>
+        <option value="indices">INDICES</option>
+        <option value="commodities">COMMODITIES</option>
+        <option value="stocks">STOCKS</option>
+      </select>
+    </div>
+    <div class="field"><label for="chartSymbol">INSTRUMENT</label><select id="chartSymbol"></select></div>
+    <div class="field"><label for="chartInterval">CHART TIMEFRAME</label>
+      <select id="chartInterval">
+        <option value="1">1 MIN</option>
+        <option value="5" selected>5 MIN</option>
+        <option value="15">15 MIN</option>
+        <option value="30">30 MIN</option>
+        <option value="60">1 HOUR</option>
+        <option value="240">4 HOURS</option>
+        <option value="1D">1 DAY</option>
+      </select>
+    </div>
+    <button id="chartLoad" class="primary">LOAD CHART</button>
+  </div>
+  <div id="marketChart" class="chart-wrap">
+    <div style="height:100%;display:grid;place-items:center;color:#91a8c4">Loading chart…</div>
+  </div>
+  <p id="chartStatus" class="chart-status" role="status">Chart feed status will appear here.</p>
+  <p class="tv-disclaimer">Market symbols and available data are supplied by TradingView and its data partners. Data may be real-time, delayed or unavailable depending on the instrument and exchange. TradingView branding is retained. The embedded chart does not expose raw OHLC data to NEXT TRADER's custom algorithm.</p>
+</section>
+
 
 
 
@@ -843,7 +895,109 @@ function tick() {
 setInterval(tick, 250);
 tick();
 compoundInit();
+populateChartSymbols();
 restoreSession();
+
+const MARKET_SYMBOLS = {
+  forex: [
+    ["EUR / USD","OANDA:EURUSD"],["GBP / USD","OANDA:GBPUSD"],
+    ["USD / JPY","OANDA:USDJPY"],["AUD / USD","OANDA:AUDUSD"],
+    ["USD / CAD","OANDA:USDCAD"],["USD / CHF","OANDA:USDCHF"],
+    ["NZD / USD","OANDA:NZDUSD"],["EUR / JPY","OANDA:EURJPY"],
+    ["GBP / JPY","OANDA:GBPJPY"]
+  ],
+  crypto: [
+    ["BTC / USDT","BINANCE:BTCUSDT"],["ETH / USDT","BINANCE:ETHUSDT"],
+    ["BNB / USDT","BINANCE:BNBUSDT"],["SOL / USDT","BINANCE:SOLUSDT"],
+    ["XRP / USDT","BINANCE:XRPUSDT"],["DOGE / USDT","BINANCE:DOGEUSDT"],
+    ["ADA / USDT","BINANCE:ADAUSDT"],["LINK / USDT","BINANCE:LINKUSDT"]
+  ],
+  indices: [
+    ["S&P 500","TVC:SPX"],["NASDAQ 100","NASDAQ:NDX"],
+    ["DOW JONES","DJ:DJI"],["DXY U.S. Dollar Index","TVC:DXY"],
+    ["VIX","TVC:VIX"],["FTSE 100","TVC:UKX"],["DAX","XETR:DAX"]
+  ],
+  commodities: [
+    ["Gold","OANDA:XAUUSD"],["Silver","OANDA:XAGUSD"],
+    ["WTI Crude Oil","TVC:USOIL"],["Brent Crude Oil","TVC:UKOIL"],
+    ["Natural Gas","NYMEX:NG1!"],["Copper","COMEX:HG1!"]
+  ],
+  stocks: [
+    ["Apple","NASDAQ:AAPL"],["Microsoft","NASDAQ:MSFT"],
+    ["NVIDIA","NASDAQ:NVDA"],["Amazon","NASDAQ:AMZN"],
+    ["Tesla","NASDAQ:TSLA"],["Alphabet","NASDAQ:GOOGL"],
+    ["Meta","NASDAQ:META"],["AMD","NASDAQ:AMD"]
+  ]
+};
+function populateChartSymbols() {
+  const type=$('chartMarketClass').value;
+  const list=MARKET_SYMBOLS[type]||MARKET_SYMBOLS.forex;
+  const select=$('chartSymbol');
+  select.replaceChildren();
+  list.forEach(([label,symbol])=>{
+    const option=document.createElement('option');
+    option.value=symbol;option.textContent=label+' ('+symbol+')';
+    select.append(option);
+  });
+  renderTradingViewChart();
+}
+function renderTradingViewChart() {
+  const symbol=$('chartSymbol').value;
+  const interval=$('chartInterval').value;
+  if(!symbol)return;
+  const host=$('marketChart');
+  host.replaceChildren();
+  const outer=document.createElement('div');
+  outer.className='tradingview-widget-container';
+  outer.style.cssText='width:100%;height:100%';
+  const widget=document.createElement('div');
+  widget.className='tradingview-widget-container__widget';
+  widget.style.cssText='width:100%;height:calc(100% - 24px)';
+  const copyright=document.createElement('div');
+  copyright.style.cssText='height:24px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#91a8c4';
+  const link=document.createElement('a');
+  link.href='https://www.tradingview.com/symbols/'+encodeURIComponent(symbol.replace(':','-'))+'/';
+  link.target='_blank';link.rel='noopener nofollow';
+  link.textContent=symbol+' chart by TradingView';
+  link.style.cssText='color:#91a8c4;text-decoration:none';
+  copyright.append(link);
+  const script=document.createElement('script');
+  script.type='text/javascript';
+  script.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  script.async=true;
+  script.text=JSON.stringify({
+    autosize:true,
+    symbol,
+    interval,
+    timezone:'Asia/Dhaka',
+    theme:'dark',
+    style:'1',
+    locale:'en',
+    backgroundColor:'#050817',
+    gridColor:'rgba(46,46,46,0.12)',
+    allow_symbol_change:true,
+    hide_side_toolbar:false,
+    hide_top_toolbar:false,
+    hide_legend:false,
+    hide_volume:false,
+    save_image:false,
+    calendar:false,
+    details:false,
+    hotlist:false,
+    withdateranges:true,
+    watchlist:[],
+    compareSymbols:[],
+    studies:['MASimple@tv-basicstudies','RSI@tv-basicstudies','MACD@tv-basicstudies']
+  });
+  outer.append(widget,copyright,script);
+  host.append(outer);
+  $('chartStatus').textContent='Loading '+symbol+' • '+interval+' interval. Data availability and delay depend on the exchange/feed.';
+}
+$('chartMarketClass').addEventListener('change',populateChartSymbols);
+$('chartLoad').addEventListener('click',renderTradingViewChart);
+$('chartSymbol').addEventListener('change',renderTradingViewChart);
+$('chartInterval').addEventListener('change',renderTradingViewChart);
+
 </script>
 </body>
 </html>
