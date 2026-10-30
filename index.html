@@ -1046,7 +1046,7 @@ async function mountCryptoChart(symbol,seconds) {
               if(document.visibilityState!=='visible'||!cryptoCandleSeries)return;
               try {
                 const latest=await fetchCryptoCandles(symbol,seconds,2);
-                for(const x of latest.candles||[]) cryptoCandleSeries.update({time:x.time,open:x.open,high:x.high,low:x.low,close:x.close});
+                const x=(latest.candles||[]).at(-1);\n                if(x) cryptoCandleSeries.update({time:x.time,open:x.open,high:x.high,low:x.low,close:x.close});
                 setChartStatus('REST refresh • Binance Spot • '+symbol+' • Updated '+new Date(latest.retrievedAt).toLocaleTimeString('en-GB',{timeZone:'Asia/Dhaka'}),'good');
               } catch(error) { setChartStatus(error.message,'error'); }
             },15000);
