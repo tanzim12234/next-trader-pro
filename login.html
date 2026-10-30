@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#050817">
-<title>NEXT TRADER PRO — Create Account / Login</title>
+<title>NEXT TRADER PRO — Login</title>
 <style>
 :root{color-scheme:dark;--cyan:#40f1ff;--muted:#9bb1cd;--border:#345376;--green:#36e9ae;--red:#ff7297}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 10% 10%,#19366b,transparent 42%),radial-gradient(circle at 90% 10%,#291949,transparent 44%),#050817;color:#eff8ff;font:15px/1.6 system-ui,-apple-system,'Segoe UI',sans-serif}
@@ -14,21 +14,21 @@ input{width:100%;padding:13px;border:1px solid var(--border);border-radius:11px;
 <body>
 <main>
 <div class="brand">NEXT TRADER <span>PRO</span></div>
-<div class="eyebrow">STEP 01 / CREATE ACCOUNT OR LOGIN</div>
-<h1>Secure Member Access</h1>
-<p>Register or sign in first. Then complete your subscription on the separate payment page.</p>
-<p>প্রথমে অ্যাকাউন্ট তৈরি করুন অথবা লগইন করুন। এরপর আলাদা পেমেন্ট পেজে সাবস্ক্রিপশন সম্পন্ন করুন।</p>
+<div class="eyebrow">STEP 02 / MEMBER LOGIN</div>
+<h1>Member Login / লগইন</h1>
+<p>Sign in to continue. Active members enter the trading console; others go to the payment page.</p>
+<p>লগইন করলে সক্রিয় সদস্যরা ট্রেডিং কনসোলে যাবেন; অন্যরা পেমেন্ট পেজে যাবেন।</p>
 <form id="authForm" novalidate>
 <label for="username">USERNAME / ইউজারনেম</label>
 <input id="username" name="username" required autocomplete="username" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" placeholder="3–24 letters, numbers, underscore">
 <label for="password">PASSWORD / পাসওয়ার্ড</label>
 <input id="password" name="password" type="password" autocomplete="current-password" required minlength="8" maxlength="128" placeholder="8–128 characters">
 <div class="row">
-<button id="registerBtn" type="button">CREATE ACCOUNT</button>
-<button id="loginBtn" type="submit" class="primary">LOGIN →</button>
+<button id="loginBtn" type="submit" class="primary">LOGIN / লগইন →</button>
 </div>
 <p id="message" class="message" role="status" aria-live="polite"></p>
 </form>
+<p>New here? / নতুন অ্যাকাউন্ট দরকার? <a href="/register.html" style="color:var(--cyan)">CREATE ACCOUNT / অ্যাকাউন্ট তৈরি করুন →</a></p>
 <div class="note">One active login session per account. A new login replaces the previous session.<br>একটি অ্যাকাউন্টে একসঙ্গে একটি সক্রিয় লগইন থাকবে। নতুন লগইন করলে আগের সেশন বন্ধ হবে।</div>
 </main>
 <script>
@@ -36,7 +36,7 @@ input{width:100%;padding:13px;border:1px solid var(--border);border-radius:11px;
 const $ = id => document.getElementById(id);
 let busy = false;
 function message(text,kind='') { $('message').textContent=text; $('message').className='message '+kind; }
-function setBusy(value){busy=value;$('loginBtn').disabled=value;$('registerBtn').disabled=value;}
+function setBusy(value){busy=value;$('loginBtn').disabled=value;}
 async function api(body) {
   const response=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'});
   const data=await response.json().catch(()=>({}));
@@ -55,24 +55,14 @@ async function login(credentials){
   message('Logged in. Opening the next step… / লগইন সফল। পরের ধাপে যাচ্ছি…','good');
   window.location.replace(d.user?.subscriptionActive?'/':'/payment.html');
 }
-async function act(mode){
+async function act(){
   if(busy)return;
   setBusy(true);
-  try{
-    const credentials=getCredentials();
-    if(mode==='register'){
-      message('Creating account… / অ্যাকাউন্ট তৈরি হচ্ছে…');
-      await api({action:'register',...credentials});
-      message('Account created. Signing in… / অ্যাকাউন্ট তৈরি হয়েছে, লগইন হচ্ছে…','good');
-    }else{
-      message('Signing in… / লগইন হচ্ছে…');
-    }
-    await login(credentials);
-  }catch(e){message(e.message,'error');}
-  finally{setBusy(false);}
+  try { message('Signing in… / লগইন হচ্ছে…'); await login(getCredentials()); }
+  catch(e) { message(e.message,'error'); }
+  finally { setBusy(false); }
 }
-$('authForm').addEventListener('submit',e=>{e.preventDefault();act('login');});
-$('registerBtn').addEventListener('click',()=>act('register'));
+$('authForm').addEventListener('submit',e=>{e.preventDefault();act();});
 (async()=>{
  try{
    const r=await fetch('/api/auth',{cache:'no-store'});
