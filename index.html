@@ -563,6 +563,8 @@ async function analyze(image, automatic = false) {
           mode:$('mode').value,
           min_confidence:Number($('confidence').value),
           symbol:sym(),
+          market_type:$('chartMarketClass')?.value || 'forex',
+          market_data_source:($('chartMarketClass')?.value === 'crypto' ? 'BINANCE_PUBLIC_SPOT' : 'TRADINGVIEW_SCREEN'),
           execution_mode:automatic
             ? 'FIXED_1M_CLOSE_TO_RUNNING_ENTRY'
             : 'MANUAL'
