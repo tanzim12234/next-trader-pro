@@ -903,7 +903,6 @@ function tick() {
 setInterval(tick, 250);
 tick();
 compoundInit();
-populateChartSymbols();
 restoreSession();
 
 const MARKET_SYMBOLS = {
@@ -1103,6 +1102,7 @@ $('chartMarketClass').addEventListener('change',populateChartSymbols);
 $('chartLoad').addEventListener('click',renderMarketChart);
 $('chartSymbol').addEventListener('change',renderMarketChart);
 $('chartInterval').addEventListener('change',renderMarketChart);
+populateChartSymbols();
 
 </script>
 </body>
