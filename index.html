@@ -210,9 +210,9 @@ code{color:var(--cyan);overflow-wrap:anywhere}
     <div class="field"><label for="chartSymbol">INSTRUMENT</label><select id="chartSymbol"></select></div>
     <div class="field"><label for="chartInterval">CHART TIMEFRAME</label>
       <select id="chartInterval">
-        <option value="60">1 MIN</option>
+        <option value="60" selected>1 MIN</option>
         <option value="180">3 MIN</option>
-        <option value="300" selected>5 MIN</option>
+        <option value="300">5 MIN</option>
         <option value="900">15 MIN</option>
         <option value="1800">30 MIN</option>
         <option value="3600">1 HOUR</option>
@@ -252,7 +252,7 @@ code{color:var(--cyan);overflow-wrap:anywhere}
         <option value="300">5 MINUTES</option>
       </select>
     </div>
-    <div class="field"><label for="market">MARKET</label><select id="market"><option>REAL</option><option>OTC</option></select></div>
+    <div class="field"><label for="market">MARKET</label><select id="market"><option>REAL</option></select></div>
     <div class="field"><label for="confidence">MINIMUM CONFIDENCE</label><input id="confidence" type="number" value="55" min="0" max="100"></div>
     <div class="field">
       <label for="mode">AI STRATEGY</label>
@@ -574,6 +574,7 @@ async function analyze(image, automatic = false) {
           symbol:sym(),
           market_type:$('chartMarketClass')?.value || 'forex',
           market_data_source:($('chartMarketClass')?.value === 'crypto' ? 'BINANCE_PUBLIC_SPOT' : 'TRADINGVIEW_SCREEN'),
+          chart_timeframe_seconds:Number($('chartInterval')?.value)||60,
           execution_mode:automatic
             ? 'FIXED_1M_CLOSE_TO_RUNNING_ENTRY'
             : 'MANUAL'
