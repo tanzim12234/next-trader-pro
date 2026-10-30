@@ -1027,7 +1027,7 @@ async function mountCryptoChart(symbol,seconds) {
     const connect=()=>{
       if(activeChartSymbol!==symbol||activeChartTimeframe!==seconds)return;
       try {
-        cryptoSocket=new WebSocket('wss://stream.binance.com:9443/ws/'+symbol.toLowerCase()+'@kline_'+interval);
+        cryptoSocket=new WebSocket('wss://data-stream.binance.vision:443/ws/'+symbol.toLowerCase()+'@kline_'+interval);
         cryptoSocket.onopen=()=>setChartStatus('LIVE • Binance Spot WebSocket • '+symbol+' • '+interval,'good');
         cryptoSocket.onmessage=event=>{
           try {
