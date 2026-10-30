@@ -265,7 +265,7 @@ export default async function handler(req, res) {
 
     const prompt = `You are NEXT TRADER PRO's visual evidence extractor. A deterministic server-side rule engine will decide the final direction.
 
-IMAGE IS THE ONLY SOURCE OF PRICE EVIDENCE. Do not invent candles, OHLC values, hidden broker feeds, or future movement. Treat the chart label/symbol and selected interval as hints, not proof of live feed quality.
+Use only visible chart evidence for visual interpretation. Do not invent candles, OHLC values, hidden broker feeds, or future movement. When the selected market is Crypto, a separate deterministic rule engine also evaluates closed Binance Spot OHLC candles; your visual evidence must independently agree with that engine before a CALL/PUT can be returned.
 
 Market: ${market}
 Symbol: ${String(settings.symbol || "UNKNOWN").slice(0,40)}
@@ -441,10 +441,10 @@ Return ONLY valid JSON with this exact shape:
       ) ? String(result.risk).toUpperCase() : "HIGH",
       market_data: {
         asset: String(md.asset || liveData?.asset || settings.symbol || "UNKNOWN"),
-        current_price: String(md.current_price || liveData?.price || liveData?.close || "UNKNOWN"),
-        visible_time: String(md.visible_time || liveData?.server_time || "UNKNOWN"),
-        candle_close: String(md.candle_close || liveData?.close || "UNKNOWN"),
-        source: liveData ? "LIVE DATA + SCREEN" : "SCREEN SNAPSHOT"
+        current_price: String(deterministicMarketScore?.close ?? md.current_price ?? liveData?.price ?? liveData?.close ?? "UNKNOWN"),
+        visible_time: String(deterministicMarketScore?.last_closed_candle_time ? new Date(deterministicMarketScore.last_closed_candle_time*1000).toISOString() : md.visible_time || liveData?.server_time || "UNKNOWN"),
+        candle_close: String(deterministicMarketScore?.close ?? md.candle_close ?? liveData?.close ?? "UNKNOWN"),
+        source: deterministicMarketScore ? "BINANCE PUBLIC OHLC + SCREEN" : liveData ? "LIVE DATA + SCREEN" : "SCREEN SNAPSHOT"
       },
       disclaimer: "Technical analysis is probabilistic; no signal is guaranteed."
     });
