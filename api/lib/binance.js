@@ -16,7 +16,10 @@ const TIMEFRAME_INTERVALS = {
 };
 
 export function isAllowedBinanceSymbol(symbol) {
-  return ALLOWED_BINANCE_SYMBOLS.has(String(symbol || "").toUpperCase());
+  const value=String(symbol || "").trim().toUpperCase();
+  // Allow common Binance Spot pair quote assets; Binance validates the actual listing.
+  return /^[A-Z0-9]{5,20}$/.test(value) &&
+    /(USDT|USDC|FDUSD|TUSD|USDP|DAI|BTC|ETH|BNB|EUR|TRY|BRL)$/.test(value);
 }
 
 export function getSupportedBinanceTimeframes() {
