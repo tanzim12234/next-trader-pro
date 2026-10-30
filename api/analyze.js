@@ -332,7 +332,7 @@ Return ONLY valid JSON with this exact shape:
           generationConfig: {
             temperature: 0.1,
             responseMimeType: "application/json",
-            maxOutputTokens: 260,
+            maxOutputTokens: 500,
             thinkingConfig: { thinkingLevel: "minimal" }
           }
         }),
