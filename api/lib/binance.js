@@ -57,7 +57,7 @@ export async function getBinanceCandles(symbol, timeframeSeconds=60, limit=300) 
   const timeframe=TIMEFRAME_INTERVALS[Number(timeframeSeconds)];
   if (!isAllowedBinanceSymbol(pair)) throw new Error("Unsupported Binance Spot symbol.");
   if (!timeframe) throw new Error("Unsupported chart timeframe.");
-  const safeLimit=Math.max(20,Math.min(500,Math.floor(Number(limit)||300)));
+  const safeLimit=Math.max(2,Math.min(500,Math.floor(Number(limit)||300)));
   const requestLimit=Math.min(1000,safeLimit*timeframe.factor);
   const url=new URL("https://data-api.binance.vision/api/v3/klines");
   url.searchParams.set("symbol",pair);
