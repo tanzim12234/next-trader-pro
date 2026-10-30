@@ -130,6 +130,9 @@ code{color:var(--cyan);overflow-wrap:anywhere}
 .market-chart-panel{margin:20px 0}
 .chart-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px}
 .chart-toolbar .field label{display:block;font-size:10px;letter-spacing:.1em;color:#a6bddd;font-weight:700;margin-bottom:6px}
+.chart-custom-bar{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin:0 0 12px}
+.chart-custom-bar .field label{display:block;font-size:10px;letter-spacing:.1em;color:#a6bddd;font-weight:700;margin-bottom:6px}
+@media(max-width:520px){.chart-custom-bar{grid-template-columns:1fr}}
 .chart-wrap{height:540px;min-height:360px;overflow:hidden;border:1px solid #294766;border-radius:14px;background:#070e20}
 .tradingview-widget-container,.tradingview-widget-container__widget{width:100%;height:100%}
 .chart-status{font-size:11px;color:var(--muted);min-height:18px;margin:7px 0 0}
@@ -218,6 +221,10 @@ code{color:var(--cyan);overflow-wrap:anywhere}
       </select>
     </div>
     <button id="chartLoad" class="primary">LOAD CHART</button>
+  </div>
+  <div class="chart-custom-bar">
+    <div class="field"><label for="chartCustomSymbol">CUSTOM / SEARCH SYMBOL</label><input id="chartCustomSymbol" placeholder="Crypto: BTCUSDT • TradingView: NASDAQ:ADBE / OANDA:EURUSD" maxlength="32"></div>
+    <button id="chartCustomApply" type="button">USE SYMBOL</button>
   </div>
   <div id="marketChart" class="chart-wrap">
     <div style="height:100%;display:grid;place-items:center;color:#91a8c4">Loading chart…</div>
@@ -1102,6 +1109,22 @@ $('chartMarketClass').addEventListener('change',populateChartSymbols);
 $('chartLoad').addEventListener('click',renderMarketChart);
 $('chartSymbol').addEventListener('change',renderMarketChart);
 $('chartInterval').addEventListener('change',renderMarketChart);
+$('chartCustomApply').addEventListener('click',()=>{
+  const typed=$('chartCustomSymbol').value.trim().toUpperCase();
+  const type=$('chartMarketClass').value;
+  if(!typed) { setChartStatus('Enter a symbol first.','error'); return; }
+  if(type==='crypto' && !/^[A-Z0-9]{5,20}$/.test(typed)) {
+    setChartStatus('Enter a Binance Spot pair such as BTCUSDT.','error'); return;
+  }
+  if(type!=='crypto' && !typed.includes(':')) {
+    setChartStatus('Enter a TradingView ticker with exchange prefix, e.g. OANDA:EURUSD or NASDAQ:ADBE.','error'); return;
+  }
+  const select=$('chartSymbol');
+  let option=[...select.options].find(x=>x.value===typed);
+  if(!option) { option=document.createElement('option');option.value=typed;option.textContent=typed+' (custom)';select.add(option); }
+  select.value=typed;
+  renderMarketChart();
+});
 populateChartSymbols();
 
 </script>
