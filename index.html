@@ -107,10 +107,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .feed div{padding:9px 3px;border-bottom:1px solid var(--line);color:#a8bfdc}
 .foot{text-align:center;color:#718baa;font-size:11px;margin-top:24px}
 video{display:none;width:100%;max-height:230px;object-fit:contain;background:#020611;border-radius:12px;margin-top:13px}
-#login{position:fixed;inset:0;z-index:99;background:#030714ed;display:grid;place-items:center;padding:15px;backdrop-filter:blur(20px)}
-#login .panel{width:min(430px,95vw);padding:28px}
-#login h2{margin:8px 0 20px}
-#login input{margin-bottom:10px}
 code{color:var(--cyan);overflow-wrap:anywhere}
 [hidden]{display:none!important}
 @media(max-width:1000px){.hero,.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
@@ -123,29 +119,7 @@ code{color:var(--cyan);overflow-wrap:anywhere}
 </head>
 
 <body>
-<div id="login">
-  <div class="panel">
-    <div class="eyebrow">SECURE ACCESS // NEXT TRADER</div>
-    <h2 id="authHeading">CREATE ACCOUNT / LOGIN</h2>
-    <div class="field">
-      <label for="username">USERNAME</label>
-      <input id="username" autocomplete="username" minlength="3" maxlength="24"
-        placeholder="3–24 characters: letters, numbers, underscore">
-    </div>
-    <div class="field">
-      <label for="password">PASSWORD</label>
-      <input id="password" type="password" autocomplete="current-password"
-        minlength="8" maxlength="128" placeholder="At least 8 characters">
-    </div>
-    <div class="actions">
-      <button id="registerBtn">CREATE ACCOUNT</button>
-      <button id="loginBtn" class="primary">LOGIN →</button>
-    </div>
-    <p id="loginError" class="status" role="status"></p>
-  </div>
-</div>
-
-<div class="shell">
+<div class="shell" id="appShell" hidden>
 <header class="nav">
   <div class="brand">
     <div class="mark">NT</div>
@@ -155,7 +129,7 @@ code{color:var(--cyan);overflow-wrap:anywhere}
     </div>
   </div>
   <div class="navright">
-    <span class="live-tag" id="systemState">STANDBY</span>
+    <button type="button" id="logoutBtn">LOG OUT</button><span class="live-tag" id="systemState">STANDBY</span>
     <div class="nav-clock"><small>ASIA / DHAKA</small><span id="clock">--:--:--</span></div>
   </div>
 </header>
@@ -164,7 +138,7 @@ code{color:var(--cyan);overflow-wrap:anywhere}
   <div class="hero-main">
     <div class="eyebrow">◆ &nbsp; THE NEXT GENERATION OF CHART INTELLIGENCE</div>
     <h1>PRECISION.<br><span>REIMAGINED.</span></h1>
-    <p>Screenshot-based AI chart analysis, voice alerts and subscription-controlled access in one trading console.</p>
+    <p>Screenshot-based AI chart analysis and voice alerts in one trading console.</p>
   </div>
   <div class="hero-stat">
     <div class="eyebrow">NEXT CANDLE IN</div>
@@ -184,20 +158,7 @@ code{color:var(--cyan);overflow-wrap:anywhere}
   <div class="metric"><div class="eyebrow">CANDLE CLOSE</div><div class="value" id="countdown">--:--</div><div class="hint">Bangladesh time aligned</div></div>
 </section>
 
-<section id="accountPanel" class="panel" hidden style="margin-bottom:20px">
-  <div class="panel-head">
-    <h2>ACCOUNT / SUBSCRIPTION</h2>
-    <button id="logoutBtn">LOG OUT</button>
-  </div>
-  <p id="accountInfo" class="sub"></p>
-  <div id="paymentArea">
-    <p><b>Subscription:</b> $50 USD / 2 calendar months</p>
-    <p class="sub">Payment and subscription details are handled on a separate secure page. / পেমেন্ট ও সাবস্ক্রিপশনের বিস্তারিত আলাদা পেজে দেখুন।</p>
-    <div class="actions">
-      <button id="openPaymentPage" class="primary" onclick="window.location.href='/payment.html'">OPEN PAYMENT PAGE / পেমেন্ট পেজ খুলুন →</button>
-    </div>
-  </div>
-</section>
+
 
 <div class="grid">
 <section class="panel">
@@ -243,7 +204,7 @@ code{color:var(--cyan);overflow-wrap:anywhere}
     <div class="actions"><button id="upload" class="primary" disabled>ANALYZE UPLOAD →</button></div>
   </div>
   <video id="video" autoplay muted playsinline></video>
-  <p id="status" class="status">Log in to check your subscription.</p>
+  <p id="status" class="status">Checking access…</p>
 </section>
 
 <section class="panel">
@@ -251,7 +212,7 @@ code{color:var(--cyan);overflow-wrap:anywhere}
   <div id="result" class="signal-screen">
     <div class="signal-label">AWAITING ANALYSIS</div>
     <div class="signal WAIT">—</div>
-    <p class="sub">Your analysis appears here after login and subscription activation.</p>
+    <p class="sub">Your chart analysis appears here.</p>
   </div>
   <div class="readout"><span class="sub">AI RESPONSE TIME</span><b id="timing">—</b></div>
   <div class="readout"><span class="sub">SIGNAL AGE</span><b id="age">—</b></div>
@@ -331,109 +292,37 @@ function setAnalysisEnabled(enabled) {
   $('start').disabled = !enabled || Boolean(stream);
 }
 
-function showAccount(user) {
-  currentAccount = user;
-  $('login').hidden = true;
-  $('accountPanel').hidden = false;
-
-  const active = subscriptionIsActive(user);
-  const state = active ? 'ACTIVE' :
-    user.status === 'active' ? 'EXPIRED' : String(user.status || 'PENDING').toUpperCase();
-
-  $('accountInfo').textContent =
-    'Username: ' + user.username +
-    ' | Status: ' + state +
-    ' | Expiry: ' +
-    (user.subscriptionExpiresAt
-      ? new Date(user.subscriptionExpiresAt).toLocaleString('en-GB', {timeZone:'Asia/Dhaka'})
-      : 'Not activated');
-
-  $('paymentArea').hidden = false;
-  setAnalysisEnabled(active);
-
-  if (active) {
-    status('Subscription active. Chart analysis is available.');
-  } else {
-    status('Subscription inactive. Submit payment and wait for approval.');
-  }
-}
-
-async function login() {
-  $('loginError').textContent = '';
-
-  try {
-    const result = await apiRequest('/api/auth', {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'login',
-        username: $('username').value,
-        password: $('password').value
-      })
-    });
-
-    showAccount(result.user);
-    log('Logged in as ' + result.user.username);
-  } catch (error) {
-    $('loginError').textContent = error.message;
-  }
-}
-
-async function register() {
-  $('loginError').textContent = '';
-
-  try {
-    const result = await apiRequest('/api/auth', {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'register',
-        username: $('username').value,
-        password: $('password').value
-      })
-    });
-
-    $('loginError').textContent = result.message || 'Account created. Log in now.';
-  } catch (error) {
-    $('loginError').textContent = error.message;
-  }
-}
-
+// The account and payment flow is isolated on /login.html and /payment.html.
 async function logout() {
-  try {
-    await apiRequest('/api/auth', {
-      method:'POST',
-      body:JSON.stringify({action:'logout'})
-    });
-  } catch (_) {}
-
+  try { await apiRequest('/api/auth', {method:'POST', body:JSON.stringify({action:'logout'})}); }
+  catch (_) {}
   stop();
   currentAccount = null;
-  $('accountPanel').hidden = true;
-  $('login').hidden = false;
-  $('password').value = '';
-  $('loginError').textContent = 'Logged out.';
-  setAnalysisEnabled(false);
-  log('Logged out');
+  window.location.replace('/login.html');
+}
+
+function showAccount(user) {
+  if (!subscriptionIsActive(user)) {
+    window.location.replace('/payment.html');
+    return;
+  }
+  currentAccount = user;
+  $('appShell').hidden = false;
+  setAnalysisEnabled(true);
+  status('Account authorized. Chart analysis available.');
 }
 
 async function restoreSession() {
   try {
-    const result = await apiRequest('/api/auth', {method:'GET'});
+    const result = await apiRequest('/api/auth',{method:'GET'});
     showAccount(result.user);
   } catch (_) {
     currentAccount = null;
-    $('login').hidden = false;
-    $('accountPanel').hidden = true;
-    setAnalysisEnabled(false);
+    $('appShell').hidden = true;
+    window.location.replace('/login.html');
   }
 }
-
-$('loginBtn').onclick = login;
-$('registerBtn').onclick = register;
 $('logoutBtn').onclick = logout;
-
-$('password').onkeydown = event => {
-  if (event.key === 'Enter') login();
-};
 
 function speakSignal(trend, entry, confidence) {
   if (!voiceOn || !('speechSynthesis' in window)) return;
