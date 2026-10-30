@@ -231,11 +231,14 @@ export default async function handler(req, res) {
     const isBinanceCrypto=marketType==="crypto" && isAllowedBinanceSymbol(selectedSymbol);
     let deterministicMarketScore=null;
 
+    const targetExpirySeconds=Number(settings.timeframe_seconds)||60;
+    const chartTimeframeSeconds=Number(settings.chart_timeframe_seconds)||targetExpirySeconds;
+
     if(isBinanceCrypto) {
-      const timeframeSeconds=Number(settings.timeframe_seconds)||60;
-      const candles=await getBinanceCandles(selectedSymbol,timeframeSeconds,180);
+      const candles=await getBinanceCandles(selectedSymbol,chartTimeframeSeconds,180);
       deterministicMarketScore=scoreBinanceCandles(candles);
       deterministicMarketScore.symbol=selectedSymbol;
+      deterministicMarketScore.timeframeSeconds=chartTimeframeSeconds;
     }
 
     if (typeof image !== "string" || image.length > 8_000_000) {
@@ -270,7 +273,8 @@ Use only visible chart evidence for visual interpretation. Do not invent candles
 Market: ${market}
 Market class: ${marketType || "unknown"}
 Symbol: ${String(settings.symbol || "UNKNOWN").slice(0,40)}
-Timeframe: ${timeframe}
+Chart timeframe: ${chartTimeframeSeconds} seconds
+Target expiry timeframe: ${targetExpirySeconds} seconds
 Data source note: selected crypto pairs are separately checked with Binance Spot public OHLC candles by the server-side rule engine; all other market classes are scored from visible chart evidence only.
 Mode: ${mode}
 Minimum AI confidence: ${minConfidence}%
@@ -433,6 +437,7 @@ Return ONLY valid JSON with this exact shape:
         rule: algorithm.rule,
         provider: deterministicMarketScore ? deterministicMarketScore.provider : "AI_VISUAL_EVIDENCE",
         market_symbol: deterministicMarketScore?.symbol || settings.symbol || null,
+        market_timeframe_seconds: deterministicMarketScore?.timeframeSeconds || null,
         last_closed_candle_time: deterministicMarketScore?.last_closed_candle_time || null,
         ema20: deterministicMarketScore?.ema20 ?? null,
         ema50: deterministicMarketScore?.ema50 ?? null,
