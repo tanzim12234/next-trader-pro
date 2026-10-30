@@ -688,18 +688,25 @@ function compoundLoad() {
   if(!compoundState || typeof compoundState!=='object') {
     compoundState={balance:0,startingBalance:0,dayKey:today,dayStartBalance:0,lossToday:0,tradesToday:0,history:[]};
   }
+  const saved=compoundState.config||{};
+  ['start','min','max','risk','payout','dailyStop','maxTrades'].forEach(key=>{
+    const id={start:'compoundStart',min:'compoundMin',max:'compoundMax',risk:'compoundRisk',payout:'compoundPayout',dailyStop:'compoundDailyStop',maxTrades:'compoundMaxTrades'}[key];
+    if(Number.isFinite(Number(saved[key]))) $(id).value=String(saved[key]);
+  });
   if(compoundState.dayKey!==today) {
     compoundState.dayKey=today;
     compoundState.dayStartBalance=Number(compoundState.balance)||0;
     compoundState.lossToday=0;
     compoundState.tradesToday=0;
-    compoundActiveTrade=null;
   }
   if(!Array.isArray(compoundState.history)) compoundState.history=[];
   compoundSave();
 }
 function compoundSave() {
-  try { localStorage.setItem('nt_compound_assist_v1',JSON.stringify(compoundState)); } catch (_) {}
+  try {
+    compoundState.config = compoundConfig();
+    localStorage.setItem('nt_compound_assist_v1',JSON.stringify(compoundState));
+  } catch (_) {}
 }
 function compoundConfig() {
   return {
@@ -722,13 +729,14 @@ function compoundStopReason() {
   if(!compoundState || compoundState.balance<=0) return 'Set a starting balance above zero.';
   if(compoundActiveTrade) return 'Settle or cancel the open tracked trade first.';
   if(compoundState.tradesToday>=cfg.maxTrades) return 'Daily trade limit reached.';
-  const limit=compoundState.dayStartBalance*cfg.dailyStop/100;
-  if(cfg.dailyStop>0 && compoundState.lossToday>=limit) return 'Daily loss limit reached. Stop for today.';
   if(!compoundFreshSignal()) return 'Run a fresh AI analysis and wait for CALL / PUT.';
   if(cfg.min<=0 || cfg.max<=0 || cfg.max<cfg.min) return 'Set valid minimum and maximum stake limits.';
   if(cfg.risk<=0) return 'Set risk per trade above zero.';
   const raw=compoundState.balance*cfg.risk/100;
   if(raw<cfg.min) return 'Risk-based stake is below your minimum. Reduce minimum/risk or update balance.';
+  const stake=Math.min(raw,cfg.max);
+  const dailyLossLimit=compoundState.dayStartBalance*cfg.dailyStop/100;
+  if(cfg.dailyStop>0 && compoundState.lossToday+stake>dailyLossLimit) return 'This stake may exceed the daily loss limit. Stop for today.';
   return '';
 }
 function compoundSuggestedStake() {
@@ -828,8 +836,8 @@ function compoundCancel() {
 function compoundInit() {
   compoundLoad();
   $('compoundStart').value=String(compoundState.startingBalance||0);
-  ['compoundMin','compoundMax','compoundRisk','compoundPayout','compoundDailyStop','compoundMaxTrades'].forEach(id=>{
-    $(id).addEventListener('input',compoundRender);
+  ['compoundStart','compoundMin','compoundMax','compoundRisk','compoundPayout','compoundDailyStop','compoundMaxTrades'].forEach(id=>{
+    $(id).addEventListener('input',()=>{compoundSave();compoundRender();});
   });
   $('compoundApply').addEventListener('click',compoundApply);
   $('compoundRefresh').addEventListener('click',compoundRender);
