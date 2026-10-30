@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
     const symbol=String(req.query?.symbol||"BTCUSDT").toUpperCase();
     const timeframe=Number(req.query?.timeframe||60);
-    const limit=Math.max(20,Math.min(500,Number(req.query?.limit)||300));
+    const limit=Math.max(2,Math.min(500,Number(req.query?.limit)||300));
 
     if(!isAllowedBinanceSymbol(symbol)) {
       return json(res,400,{error:"This free public feed supports selected Binance Spot crypto pairs only."});
