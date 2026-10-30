@@ -268,8 +268,10 @@ export default async function handler(req, res) {
 Use only visible chart evidence for visual interpretation. Do not invent candles, OHLC values, hidden broker feeds, or future movement. When the selected market is Crypto, a separate deterministic rule engine also evaluates closed Binance Spot OHLC candles; your visual evidence must independently agree with that engine before a CALL/PUT can be returned.
 
 Market: ${market}
+Market class: ${marketType || "unknown"}
 Symbol: ${String(settings.symbol || "UNKNOWN").slice(0,40)}
 Timeframe: ${timeframe}
+Data source note: selected crypto pairs are separately checked with Binance Spot public OHLC candles by the server-side rule engine; all other market classes are scored from visible chart evidence only.
 Mode: ${mode}
 Minimum AI confidence: ${minConfidence}%
 Live target-candle workflow: ${live ? "YES" : "NO"}
