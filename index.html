@@ -207,13 +207,14 @@ code{color:var(--cyan);overflow-wrap:anywhere}
     <div class="field"><label for="chartSymbol">INSTRUMENT</label><select id="chartSymbol"></select></div>
     <div class="field"><label for="chartInterval">CHART TIMEFRAME</label>
       <select id="chartInterval">
-        <option value="1">1 MIN</option>
-        <option value="5" selected>5 MIN</option>
-        <option value="15">15 MIN</option>
-        <option value="30">30 MIN</option>
-        <option value="60">1 HOUR</option>
-        <option value="240">4 HOURS</option>
-        <option value="1D">1 DAY</option>
+        <option value="60">1 MIN</option>
+        <option value="180">3 MIN</option>
+        <option value="300" selected>5 MIN</option>
+        <option value="900">15 MIN</option>
+        <option value="1800">30 MIN</option>
+        <option value="3600">1 HOUR</option>
+        <option value="14400">4 HOURS</option>
+        <option value="86400">1 DAY</option>
       </select>
     </div>
     <button id="chartLoad" class="primary">LOAD CHART</button>
@@ -901,36 +902,45 @@ populateChartSymbols();
 restoreSession();
 
 const MARKET_SYMBOLS = {
-  forex: [
+  forex:[
     ["EUR / USD","OANDA:EURUSD"],["GBP / USD","OANDA:GBPUSD"],
     ["USD / JPY","OANDA:USDJPY"],["AUD / USD","OANDA:AUDUSD"],
     ["USD / CAD","OANDA:USDCAD"],["USD / CHF","OANDA:USDCHF"],
     ["NZD / USD","OANDA:NZDUSD"],["EUR / JPY","OANDA:EURJPY"],
     ["GBP / JPY","OANDA:GBPJPY"]
   ],
-  crypto: [
-    ["BTC / USDT","BINANCE:BTCUSDT"],["ETH / USDT","BINANCE:ETHUSDT"],
-    ["BNB / USDT","BINANCE:BNBUSDT"],["SOL / USDT","BINANCE:SOLUSDT"],
-    ["XRP / USDT","BINANCE:XRPUSDT"],["DOGE / USDT","BINANCE:DOGEUSDT"],
-    ["ADA / USDT","BINANCE:ADAUSDT"],["LINK / USDT","BINANCE:LINKUSDT"]
+  crypto:[
+    ["BTC / USDT","BTCUSDT"],["ETH / USDT","ETHUSDT"],
+    ["BNB / USDT","BNBUSDT"],["SOL / USDT","SOLUSDT"],
+    ["XRP / USDT","XRPUSDT"],["DOGE / USDT","DOGEUSDT"],
+    ["ADA / USDT","ADAUSDT"],["LINK / USDT","LINKUSDT"],
+    ["AVAX / USDT","AVAXUSDT"],["TRX / USDT","TRXUSDT"],
+    ["LTC / USDT","LTCUSDT"],["BCH / USDT","BCHUSDT"]
   ],
-  indices: [
+  indices:[
     ["S&P 500","TVC:SPX"],["NASDAQ 100","NASDAQ:NDX"],
-    ["DOW JONES","DJ:DJI"],["DXY U.S. Dollar Index","TVC:DXY"],
+    ["Dow Jones","TVC:DJI"],["U.S. Dollar Index","TVC:DXY"],
     ["VIX","TVC:VIX"],["FTSE 100","TVC:UKX"],["DAX","XETR:DAX"]
   ],
-  commodities: [
+  commodities:[
     ["Gold","OANDA:XAUUSD"],["Silver","OANDA:XAGUSD"],
     ["WTI Crude Oil","TVC:USOIL"],["Brent Crude Oil","TVC:UKOIL"],
     ["Natural Gas","NYMEX:NG1!"],["Copper","COMEX:HG1!"]
   ],
-  stocks: [
+  stocks:[
     ["Apple","NASDAQ:AAPL"],["Microsoft","NASDAQ:MSFT"],
     ["NVIDIA","NASDAQ:NVDA"],["Amazon","NASDAQ:AMZN"],
     ["Tesla","NASDAQ:TSLA"],["Alphabet","NASDAQ:GOOGL"],
     ["Meta","NASDAQ:META"],["AMD","NASDAQ:AMD"]
   ]
 };
+let cryptoChart=null, cryptoCandleSeries=null, cryptoSocket=null, cryptoRefreshTimer=null;
+let lightweightChartsPromise=null, activeChartSymbol=null, activeChartTimeframe=null;
+
+function setChartStatus(text,kind='') {
+  $('chartStatus').textContent=text;
+  $('chartStatus').style.color=kind==='error'?'var(--red)':kind==='good'?'var(--green)':'var(--muted)';
+}
 function populateChartSymbols() {
   const type=$('chartMarketClass').value;
   const list=MARKET_SYMBOLS[type]||MARKET_SYMBOLS.forex;
@@ -941,12 +951,106 @@ function populateChartSymbols() {
     option.value=symbol;option.textContent=label+' ('+symbol+')';
     select.append(option);
   });
-  renderTradingViewChart();
+  renderMarketChart();
 }
-function renderTradingViewChart() {
-  const symbol=$('chartSymbol').value;
-  const interval=$('chartInterval').value;
-  if(!symbol)return;
+function stopCryptoChart() {
+  if(cryptoSocket) { try{cryptoSocket.close();}catch(_){} cryptoSocket=null; }
+  if(cryptoRefreshTimer) { clearInterval(cryptoRefreshTimer);cryptoRefreshTimer=null; }
+  if(cryptoChart) { cryptoChart.remove();cryptoChart=null;cryptoCandleSeries=null; }
+}
+function loadLightweightCharts() {
+  if(window.LightweightCharts) return Promise.resolve(window.LightweightCharts);
+  if(lightweightChartsPromise) return lightweightChartsPromise;
+  lightweightChartsPromise=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='https://unpkg.com/lightweight-charts@5.0.9/dist/lightweight-charts.standalone.production.js';
+    script.async=true;
+    script.onload=()=>window.LightweightCharts?resolve(window.LightweightCharts):reject(new Error('Chart library failed to initialize.'));
+    script.onerror=()=>reject(new Error('Chart library could not load. Check your internet connection.'));
+    document.head.append(script);
+  });
+  return lightweightChartsPromise;
+}
+function binanceInterval(seconds) {
+  return ({60:'1m',180:'3m',300:'5m',900:'15m',1800:'30m',3600:'1h',14400:'4h',86400:'1d'})[seconds]||'1m';
+}
+async function fetchCryptoCandles(symbol,seconds,limit) {
+  const query=new URLSearchParams({symbol,timeframe:String(seconds),limit:String(limit)});
+  const response=await fetch('/api/market?'+query.toString(),{cache:'no-store'});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(data.error||('Market data request failed ('+response.status+').'));
+  return data;
+}
+async function mountCryptoChart(symbol,seconds) {
+  stopCryptoChart();
+  activeChartSymbol=symbol;activeChartTimeframe=seconds;
+  $('marketChart').replaceChildren();
+  const root=document.createElement('div');
+  root.style.cssText='width:100%;height:100%';
+  $('marketChart').append(root);
+  setChartStatus('Loading Binance Spot OHLC history for '+symbol+'…');
+  try {
+    const LW=await loadLightweightCharts();
+    const initial=await fetchCryptoCandles(symbol,seconds,300);
+    if(activeChartSymbol!==symbol||activeChartTimeframe!==seconds)return;
+    if(!Array.isArray(initial.candles)||initial.candles.length<20)throw new Error('Not enough candle history returned.');
+    cryptoChart=LW.createChart(root,{
+      autoSize:true,
+      layout:{background:{type:'solid',color:'#070e20'},textColor:'#b9cae3',fontFamily:'Space Grotesk, sans-serif'},
+      grid:{vertLines:{color:'rgba(85,125,170,0.11)'},horzLines:{color:'rgba(85,125,170,0.11)'}},
+      rightPriceScale:{borderColor:'#294766'},
+      timeScale:{borderColor:'#294766',timeVisible:true,secondsVisible:false},
+      crosshair:{mode:LW.CrosshairMode.Normal}
+    });
+    cryptoCandleSeries=cryptoChart.addSeries(LW.CandlestickSeries,{
+      upColor:'#31efb6',downColor:'#ff5b93',borderVisible:false,
+      wickUpColor:'#31efb6',wickDownColor:'#ff5b93'
+    });
+    cryptoCandleSeries.setData(initial.candles.map(x=>({time:x.time,open:x.open,high:x.high,low:x.low,close:x.close})));
+    cryptoChart.timeScale().fitContent();
+    setChartStatus('Binance Spot public data • '+symbol+' • '+seconds+'s candles • Updated '+new Date(initial.retrievedAt).toLocaleTimeString('en-GB',{timeZone:'Asia/Dhaka'}),'good');
+
+    // Public Binance WebSocket stream: no trading key, no order permissions.
+    const interval=binanceInterval(seconds);
+    const connect=()=>{
+      if(activeChartSymbol!==symbol||activeChartTimeframe!==seconds)return;
+      try {
+        cryptoSocket=new WebSocket('wss://stream.binance.com:9443/ws/'+symbol.toLowerCase()+'@kline_'+interval);
+        cryptoSocket.onopen=()=>setChartStatus('LIVE • Binance Spot WebSocket • '+symbol+' • '+interval,'good');
+        cryptoSocket.onmessage=event=>{
+          try {
+            const payload=JSON.parse(event.data);
+            const k=payload.k;
+            if(k&&cryptoCandleSeries) cryptoCandleSeries.update({
+              time:Math.floor(k.t/1000),open:Number(k.o),high:Number(k.h),low:Number(k.l),close:Number(k.c)
+            });
+          } catch(_) {}
+        };
+        cryptoSocket.onerror=()=>setChartStatus('WebSocket interrupted. Switching to periodic REST updates.','error');
+        cryptoSocket.onclose=()=>{
+          if(activeChartSymbol!==symbol||activeChartTimeframe!==seconds)return;
+          if(!cryptoRefreshTimer) {
+            cryptoRefreshTimer=setInterval(async()=>{
+              if(document.visibilityState!=='visible'||!cryptoCandleSeries)return;
+              try {
+                const latest=await fetchCryptoCandles(symbol,seconds,2);
+                for(const x of latest.candles||[]) cryptoCandleSeries.update({time:x.time,open:x.open,high:x.high,low:x.low,close:x.close});
+                setChartStatus('REST refresh • Binance Spot • '+symbol+' • Updated '+new Date(latest.retrievedAt).toLocaleTimeString('en-GB',{timeZone:'Asia/Dhaka'}),'good');
+              } catch(error) { setChartStatus(error.message,'error'); }
+            },15000);
+          }
+        };
+      } catch(error) { setChartStatus(error.message,'error'); }
+    };
+    connect();
+  } catch(error) {
+    stopCryptoChart();
+    setChartStatus(error.message,'error');
+  }
+}
+function mountTradingViewChart(symbol,interval) {
+  stopCryptoChart();
+  activeChartSymbol=symbol;activeChartTimeframe=interval;
   const host=$('marketChart');
   host.replaceChildren();
   const outer=document.createElement('div');
@@ -955,50 +1059,45 @@ function renderTradingViewChart() {
   const widget=document.createElement('div');
   widget.className='tradingview-widget-container__widget';
   widget.style.cssText='width:100%;height:calc(100% - 24px)';
-  const copyright=document.createElement('div');
-  copyright.style.cssText='height:24px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#91a8c4';
+  const credit=document.createElement('div');
+  credit.className='chart-credit';
   const link=document.createElement('a');
-  link.href='https://www.tradingview.com/symbols/'+encodeURIComponent(symbol.replace(':','-'))+'/';
+  link.href='https://www.tradingview.com/';
   link.target='_blank';link.rel='noopener nofollow';
-  link.textContent=symbol+' chart by TradingView';
-  link.style.cssText='color:#91a8c4;text-decoration:none';
-  copyright.append(link);
+  link.textContent='Chart by TradingView';
+  credit.append(link);
   const script=document.createElement('script');
   script.type='text/javascript';
   script.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
   script.async=true;
+  const tvInterval=({60:'1',180:'3',300:'5',900:'15',1800:'30',3600:'60',14400:'240',86400:'1D'})[Number(interval)]||'5';
   script.text=JSON.stringify({
-    autosize:true,
-    symbol,
-    interval,
-    timezone:'Asia/Dhaka',
-    theme:'dark',
-    style:'1',
-    locale:'en',
-    backgroundColor:'#050817',
-    gridColor:'rgba(46,46,46,0.12)',
-    allow_symbol_change:true,
-    hide_side_toolbar:false,
-    hide_top_toolbar:false,
-    hide_legend:false,
-    hide_volume:false,
-    save_image:false,
-    calendar:false,
-    details:false,
-    hotlist:false,
-    withdateranges:true,
-    watchlist:[],
-    compareSymbols:[],
+    autosize:true,symbol,interval:tvInterval,timezone:'Asia/Dhaka',
+    theme:'dark',style:'1',locale:'en',backgroundColor:'#050817',
+    gridColor:'rgba(46,46,46,0.12)',allow_symbol_change:true,
+    hide_side_toolbar:false,hide_top_toolbar:false,hide_legend:false,
+    hide_volume:false,save_image:false,calendar:false,details:false,
+    hotlist:false,withdateranges:true,watchlist:[],compareSymbols:[],
     studies:['MASimple@tv-basicstudies','RSI@tv-basicstudies','MACD@tv-basicstudies']
   });
-  outer.append(widget,copyright,script);
+  outer.append(widget,credit,script);
   host.append(outer);
-  $('chartStatus').textContent='Loading '+symbol+' • '+interval+' interval. Data availability and delay depend on the exchange/feed.';
+  setChartStatus('TradingView chart loading for '+symbol+'. Feed delay depends on exchange.');
+}
+function renderMarketChart() {
+  const type=$('chartMarketClass').value;
+  const symbol=$('chartSymbol').value;
+  const interval=Number($('chartInterval').value)||300;
+  if(!symbol)return;
+  $('symbol').value=type==='crypto'?symbol:symbol.split(':').pop();
+  $('market').value='REAL';
+  if(type==='crypto') mountCryptoChart(symbol,interval);
+  else mountTradingViewChart(symbol,interval);
 }
 $('chartMarketClass').addEventListener('change',populateChartSymbols);
-$('chartLoad').addEventListener('click',renderTradingViewChart);
-$('chartSymbol').addEventListener('change',renderTradingViewChart);
-$('chartInterval').addEventListener('change',renderTradingViewChart);
+$('chartLoad').addEventListener('click',renderMarketChart);
+$('chartSymbol').addEventListener('change',renderMarketChart);
+$('chartInterval').addEventListener('change',renderMarketChart);
 
 </script>
 </body>
