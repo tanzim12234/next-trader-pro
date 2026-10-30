@@ -110,7 +110,7 @@ function atr(candles, period=14) {
   return trs.slice(-period).reduce((a,b)=>a+b,0)/period;
 }
 
-function scoreBinanceCandles(sourceCandles) {
+export function scoreBinanceCandles(sourceCandles) {
   const candles=sourceCandles.slice(0,-1); // Ignore the still-forming candle for confirmation.
   if(candles.length<60) throw new Error("Not enough closed candles for the custom market algorithm.");
   const closes=candles.map(c=>c.close);
