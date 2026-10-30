@@ -3,6 +3,7 @@ import {
   currentUser,
   subscriptionActive
 } from "./store.js";
+import { getBinanceCandles, isAllowedBinanceSymbol } from "./lib/binance.js";
 
 const MODEL = "gemini-3.5-flash-lite";
 
@@ -74,6 +75,113 @@ function scoreEvidence(evidence = {}) {
   };
 }
 
+function ema(values, period) {
+  if (!Array.isArray(values) || values.length < period) return null;
+  const multiplier=2/(period+1);
+  let current=values.slice(0,period).reduce((a,b)=>a+b,0)/period;
+  for(let i=period;i<values.length;i++) current=(values[i]-current)*multiplier+current;
+  return current;
+}
+
+function rsi(values, period=14) {
+  if(values.length<=period) return null;
+  let gains=0,losses=0;
+  for(let i=1;i<=period;i++) {
+    const delta=values[i]-values[i-1];
+    if(delta>0) gains+=delta; else losses-=delta;
+  }
+  let averageGain=gains/period,averageLoss=losses/period;
+  for(let i=period+1;i<values.length;i++) {
+    const delta=values[i]-values[i-1];
+    averageGain=(averageGain*(period-1)+Math.max(delta,0))/period;
+    averageLoss=(averageLoss*(period-1)+Math.max(-delta,0))/period;
+  }
+  if(averageLoss===0) return 100;
+  return 100-(100/(1+averageGain/averageLoss));
+}
+
+function atr(candles, period=14) {
+  if(candles.length<=period) return null;
+  const trs=[];
+  for(let i=1;i<candles.length;i++) {
+    const cur=candles[i],prev=candles[i-1];
+    trs.push(Math.max(cur.high-cur.low,Math.abs(cur.high-prev.close),Math.abs(cur.low-prev.close)));
+  }
+  return trs.slice(-period).reduce((a,b)=>a+b,0)/period;
+}
+
+function scoreBinanceCandles(sourceCandles) {
+  const candles=sourceCandles.slice(0,-1); // Ignore the still-forming candle for confirmation.
+  if(candles.length<60) throw new Error("Not enough closed candles for the custom market algorithm.");
+  const closes=candles.map(c=>c.close);
+  const last=candles[candles.length-1];
+  const prior=candles.slice(-40,-1);
+  const ema20=ema(closes,20),ema50=ema(closes,50),rsi14=rsi(closes,14),atr14=atr(candles,14);
+
+  const pivotsHigh=[],pivotsLow=[];
+  for(let i=Math.max(2,candles.length-40);i<candles.length-2;i++) {
+    const x=candles[i];
+    if(x.high>candles[i-1].high && x.high>candles[i-2].high &&
+       x.high>=candles[i+1].high && x.high>=candles[i+2].high) pivotsHigh.push(x.high);
+    if(x.low<candles[i-1].low && x.low<candles[i-2].low &&
+       x.low<=candles[i+1].low && x.low<=candles[i+2].low) pivotsLow.push(x.low);
+  }
+  const swingHigh=pivotsHigh.at(-1);
+  const swingLow=pivotsLow.at(-1);
+  const previousHigh=prior.length?Math.max(...prior.map(x=>x.high)):null;
+  const previousLow=prior.length?Math.min(...prior.map(x=>x.low)):null;
+
+  let liquiditySweep="NONE";
+  if(previousLow!==null && last.low<previousLow && last.close>previousLow) liquiditySweep="SELL_SIDE";
+  else if(previousHigh!==null && last.high>previousHigh && last.close<previousHigh) liquiditySweep="BUY_SIDE";
+
+  let structureBreak="NEUTRAL";
+  if(Number.isFinite(swingHigh) && last.close>swingHigh) structureBreak="BULLISH";
+  else if(Number.isFinite(swingLow) && last.close<swingLow) structureBreak="BEARISH";
+
+  const twoBack=candles[candles.length-3];
+  let fvg="NEUTRAL";
+  if(twoBack && last.low>twoBack.high) fvg="BULLISH";
+  else if(twoBack && last.high<twoBack.low) fvg="BEARISH";
+
+  let displacement="NEUTRAL";
+  if(atr14 && Math.abs(last.close-last.open)>=atr14*1.15) {
+    displacement=last.close>last.open?"BULLISH":"BEARISH";
+  }
+  const emaAlignment=ema20!==null&&ema50!==null
+    ? (ema20>ema50&&last.close>ema20?"BULLISH":ema20<ema50&&last.close<ema20?"BEARISH":"NEUTRAL")
+    : "NEUTRAL";
+  const rsiAlignment=rsi14!==null
+    ? (rsi14>=55?"BULLISH":rsi14<=45?"BEARISH":"NEUTRAL")
+    : "NEUTRAL";
+  const marketStructure=emaAlignment!=="NEUTRAL"?emaAlignment:"NEUTRAL";
+  const rejection=liquiditySweep==="SELL_SIDE"?"BULLISH":liquiditySweep==="BUY_SIDE"?"BEARISH":"NEUTRAL";
+
+  const scored=scoreEvidence({
+    market_structure:marketStructure,
+    liquidity_sweep:liquiditySweep,
+    structure_break:structureBreak,
+    fvg,
+    displacement,
+    rejection,
+    ema_alignment:emaAlignment,
+    rsi_alignment:rsiAlignment
+  });
+
+  return {
+    ...scored,
+    provider:"BINANCE_PUBLIC_SPOT",
+    market:"CRYPTO",
+    symbol:undefined,
+    last_closed_candle_time:last.time,
+    ema20:Number(ema20?.toFixed(8)),
+    ema50:Number(ema50?.toFixed(8)),
+    rsi14:Number(rsi14?.toFixed(2)),
+    close:last.close,
+    atr14:Number(atr14?.toFixed(8))
+  };
+}
+
 function normalizeSignal(value) {
   const signal = String(value || "").trim().toUpperCase();
 
@@ -117,6 +225,18 @@ export default async function handler(req, res) {
       body.live_data && typeof body.live_data === "object"
         ? body.live_data
         : null;
+
+    const marketType=String(settings.market_type||"").toLowerCase();
+    const selectedSymbol=String(settings.symbol||"").toUpperCase();
+    const isBinanceCrypto=marketType==="crypto" && isAllowedBinanceSymbol(selectedSymbol);
+    let deterministicMarketScore=null;
+
+    if(isBinanceCrypto) {
+      const timeframeSeconds=Number(settings.timeframe_seconds)||60;
+      const candles=await getBinanceCandles(selectedSymbol,timeframeSeconds,180);
+      deterministicMarketScore=scoreBinanceCandles(candles);
+      deterministicMarketScore.symbol=selectedSymbol;
+    }
 
     if (typeof image !== "string" || image.length > 8_000_000) {
       return json(res, 400, {
@@ -260,7 +380,8 @@ Return ONLY valid JSON with this exact shape:
     confidence = Math.max(0, Math.min(100, Math.round(confidence)));
 
     const aiSignal = normalizeSignal(result.signal);
-    const algorithm = scoreEvidence(result.evidence);
+    const imageAlgorithm = scoreEvidence(result.evidence);
+    const algorithm = deterministicMarketScore || imageAlgorithm;
     // The server-side confluence gate is authoritative. AI direction alone cannot create a trade idea.
     const finalSignal = confidence >= minConfidence &&
       ["CALL","PUT"].includes(aiSignal) &&
@@ -307,7 +428,13 @@ Return ONLY valid JSON with this exact shape:
         bearish_score: algorithm.bearishScore,
         score_gap: algorithm.gap,
         evidence: algorithm.evidence,
-        rule: algorithm.rule
+        rule: algorithm.rule,
+        provider: deterministicMarketScore ? deterministicMarketScore.provider : "AI_VISUAL_EVIDENCE",
+        market_symbol: deterministicMarketScore?.symbol || settings.symbol || null,
+        last_closed_candle_time: deterministicMarketScore?.last_closed_candle_time || null,
+        ema20: deterministicMarketScore?.ema20 ?? null,
+        ema50: deterministicMarketScore?.ema50 ?? null,
+        rsi14: deterministicMarketScore?.rsi14 ?? null
       },
       risk: ["LOW", "MEDIUM", "HIGH"].includes(
         String(result.risk || "").toUpperCase()
