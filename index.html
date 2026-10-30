@@ -414,6 +414,7 @@ function showAccount(user) {
   $('appShell').hidden = false;
   setAnalysisEnabled(true);
   status('Account authorized. Chart analysis available.');
+  setTimeout(renderMarketChart,150);
 }
 
 async function restoreSession() {
@@ -622,6 +623,7 @@ async function analyze(image, automatic = false) {
         ' • CALL ' + escapeHTML(result.algorithm.bullish_score) +
         ' / PUT ' + escapeHTML(result.algorithm.bearish_score) + '</p>' : '') +
       '<p><b>Setup:</b> ' + escapeHTML(result.setup) + '</p>' +
+      (result.market_data?.source ? '<p><b>Data source:</b> ' + escapeHTML(result.market_data.source) + '</p>' : '') +
       '<p><b>Entry:</b> ' + escapeHTML(result.entry_candle) + '</p>' +
       '<ul>' + reasons + '</ul>' +
       '<p class="sub">' + escapeHTML(result.disclaimer ||
