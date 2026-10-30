@@ -629,84 +629,12 @@ $('voice').onclick = () => {
 
 $('testVoice').onclick = () => speakSignal('BULLISH', 'CALL', 78);
 
-
 /* Risk-based compounding assistant. It only tracks manually executed trades. */
 function dhakaDayKey() {
   return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 }
-function money(value) { return '
-  const now = Date.now();
-  const seconds = Math.floor(now / 1000);
-  const period = tf();
-  const remaining = period - (seconds % period);
-  const bucket = Math.floor(seconds / period);
-
-  $('clock').textContent = new Date().toLocaleTimeString('en-GB', {
-    timeZone:'Asia/Dhaka',
-    hour12:false
-  });
-
-  const countdown =
-    String(Math.floor(remaining / 60)).padStart(2,'0') + ':' +
-    String(remaining % 60).padStart(2,'0');
-
-  $('countdown').textContent = countdown;
-  $('heroCountdown').textContent = countdown;
-  $('age').textContent = lastSignal
-    ? ((now - lastSignal.at) / 1000).toFixed(1) + 's'
-    : '—';
-
-  if (
-    stream &&
-    remaining === 1 &&
-    bucket !== lastBucket &&
-    subscriptionIsActive(currentAccount)
-  ) {
-    lastBucket = bucket;
-    try {
-      analyze(screenshot(), true);
-    } catch (error) {
-      status(error.message);
-    }
-  }
-}
-
-setInterval(tick, 250);
-tick();
-compoundInit();
-restoreSession();
-</script>
-</body>
-</html>
- + (Number(value)||0).toFixed(2); }
-function compoundLoad() {
-  try {
-    const raw=localStorage.getItem('nt_compound_assist_v1');
-    if(raw) compoundState=JSON.parse(raw);
-  } catch (_) { compoundState=null; }
-  const today=dhakaDayKey();
-  if(!compoundState || typeof compoundState!=='object') {
-    compoundState={balance:0,startingBalance:0,dayKey:today,dayStartBalance:0,lossToday:0,tradesToday:0,history:[]};
-  }
-  const saved=compoundState.config||{};
-  ['start','min','max','risk','payout','dailyStop','maxTrades'].forEach(key=>{
-    const id={start:'compoundStart',min:'compoundMin',max:'compoundMax',risk:'compoundRisk',payout:'compoundPayout',dailyStop:'compoundDailyStop',maxTrades:'compoundMaxTrades'}[key];
-    if(Number.isFinite(Number(saved[key]))) $(id).value=String(saved[key]);
-  });
-  if(compoundState.dayKey!==today) {
-    compoundState.dayKey=today;
-    compoundState.dayStartBalance=Number(compoundState.balance)||0;
-    compoundState.lossToday=0;
-    compoundState.tradesToday=0;
-  }
-  if(!Array.isArray(compoundState.history)) compoundState.history=[];
-  compoundSave();
-}
-function compoundSave() {
-  try {
-    compoundState.config = compoundConfig();
-    localStorage.setItem('nt_compound_assist_v1',JSON.stringify(compoundState));
-  } catch (_) {}
+function money(value) {
+  return '$' + (Number(value)||0).toFixed(2);
 }
 function compoundConfig() {
   return {
@@ -719,10 +647,44 @@ function compoundConfig() {
     maxTrades:Math.max(1,Math.floor(Number($('compoundMaxTrades').value)||1))
   };
 }
+function compoundSave() {
+  try {
+    compoundState.config = compoundConfig();
+    localStorage.setItem('nt_compound_assist_v1',JSON.stringify(compoundState));
+  } catch (_) {}
+}
+function compoundLoad() {
+  try {
+    const raw=localStorage.getItem('nt_compound_assist_v1');
+    if(raw) compoundState=JSON.parse(raw);
+  } catch (_) { compoundState=null; }
+  const today=dhakaDayKey();
+  if(!compoundState || typeof compoundState!=='object') {
+    compoundState={balance:0,startingBalance:0,dayKey:today,dayStartBalance:0,lossToday:0,tradesToday:0,history:[]};
+  }
+  const saved=compoundState.config||{};
+  const ids={start:'compoundStart',min:'compoundMin',max:'compoundMax',risk:'compoundRisk',payout:'compoundPayout',dailyStop:'compoundDailyStop',maxTrades:'compoundMaxTrades'};
+  Object.keys(ids).forEach(key=>{
+    if(saved[key]!==undefined && Number.isFinite(Number(saved[key]))) $(ids[key]).value=String(saved[key]);
+  });
+  if(compoundState.dayKey!==today) {
+    compoundState.dayKey=today;
+    compoundState.dayStartBalance=Number(compoundState.balance)||0;
+    compoundState.lossToday=0;
+    compoundState.tradesToday=0;
+  }
+  if(!Array.isArray(compoundState.history)) compoundState.history=[];
+  compoundSave();
+}
 function compoundFreshSignal() {
   if(!lastSignal || !['CALL','PUT'].includes(lastSignal.signal)) return false;
   const age=Date.now()-lastSignal.at;
   return age>=0 && age<tf()*1000 && Math.floor(Date.now()/1000/tf())===lastSignal.bucket;
+}
+function compoundSuggestedStake() {
+  const cfg=compoundConfig();
+  const raw=compoundState ? compoundState.balance*cfg.risk/100 : 0;
+  return Math.min(raw,cfg.max);
 }
 function compoundStopReason() {
   const cfg=compoundConfig();
@@ -739,11 +701,6 @@ function compoundStopReason() {
   if(cfg.dailyStop>0 && compoundState.lossToday+stake>dailyLossLimit) return 'This stake may exceed the daily loss limit. Stop for today.';
   return '';
 }
-function compoundSuggestedStake() {
-  const cfg=compoundConfig();
-  const raw=compoundState ? compoundState.balance*cfg.risk/100 : 0;
-  return Math.min(raw,cfg.max);
-}
 function compoundRender() {
   if(!compoundState) return;
   const cfg=compoundConfig();
@@ -752,17 +709,16 @@ function compoundRender() {
   $('compoundLoss').textContent=money(compoundState.lossToday);
   const stop=compoundStopReason();
   const stake=compoundSuggestedStake();
-  const blocked=Boolean(stop);
-  $('compoundStake').textContent=money(blocked?0:stake);
+  $('compoundStake').textContent=money(stop?0:stake);
   $('compoundRiskText').textContent=compoundFreshSignal()
     ? 'AI '+lastSignal.signal+' • '+lastSignal.confidence+'% • '+lastSignal.symbol
     : 'Waiting for a fresh CALL / PUT signal';
-  $('compoundConfirm').disabled=blocked;
+  $('compoundConfirm').disabled=Boolean(stop);
   $('compoundWin').disabled=!compoundActiveTrade;
   $('compoundLossBtn').disabled=!compoundActiveTrade;
   $('compoundCancel').disabled=!compoundActiveTrade;
   if(compoundActiveTrade) {
-    $('compoundState').textContent='Open manual trade: '+compoundActiveTrade.signal+' / '+money(compoundActiveTrade.stake)+'. After you settle it at your broker, mark WIN or LOSS here.';
+    $('compoundState').textContent='Open manual trade: '+compoundActiveTrade.signal+' / '+money(compoundActiveTrade.stake)+'. Settle it at your broker, then mark WIN or LOSS here.';
     $('compoundState').className='compound-state good';
   } else {
     $('compoundState').textContent=stop||('Suggested stake is '+money(stake)+'. You must place it manually on your broker.');
@@ -774,7 +730,7 @@ function updateCompoundPanel() {
 }
 function compoundApply() {
   const cfg=compoundConfig();
-  if(!Number.isFinite(cfg.start) || cfg.start<=0) {
+  if(cfg.start<=0) {
     $('compoundState').textContent='Enter a starting balance greater than zero.';
     $('compoundState').className='compound-state error'; return;
   }
@@ -835,7 +791,6 @@ function compoundCancel() {
 }
 function compoundInit() {
   compoundLoad();
-  $('compoundStart').value=String(compoundState.startingBalance||0);
   ['compoundStart','compoundMin','compoundMax','compoundRisk','compoundPayout','compoundDailyStop','compoundMaxTrades'].forEach(id=>{
     $(id).addEventListener('input',()=>{compoundSave();compoundRender();});
   });
@@ -887,6 +842,7 @@ function tick() {
 
 setInterval(tick, 250);
 tick();
+compoundInit();
 restoreSession();
 </script>
 </body>
