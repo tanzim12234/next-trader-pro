@@ -618,6 +618,9 @@ async function analyze(image, automatic = false) {
       '<div class="signal ' + signal + '">' + signal + '</div>' +
       '<p><b>Confidence:</b> ' + escapeHTML(result.confidence) +
       '% &nbsp; <b>Trend:</b> ' + escapeHTML(result.trend) + '</p>' +
+      (result.algorithm ? '<p><b>Algorithm:</b> ' + escapeHTML(result.algorithm.name) +
+        ' • CALL ' + escapeHTML(result.algorithm.bullish_score) +
+        ' / PUT ' + escapeHTML(result.algorithm.bearish_score) + '</p>' : '') +
       '<p><b>Setup:</b> ' + escapeHTML(result.setup) + '</p>' +
       '<p><b>Entry:</b> ' + escapeHTML(result.entry_candle) + '</p>' +
       '<ul>' + reasons + '</ul>' +
