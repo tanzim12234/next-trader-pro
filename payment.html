@@ -19,7 +19,7 @@ main{max-width:1080px;margin:auto;padding:22px 18px 48px}.top{display:flex;align
 <main>
 <header class="top">
   <div><div class="brand">NEXT TRADER <span>PRO</span></div><div class="eyebrow">SUBSCRIPTION & PAYMENT / সাবস্ক্রিপশন ও পেমেন্ট</div></div>
-  <a href="/">← Main website / মূল ওয়েবসাইট</a>
+  <a href="/login.html">← Account / অ্যাকাউন্ট</a>
 </header>
 
 <section class="hero">
@@ -86,14 +86,14 @@ main{max-width:1080px;margin:auto;padding:22px 18px 48px}.top{display:flex;align
   <h2 class="section-title">HOW IT WORKS / যেভাবে কাজ করে</h2>
   <div class="bilingual">
     <div class="lang"><h3>ENGLISH</h3><ul>
-      <li>Create an account and log in on the main website first.</li>
+      <li>Create an account and log in on the account page first.</li>
       <li>Confirm the receiving method and recipient details before sending USD 50 (or its agreed equivalent).</li>
       <li>Select the method/network actually used and submit the transaction reference below.</li>
       <li>An administrator manually reviews the transaction. Access is not activated automatically.</li>
       <li>After approval, access lasts two calendar months. Renewals extend from the later of today or the existing expiry date.</li>
     </ul></div>
     <div class="lang"><h3>বাংলা</h3><ul>
-      <li>প্রথমে মূল ওয়েবসাইটে অ্যাকাউন্ট তৈরি করে লগইন করুন।</li>
+      <li>প্রথমে অ্যাকাউন্ট পেজে অ্যাকাউন্ট তৈরি করে লগইন করুন।</li>
       <li>৫০ USD (অথবা আগে থেকে সম্মত সমপরিমাণ) পাঠানোর আগে রিসিভিং পদ্ধতি ও প্রাপকের তথ্য নিশ্চিত করুন।</li>
       <li>যে পদ্ধতি/নেটওয়ার্ক ব্যবহার করেছেন সেটি নির্বাচন করে নিচে ট্রানজ্যাকশন রেফারেন্স জমা দিন।</li>
       <li>অ্যাডমিন ম্যানুয়ালি ট্রানজ্যাকশন যাচাই করবেন; পেমেন্ট দিলেই স্বয়ংক্রিয়ভাবে অ্যাক্সেস চালু হবে না।</li>
@@ -113,10 +113,10 @@ main{max-width:1080px;margin:auto;padding:22px 18px 48px}.top{display:flex;align
   </div>
   <div id="loginRequired" class="note hidden">
     <div class="bilingual">
-      <div class="lang" style="border:0;background:transparent;padding:0"><h3>Sign-in required</h3><p>Please log in or create your account on the main website, then return here.</p></div>
-      <div class="lang" style="border:0;background:transparent;padding:0"><h3>লগইন প্রয়োজন</h3><p>প্রথমে মূল ওয়েবসাইটে লগইন করুন বা নতুন অ্যাকাউন্ট তৈরি করুন, তারপর এই পেজে ফিরে আসুন।</p></div>
+      <div class="lang" style="border:0;background:transparent;padding:0"><h3>Sign-in required</h3><p>Please log in or create your account on the account page, then return here.</p></div>
+      <div class="lang" style="border:0;background:transparent;padding:0"><h3>লগইন প্রয়োজন</h3><p>প্রথমে অ্যাকাউন্ট পেজে লগইন করুন বা নতুন অ্যাকাউন্ট তৈরি করুন, তারপর এই পেজে ফিরে আসুন।</p></div>
     </div>
-    <div class="actions"><a class="btn btn-primary" href="/">Go to login / লগইন করতে যান →</a></div>
+    <div class="actions"><a class="btn btn-primary" href="/login.html">Go to login / লগইন করতে যান →</a></div>
   </div>
   <form id="paymentForm" class="hidden">
     <div class="bilingual" style="margin-bottom:13px">
@@ -138,6 +138,15 @@ main{max-width:1080px;margin:auto;padding:22px 18px 48px}.top{display:flex;align
     <div class="actions"><button id="submitBtn" class="btn-primary" type="submit">SUBMIT FOR REVIEW / যাচাইয়ের জন্য জমা দিন</button></div>
     <p id="submitMessage" class="status" role="status"></p>
   </form>
+</section>
+
+<section class="panel" id="approvedActions" hidden>
+  <h2 class="section-title">ACCESS APPROVED / অ্যাক্সেস অনুমোদিত</h2>
+  <div class="bilingual">
+    <div class="lang"><h3>ENGLISH</h3><p>Your subscription has been approved and is active. Enter your NEXT TRADER PRO trading console.</p></div>
+    <div class="lang"><h3>বাংলা</h3><p>আপনার সাবস্ক্রিপশন অনুমোদিত ও সক্রিয় হয়েছে। এখন NEXT TRADER PRO-এর মূল ট্রেডিং ওয়েবসাইটে প্রবেশ করুন।</p></div>
+  </div>
+  <div class="actions"><a class="btn btn-primary" href="/">OPEN TRADING CONSOLE / মূল ওয়েবসাইটে যান →</a></div>
 </section>
 
 <section class="panel">
@@ -207,6 +216,10 @@ async function loadAccount() {
     const data = await apiRequest('/api/payment', {method:'GET'});
     signedIn = true;
     const user = data.user || {};
+    if (user.subscriptionActive) {
+      window.location.replace('/');
+      return;
+    }
     $('accountEnglish').textContent =
       'Signed in as ' + user.username + '. Subscription: ' +
       (user.subscriptionActive ? 'ACTIVE' : (user.status === 'active' ? 'EXPIRED' : 'INACTIVE / PENDING')) +
@@ -217,6 +230,7 @@ async function loadAccount() {
       (user.subscriptionExpiresAt ? '। মেয়াদ শেষ ' + new Date(Number(user.subscriptionExpiresAt)).toLocaleDateString('bn-BD',{timeZone:'Asia/Dhaka'}) : '');
     $('loginRequired').classList.add('hidden');
     $('paymentForm').classList.remove('hidden');
+    $('approvedActions').hidden = true;
     showPaymentState(data.payment);
   } catch (error) {
     signedIn = false;
@@ -224,8 +238,8 @@ async function loadAccount() {
     $('submitBtn').disabled = true;
 
     if (error.status === 401) {
-      $('accountEnglish').textContent = 'Not signed in. Log in on the main website first.';
-      $('accountBangla').textContent = 'লগইন করা নেই। আগে মূল ওয়েবসাইটে লগইন করুন।';
+      $('accountEnglish').textContent = 'Not signed in. Log in on the account page first.';
+      $('accountBangla').textContent = 'লগইন করা নেই। আগে অ্যাকাউন্ট পেজে লগইন করুন।';
       $('loginRequired').classList.remove('hidden');
       $('paymentStatus').textContent = 'Please sign in to submit payment. / পেমেন্ট জমা দিতে লগইন করুন।';
     } else {
@@ -263,7 +277,7 @@ $('network').addEventListener('change', () => {
 $('paymentForm').addEventListener('submit', async event => {
   event.preventDefault();
   if (!signedIn) {
-    setMessage('Please log in on the main website first. / আগে মূল ওয়েবসাইটে লগইন করুন।', 'error');
+    setMessage('Please log in on the account page first. / আগে অ্যাকাউন্ট পেজে লগইন করুন।', 'error');
     return;
   }
   if (pendingPayment) {
@@ -286,6 +300,21 @@ $('paymentForm').addEventListener('submit', async event => {
   }
 });
 loadAccount();
+// A submitted transfer is pending until the administrator approves it.
+// Poll only the account status and navigate when the server confirms activation.
+setInterval(async () => {
+  if (document.visibilityState !== 'visible' || !signedIn) return;
+  try {
+    const res = await fetch('/api/auth', {cache:'no-store'});
+    if (res.status === 401) {
+      window.location.replace('/login.html');
+      return;
+    }
+    if (!res.ok) return;
+    const d = await res.json();
+    if (d.user?.subscriptionActive) window.location.replace('/');
+  } catch (_) {}
+}, 12000);
 </script>
 </body>
 </html>
