@@ -1143,13 +1143,17 @@ $('manualSignal').addEventListener('click',async()=>{
     return;
   }
   if(!subscriptionIsActive(currentAccount)) {box.textContent='Active subscription required.';return;}
-  if(busy)return;
-  busy=true;button.disabled=true;
+  button.disabled=true;
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
   box.innerHTML='<div class="signal-label">ANALYZING CLOSED MARKET CANDLES…</div>';
   const symbol=$('chartSymbol').value;
   const timeframe=Number($('chartInterval').value)||60;
   try {
-    const data=await apiRequest('/api/manual-signal',{method:'POST',body:JSON.stringify({symbol,timeframe})});
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),12000);
+    let data;
+    try { data=await apiRequest('/api/manual-signal',{method:'POST',signal:controller.signal,body:JSON.stringify({symbol,timeframe})}); }
+    finally {clearTimeout(timer);}
     const signal=data.signal;
     const colour=signal==='CALL'?'var(--green)':signal==='PUT'?'var(--red)':'var(--gold)';
     const labels={CALL:'CALL ▲',PUT:'PUT ▼','NO TRADE':'NO TRADE'};
@@ -1162,8 +1166,8 @@ $('manualSignal').addEventListener('click',async()=>{
       '<p class="sub">Last confirmed candle: '+escapeHTML(new Date(data.last_closed_candle_time*1000).toLocaleString('en-GB',{timeZone:'Asia/Dhaka'}))+' (Dhaka) • Source: Binance Spot</p>'+
       '<p class="sub">Unverified strategy accuracy. Not financial advice or automatic trade execution.</p>';
     log('Manual '+symbol+' signal: '+signal+' (closed candles)');
-  }catch(error){box.innerHTML='<div class="signal-label">NO SIGNAL</div><p class="sub">'+escapeHTML(error.message)+'</p>';log('Manual signal error: '+error.message);}
-  finally{busy=false;button.disabled=false;}
+  }catch(error){const message=error.name==='AbortError'?'Request timed out. Try again.':error.message;box.innerHTML='<div class="signal-label">NO SIGNAL</div><p class="sub">'+escapeHTML(message)+'</p>';log('Manual signal error: '+message);}
+  finally{button.disabled=false;}
 });
 populateChartSymbols();
 
