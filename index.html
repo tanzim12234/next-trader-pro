@@ -1137,8 +1137,8 @@ $('chartCustomApply').addEventListener('click',()=>{
 $('manualSignal').addEventListener('click',async()=>{
   const button=$('manualSignal'),box=$('manualSignalResult');
   const type=$('chartMarketClass').value;
-  if(type!=='crypto') {
-    box.innerHTML='<div class="signal-label">SCREENSHOT REQUIRED</div><p class="sub">For non-crypto assets, this free TradingView embed does not provide raw OHLC to our algorithm. Use CONTROL CENTER: share your chart and click ANALYZE NOW, or upload a screenshot.</p>';
+  if(type!=='crypto'&&type!=='forex') {
+    box.innerHTML='<div class="signal-label">SCREENSHOT REQUIRED</div><p class="sub">For this asset class, the free TradingView embed does not provide raw OHLC to our algorithm. Use CONTROL CENTER: share your chart and click ANALYZE NOW, or upload a screenshot.</p>';
     log('Manual signal: select screen share or upload for '+type);
     return;
   }
@@ -1152,7 +1152,7 @@ $('manualSignal').addEventListener('click',async()=>{
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),12000);
     let data;
-    try { data=await apiRequest('/api/manual-signal',{method:'POST',signal:controller.signal,body:JSON.stringify({symbol,timeframe})}); }
+    try { data=await apiRequest('/api/manual-signal',{method:'POST',signal:controller.signal,body:JSON.stringify({symbol,timeframe,market:type})}); }
     finally {clearTimeout(timer);}
     const signal=data.signal;
     const colour=signal==='CALL'?'var(--green)':signal==='PUT'?'var(--red)':'var(--gold)';
@@ -1163,8 +1163,8 @@ $('manualSignal').addEventListener('click',async()=>{
       '<p class="sub">Bullish score: '+escapeHTML(data.bullish_score)+' • Bearish score: '+escapeHTML(data.bearish_score)+'</p>'+
       '<p class="sub">'+escapeHTML(data.rule)+'</p>'+
       '<p class="sub">'+escapeHTML(facts.join(' • ')||'No strong directional setup')+'</p>'+
-      '<p class="sub">Last confirmed candle: '+escapeHTML(new Date(data.last_closed_candle_time*1000).toLocaleString('en-GB',{timeZone:'Asia/Dhaka'}))+' (Dhaka) • Source: Binance Spot</p>'+
-      '<p class="sub">Unverified strategy accuracy. Not financial advice or automatic trade execution.</p>';
+      '<p class="sub">Last confirmed candle: '+escapeHTML(new Date(data.last_closed_candle_time*1000).toLocaleString('en-GB',{timeZone:'Asia/Dhaka'}))+' (Dhaka) • Source: '+escapeHTML(data.source||'Market OHLC')+'</p>'+
+      '<p class="sub">Unverified strategy accuracy. Forex uses indicative Yahoo Finance data, which may differ from your broker. No signal if feed is unavailable/stale. Not financial advice or automatic trade execution.</p>';
     log('Manual '+symbol+' signal: '+signal+' (closed candles)');
   }catch(error){const message=error.name==='AbortError'?'Request timed out. Try again.':error.message;box.innerHTML='<div class="signal-label">NO SIGNAL</div><p class="sub">'+escapeHTML(message)+'</p>';log('Manual signal error: '+message);}
   finally{button.disabled=false;}
