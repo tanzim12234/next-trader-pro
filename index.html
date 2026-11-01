@@ -147,10 +147,37 @@ code{color:var(--cyan);overflow-wrap:anywhere}
   .hero-main,.hero-stat,.panel{padding:17px}.hero h1{font-size:31px}.fields{grid-template-columns:1fr}
   .metrics{gap:8px}.metric{padding:12px}.value{font-size:13px}
 }
+/* Premium motion system */
+:root{--cyan:#70fff0;--line:rgba(112,235,226,.18);--glass:rgba(5,17,28,.8)}
+html{scroll-behavior:smooth}body{background:radial-gradient(ellipse at 50% -18%,#124d58 0,transparent 42%),radial-gradient(ellipse at 100% 18%,#142b48 0,transparent 38%),#02090f}
+body:before{background-image:linear-gradient(rgba(111,239,231,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(111,239,231,.045) 1px,transparent 1px);background-size:54px 54px}
+#ambientCanvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:.72}
+.shell{position:relative;z-index:1;max-width:1580px}
+.nav{position:sticky;top:10px;z-index:20;padding:12px 16px;margin:0 -2px 24px;border:1px solid rgba(118,238,233,.16);border-radius:18px;background:rgba(3,13,20,.76);backdrop-filter:blur(18px);box-shadow:0 12px 44px #0005}
+.mark{border-radius:15px;box-shadow:0 0 28px #52f5ec55;animation:markGlow 4s ease-in-out infinite}
+.hero-main{background:linear-gradient(130deg,rgba(7,37,47,.91),rgba(8,15,31,.82));border-color:#65f7ef35;min-height:250px}
+.hero-main:after{content:"";position:absolute;width:380px;height:380px;right:-90px;top:-160px;border:1px solid #6bf4eb22;border-radius:50%;box-shadow:0 0 0 28px #6bf4eb08,0 0 0 62px #6bf4eb06;animation:orbit 18s linear infinite}
+.hero-stat{background:linear-gradient(145deg,rgba(7,28,38,.9),rgba(9,14,31,.82));border-color:#65f7ef30}
+.hero-stat .big{color:#73fff0;text-shadow:0 0 32px #3debe477}
+.metric,.panel{background:linear-gradient(145deg,rgba(8,25,35,.88),rgba(5,12,25,.84));border-color:rgba(112,230,229,.17);backdrop-filter:blur(16px);transition:transform .28s,border-color .28s,box-shadow .28s}
+.metric:hover,.panel:hover{border-color:#6af5e477;box-shadow:0 18px 55px #0006,0 0 24px #48e8db0c}
+.metric{animation:riseIn .65s both}.metric:nth-child(2){animation-delay:.08s}.metric:nth-child(3){animation-delay:.16s}.metric:nth-child(4){animation-delay:.24s}
+.panel{animation:riseIn .7s both}.panel h2:before{background:linear-gradient(180deg,#73fff0,#6b8cff);box-shadow:0 0 15px #55f4e966}
+input,select{background:rgba(3,14,25,.88);border-color:#315363}
+button{transition:transform .2s,box-shadow .2s,border-color .2s}button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 9px 25px #0005,0 0 17px #65f7ef16}
+.primary{background:linear-gradient(105deg,#68fff0,#7da8ff);box-shadow:0 7px 24px #42e8dd24}
+.primary:hover:not(:disabled){box-shadow:0 10px 30px #49e9df50}
+.signal-screen{background:radial-gradient(ellipse at 50% 0,rgba(30,104,108,.3),transparent 68%),rgba(3,12,24,.8);border-color:#5ce7df40}
+.algorithm-badge{border-color:#5ce7df55;color:#82fff1;background:#4de9de0c}.chart-wrap{border-color:#5ce7df35;box-shadow:inset 0 0 35px #0005}
+.foot{padding:20px;border-top:1px solid var(--line)}
+@keyframes riseIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}@keyframes markGlow{50%{box-shadow:0 0 40px #52f5ec88}}@keyframes orbit{to{transform:rotate(360deg)}}
+@media(max-width:580px){.nav{top:5px;padding:10px;border-radius:14px}.hero-main:after{opacity:.45}.shell{padding-top:10px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 </style>
 </head>
 
 <body>
+<canvas id="ambientCanvas" aria-hidden="true"></canvas>
 <div class="shell" id="appShell" hidden>
 <header class="nav">
   <div class="brand">
@@ -235,7 +262,7 @@ code{color:var(--cyan);overflow-wrap:anywhere}
   </div>
   <div id="manualSignalResult" class="signal-screen" role="status" aria-live="polite" style="margin-top:12px;padding:17px">
     <div class="signal-label">ON-DEMAND MARKET ANALYSIS</div>
-    <p class="sub">Crypto: analyze Binance closed candles on click, without a screenshot. Forex, indices, commodities and stocks: use screen share or upload a chart screenshot in Control Center.</p>
+    <p class="sub">Forex and Crypto: analyze closed candles on demand. Indices, commodities and stocks: use screen share or upload a chart screenshot in Control Center.</p>
   </div>
   <p class="tv-disclaimer">Market symbols and available data are supplied by TradingView and its data partners. Data may be real-time, delayed or unavailable depending on the instrument and exchange. TradingView branding is retained. The embedded chart does not expose raw OHLC data to NEXT TRADER's custom algorithm.</p>
 </section>
@@ -416,7 +443,7 @@ async function logout() {
   catch (_) {}
   stop();
   currentAccount = null;
-  window.location.replace('/login.html');
+  window.location.replace('/home.html');
 }
 
 function showAccount(user) {
@@ -916,9 +943,14 @@ function tick() {
 }
 
 setInterval(tick, 250);
-tick();
-compoundInit();
-restoreSession();
+tick();compoundInit();restoreSession();
+(()=>{
+ const canvas=document.getElementById('ambientCanvas'),ctx=canvas&&canvas.getContext('2d');if(!ctx)return;
+ let w=0,h=0,points=[],raf=0;const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ function size(){w=innerWidth;h=innerHeight;const d=Math.min(devicePixelRatio||1,1.5);canvas.width=w*d;canvas.height=h*d;ctx.setTransform(d,0,0,d,0,0);points=Array.from({length:Math.min(85,Math.floor(w*h/16000))},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:.5+Math.random()*1.2}))}
+ function draw(){if(document.hidden){raf=0;return}ctx.clearRect(0,0,w,h);points.forEach((p,i)=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;ctx.fillStyle='rgba(119,255,245,.6)';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();for(let j=i+1;j<points.length;j++){let q=points[j],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<95){ctx.strokeStyle='rgba(91,235,226,'+(1-d/95)*.1+')';ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke()}}});if(!reduced)raf=requestAnimationFrame(draw)}
+ size();addEventListener('resize',size,{passive:true});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!raf)draw()});draw();
+})();
 
 const MARKET_SYMBOLS = {
   forex:[
