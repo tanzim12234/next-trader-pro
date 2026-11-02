@@ -79,8 +79,13 @@ export default async function handler(req, res) {
         return value.flatMap(part => {
           if (part?.type === "text" && typeof part.text === "string") return [{ text: part.text }];
           if (part?.type === "image_url" && typeof part.image_url?.url === "string") {
-            const match = part.image_url.url.match(/^data:(image\\/(?:png|jpeg|webp));base64,([\\s\\S]+)$/);
-            if (match) return [{ inlineData: { mimeType: match[1], data: match[2] } }];
+            const dataUrl = part.image_url.url;
+            const comma = dataUrl.indexOf(",");
+            const mimeType = dataUrl.slice(5, comma);
+            const data = dataUrl.slice(comma + 1);
+            if (comma > 0 && ["image/png", "image/jpeg", "image/webp"].includes(mimeType) && data) {
+              return [{ inlineData: { mimeType, data } }];
+            }
           }
           return [];
         });
