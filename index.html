@@ -147,6 +147,38 @@ code{color:var(--cyan);overflow-wrap:anywhere}
   .hero-main,.hero-stat,.panel{padding:17px}.hero h1{font-size:31px}.fields{grid-template-columns:1fr}
   .metrics{gap:8px}.metric{padding:12px}.value{font-size:13px}
 }
+
+/* Reference-inspired live tunnel background for the main trading console */
+#tunnelBackdrop{position:fixed;inset:-7%;z-index:-2;pointer-events:none;overflow:hidden;
+  background:
+    radial-gradient(ellipse at 50% 50%,rgba(0,8,15,.98) 0 10%,rgba(3,20,27,.88) 24%,transparent 58%),
+    repeating-conic-gradient(from 0deg at 50% 50%,rgba(105,255,247,.0) 0deg 2.1deg,rgba(105,255,247,.18) 2.2deg 2.35deg,transparent 2.5deg 7deg),
+    radial-gradient(ellipse at 50% 50%,#0b3339 0,#061a25 42%,#02070e 78%);
+  transform:scale(1.04);animation:tunnelCamera 32s ease-in-out infinite alternate;
+}
+#tunnelBackdrop:before,#tunnelBackdrop:after{content:"";position:absolute;inset:-15%;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 8.5%,rgba(95,239,235,.10) 8.6% 8.72%,transparent 8.85% 17%),
+    repeating-linear-gradient(0deg,transparent 0 10%,rgba(95,239,235,.08) 10.1% 10.25%,transparent 10.4% 20%);
+  mask-image:radial-gradient(ellipse at center,#000 8%,transparent 70%);
+  animation:tunnelLines 24s linear infinite;
+}
+#tunnelBackdrop:after{inset:8%;border:1px solid rgba(116,255,245,.16);
+  box-shadow:0 0 50px rgba(62,242,232,.12),inset 0 0 80px rgba(62,242,232,.12);
+  transform:perspective(650px) rotateX(3deg) scale(.72);
+  animation:tunnelPulse 8s ease-in-out infinite alternate;
+}
+#ambientCanvas{z-index:0!important;opacity:.58!important}
+.shell{z-index:2!important}
+.hero-main,.hero-stat,.metric,.panel{background:linear-gradient(145deg,rgba(4,20,28,.82),rgba(3,10,20,.78))!important;
+  backdrop-filter:blur(13px);border-color:rgba(105,245,238,.22)}
+@keyframes tunnelCamera{0%{transform:scale(1.02) translate3d(0,0,0);filter:saturate(.9) brightness(.72)}
+  100%{transform:scale(1.18) translate3d(1.2%,-.8%,0);filter:saturate(1.2) brightness(1.05)}}
+@keyframes tunnelLines{to{transform:rotate(360deg) scale(1.08)}}
+@keyframes tunnelPulse{from{opacity:.18;transform:perspective(650px) rotateX(3deg) scale(.68)}
+  to{opacity:.7;transform:perspective(650px) rotateX(3deg) scale(.86)}}
+@media(prefers-reduced-motion:reduce){#tunnelBackdrop,#tunnelBackdrop:before,#tunnelBackdrop:after{animation:none!important}}
+
 /* Premium motion system */
 :root{--cyan:#70fff0;--line:rgba(112,235,226,.18);--glass:rgba(5,17,28,.8)}
 html{scroll-behavior:smooth}body{background:radial-gradient(ellipse at 50% -18%,#124d58 0,transparent 42%),radial-gradient(ellipse at 100% 18%,#142b48 0,transparent 38%),#02090f}
@@ -177,6 +209,7 @@ button{transition:transform .2s,box-shadow .2s,border-color .2s}button:hover:not
 </head>
 
 <body>
+<div id="tunnelBackdrop" aria-hidden="true"></div>
 <canvas id="ambientCanvas" aria-hidden="true"></canvas>
 <div class="shell" id="appShell" hidden>
 <header class="nav">
