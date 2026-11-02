@@ -69,6 +69,7 @@ export default async function handler(req, res) {
     const promptText = [message, attachmentText ? `[Attached file: ${attachmentName}]\\n${attachmentText}` : ""].filter(Boolean).join("\\n\\n");
     let reply = "";
     let model = "";
+    let usage = null;
 
     if (geminiKey) {
       model = process.env.NEXT_AI_GEMINI_MODEL || "gemini-3.8-flash";
@@ -105,6 +106,7 @@ export default async function handler(req, res) {
         signal: AbortSignal.timeout(60000)
       });
       const payload = await upstream.json().catch(() => ({}));
+      usage = payload?.usageMetadata || null;
       if (!upstream.ok) {
         console.error("NEXT AI Gemini provider error:", upstream.status, payload?.error?.status || "provider_error");
         return json(res, 502, { error: "Gemini এখন উত্তর দিতে পারেনি। API key, model access বা free-tier limit পরীক্ষা করে আবার চেষ্টা করো।" });
@@ -129,6 +131,7 @@ export default async function handler(req, res) {
         signal: AbortSignal.timeout(60000)
       });
       const payload = await upstream.json().catch(() => ({}));
+      usage = payload?.usage || null;
       if (!upstream.ok) {
         console.error("NEXT AI OpenAI provider error:", upstream.status, payload?.error?.type || "provider_error");
         return json(res, 502, { error: "AI provider এখন উত্তর দিতে পারেনি। কিছুক্ষণ পর আবার চেষ্টা করো।" });
@@ -142,7 +145,7 @@ export default async function handler(req, res) {
     history = [...history, savedUserMessage, savedAssistantMessage].slice(-18);
     await redis.set(key, JSON.stringify(history), { ex: 60 * 60 * 24 * 90 });
     await redis.set(quotaKey(username), String(count + 1), { ex: 60 * 60 * 30 });
-    return json(res, 200, { reply: reply.trim(), model, conversationId: id, usage: payload.usage || null, remainingToday: Math.max(0, dailyLimit - count - 1) });
+    return json(res, 200, { reply: reply.trim(), model, conversationId: id, usage, remainingToday: Math.max(0, dailyLimit - count - 1) });
   } catch (error) {
     console.error("NEXT AI ERROR:", error?.name || "unknown");
     return json(res, 500, { error: "NEXT AI সাময়িক সমস্যায় পড়েছে। আবার চেষ্টা করো।" });
