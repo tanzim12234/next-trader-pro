@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     if (count >= dailyLimit) return json(res, 429, { error: "আজকের AI message limit শেষ। কাল আবার চেষ্টা করো।" });
 
     const content = [];
-    const promptText = [message, attachmentText ? `[Attached file: ${attachmentName}]\\n${attachmentText}` : ""].filter(Boolean).join("\\n\\n");
+    const promptText = [message, attachmentText ? `[Attached file: ${attachmentName}]\n${attachmentText}` : ""].filter(Boolean).join("\n\n");
     if (promptText) content.push({ type: "text", text: promptText });
     if (image) content.push({ type: "image_url", image_url: { url: image, detail: "auto" } });
     const userMessage = { role: "user", content: image ? content : promptText };
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
     const reply = payload?.choices?.[0]?.message?.content;
     if (typeof reply !== "string" || !reply.trim()) return json(res, 502, { error: "AI provider empty response দিয়েছে।" });
 
-    const savedUserMessage = { role: "user", content: [message, attachmentText ? `[Attached file: ${attachmentName}]\\n${attachmentText}` : "", image ? "[Image attached]" : ""].filter(Boolean).join("\\n\\n"), at: Date.now() };
+    const savedUserMessage = { role: "user", content: [message, attachmentText ? `[Attached file: ${attachmentName}]\n${attachmentText}` : "", image ? "[Image attached]" : ""].filter(Boolean).join("\n\n"), at: Date.now() };
     const savedAssistantMessage = { role: "assistant", content: reply.trim(), at: Date.now() };
     history = [...history, savedUserMessage, savedAssistantMessage].slice(-18);
     await redis.set(key, JSON.stringify(history), { ex: 60 * 60 * 24 * 90 });
