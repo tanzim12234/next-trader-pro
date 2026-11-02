@@ -17,6 +17,7 @@ const historyKey = (username, id) => `nextai:chat:${username}:${id}`;
 const quotaKey = username => `nextai:quota:${username}:${new Date().toISOString().slice(0,10)}`;
 
 export default async function handler(req, res) {
+  let stage = "session";
   try {
     const user = await currentUser(req);
     if (!user) return json(res, 401, { error: "NEXT AI ব্যবহার করতে আগে লগইন করো।" });
@@ -56,12 +57,14 @@ export default async function handler(req, res) {
 
     const id = validId(req.body?.conversationId) ? String(req.body.conversationId) : crypto.randomUUID();
     const key = historyKey(username, id);
+    stage = "history-read";
     const raw = await redis.get(key);
     let history = [];
     try { history = raw ? JSON.parse(raw) : []; } catch {}
     if (!Array.isArray(history)) history = [];
     history = history.slice(-16);
 
+    stage = "quota-read";
     const count = Number(await redis.get(quotaKey(username)) || 0);
     const dailyLimit = Number(process.env.NEXT_AI_DAILY_LIMIT || 100);
     if (count >= dailyLimit) return json(res, 429, { error: "আজকের AI message limit শেষ। কাল আবার চেষ্টা করো।" });
@@ -72,6 +75,7 @@ export default async function handler(req, res) {
     let usage = null;
 
     if (geminiKey) {
+      stage = "gemini-request";
       model = process.env.NEXT_AI_GEMINI_MODEL || "gemini-3.8-flash";
       const toGeminiParts = value => {
         if (typeof value === "string") return [{ text: value }];
@@ -108,7 +112,7 @@ export default async function handler(req, res) {
           contents,
           generationConfig: { temperature: 0.7, maxOutputTokens: 1800 }
         }),
-        signal: AbortSignal.timeout(60000)
+        signal: AbortSignal.timeout(30000)
       });
       const payload = await upstream.json().catch(() => ({}));
       usage = payload?.usageMetadata || null;
@@ -145,6 +149,7 @@ export default async function handler(req, res) {
     }
     if (!reply) return json(res, 502, { error: "AI provider empty response দিয়েছে।" });
 
+    stage = "history-save";
     const savedUserMessage = { role: "user", content: [message, attachmentText ? `[Attached file: ${attachmentName}]\n${attachmentText}` : "", image ? "[Image attached]" : ""].filter(Boolean).join("\n\n"), at: Date.now() };
     const savedAssistantMessage = { role: "assistant", content: reply.trim(), at: Date.now() };
     history = [...history, savedUserMessage, savedAssistantMessage].slice(-18);
@@ -152,7 +157,8 @@ export default async function handler(req, res) {
     await redis.set(quotaKey(username), String(count + 1), { ex: 60 * 60 * 30 });
     return json(res, 200, { reply: reply.trim(), model, conversationId: id, usage, remainingToday: Math.max(0, dailyLimit - count - 1) });
   } catch (error) {
-    console.error("NEXT AI ERROR:", error?.name || "unknown");
-    return json(res, 500, { error: "NEXT AI সাময়িক সমস্যায় পড়েছে। আবার চেষ্টা করো।" });
+    console.error("NEXT AI ERROR:", stage, error?.name || "unknown");
+    const timeoutMessage = stage === "gemini-request" ? "Gemini উত্তর দিতে বেশি সময় নিচ্ছে। একটু পর আবার চেষ্টা করো।" : "NEXT AI সার্ভারে সাময়িক সমস্যা হয়েছে। আবার চেষ্টা করো।";
+    return json(res, error?.name === "TimeoutError" ? 504 : 500, { error: timeoutMessage });
   }
 }
