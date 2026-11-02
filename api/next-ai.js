@@ -104,23 +104,49 @@ export default async function handler(req, res) {
           ...(image ? toGeminiParts([{ type: "image_url", image_url: { url: image } }]) : [])
         ] }
       ];
-      const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents,
-          generationConfig: { temperature: 0.7, maxOutputTokens: 1800 }
-        }),
-        signal: AbortSignal.timeout(30000)
-      });
-      const payload = await upstream.json().catch(() => ({}));
-      usage = payload?.usageMetadata || null;
-      if (!upstream.ok) {
-        console.error("NEXT AI Gemini provider error:", upstream.status, payload?.error?.status || "provider_error");
-        return json(res, 502, { error: "Gemini এখন উত্তর দিতে পারেনি। API key, model access বা free-tier limit পরীক্ষা করে আবার চেষ্টা করো।" });
+      const modelCandidates = [...new Set([model, "gemini-3.7-flash", "gemini-3.6-flash"])];
+      let lastStatus = 0;
+      let lastProviderStatus = "provider_error";
+      for (const candidate of modelCandidates) {
+        model = candidate;
+        let upstream;
+        try {
+          upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+              contents,
+              generationConfig: { temperature: 0.7, maxOutputTokens: 1800 }
+            }),
+            signal: AbortSignal.timeout(18000)
+          });
+        } catch (error) {
+          if (error?.name === "TimeoutError") {
+            console.error("NEXT AI Gemini timeout on model:", model);
+            continue;
+          }
+          throw error;
+        }
+        const payload = await upstream.json().catch(() => ({}));
+        if (upstream.ok) {
+          usage = payload?.usageMetadata || null;
+          reply = (payload?.candidates?.[0]?.content?.parts || []).map(part => part.text || "").join("").trim();
+          break;
+        }
+        lastStatus = upstream.status;
+        lastProviderStatus = payload?.error?.status || "provider_error";
+        console.error("NEXT AI Gemini provider error:", model, lastStatus, lastProviderStatus);
+        if (![500, 502, 503].includes(upstream.status)) {
+          return json(res, 502, { error: upstream.status === 429
+            ? "Gemini free-tier request limit শেষ হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করো।"
+            : "Gemini API key বা model access-এ সমস্যা হয়েছে। Vercel-এর GEMINI_API_KEY এবং model permission পরীক্ষা করতে হবে।" });
+        }
       }
-      reply = (payload?.candidates?.[0]?.content?.parts || []).map(part => part.text || "").join("").trim();
+      if (!reply) {
+        console.error("NEXT AI Gemini fallback exhausted:", lastStatus, lastProviderStatus);
+        return json(res, 503, { error: "Gemini সার্ভার এখন ব্যস্ত। বিকল্প model-এও উত্তর পাওয়া যায়নি। ৩০–৬০ সেকেন্ড পর আবার চেষ্টা করো।" });
+      }
     } else {
       model = process.env.NEXT_AI_MODEL || "gpt-4.1-mini";
       const endpoint = process.env.NEXT_AI_API_URL || "https://api.openai.com/v1/chat/completions";
