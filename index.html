@@ -410,7 +410,7 @@ const $ = id => document.getElementById(id);
 let stream = null;
 const video = $('video');
 let busy = false;
-let voiceOn = true;
+let voiceOn = false;
 let lastBucket = -1;
 let lastSignal = null;
 let compoundState = null;
@@ -503,18 +503,41 @@ async function restoreSession() {
 }
 $('logoutBtn').onclick = logout;
 
-function speakSignal(trend, entry, confidence) {
-  if (!voiceOn || !('speechSynthesis' in window)) return;
+function speakText(text) {
+  if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+    status('এই browser-এ voice alert support নেই। Safari/Chrome আপডেট করো।');
+    return false;
+  }
 
+  try {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    synth.resume();
+    const utterance = new SpeechSynthesisUtterance(String(text || ''));
+    utterance.lang = 'en-US';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    utterance.onstart = () => status('Voice alert is playing.');
+    utterance.onerror = event => {
+      log('Voice playback error: ' + (event.error || 'unknown'));
+      status('Voice চালু হয়নি। ফোনের silent mode ও media volume পরীক্ষা করো।');
+    };
+    synth.speak(utterance);
+    return true;
+  } catch (error) {
+    log('Voice playback failed: ' + error.message);
+    status('Voice playback failed: ' + error.message);
+    return false;
+  }
+}
+
+function speakSignal(trend, entry, confidence) {
+  if (!voiceOn) return;
   const t = String(trend || 'UNCLEAR').toUpperCase();
   const e = String(entry || 'WAIT').toUpperCase();
   const c = Math.max(0, Math.min(100, Math.round(Number(confidence) || 0)));
-
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(`${t}. ${e}. ${c} percent.`);
-  utterance.lang = 'en-US';
-  utterance.rate = 1.25;
-  speechSynthesis.speak(utterance);
+  speakText(`${sym()}. ${t}. ${e}. Confidence ${c} percent.`);
 }
 
 async function start() {
@@ -756,13 +779,28 @@ $('upload').onclick = async () => {
   }
 };
 
+$('voice').textContent = 'VOICE OFF';
 $('voice').onclick = () => {
   voiceOn = !voiceOn;
   $('voice').textContent = voiceOn ? 'VOICE ON' : 'VOICE OFF';
-  if (!voiceOn && 'speechSynthesis' in window) speechSynthesis.cancel();
+  if (voiceOn) {
+    // This click is a direct user gesture, allowing iOS Safari to unlock speech audio.
+    speakText('Voice alerts enabled. NEXT TRADER PRO is ready.');
+    log('Voice alerts enabled');
+  } else if ('speechSynthesis' in window) {
+    speechSynthesis.cancel();
+    status('Voice alerts are off.');
+    log('Voice alerts disabled');
+  }
 };
 
-$('testVoice').onclick = () => speakSignal('BULLISH', 'CALL', 78);
+$('testVoice').onclick = () => {
+  if (!voiceOn) {
+    voiceOn = true;
+    $('voice').textContent = 'VOICE ON';
+  }
+  speakText('Test voice. Bullish. Call. Confidence 78 percent.');
+};
 
 /* Risk-based compounding assistant. It only tracks manually executed trades. */
 function dhakaDayKey() {
