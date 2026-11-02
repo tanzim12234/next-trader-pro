@@ -37,7 +37,7 @@ function setImage(file){if(!file)return;if(file.size>3.5*1024*1024){add('ai','�
 document.getElementById('attachImage').onclick=()=>document.getElementById('imageFile').click();
 document.getElementById('imageFile').onchange=e=>setImage(e.target.files[0]);
 document.getElementById('attachFile').onclick=()=>document.getElementById('textFile').click();
-document.getElementById('textFile').onchange=e=>{const file=e.target.files[0];if(!file)return;if(file.size>120*1024){add('ai','Text file 120 KB-এর মধ্যে রাখো।');e.target.value='';return}const reader=new FileReader();reader.onload=()=>{attachmentText=String(reader.result||'');attachmentName=file.name;document.getElementById('fileName').textContent=file.name};reader.onerror=()=>add('ai','ফাইলটি পড়া যায়নি।');reader.readAsText(file)};
+document.getElementById('textFile').onchange=e=>{const file=e.target.files[0];if(!file)return;if(file.size>120*1024){add('ai','Text file 120 KB-এর মধ্যে রাখো।');e.target.value='';return}const reader=new FileReader();reader.onload=()=>{attachmentText=String(reader.result||'');attachmentName=file.name;document.getElementById('fileName').textContent=file.name;document.getElementById('clearImage').hidden=false};reader.onerror=()=>add('ai','ফাইলটি পড়া যায়নি।');reader.readAsText(file)};
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 const voiceButton=document.getElementById('voiceInput');
 if(!SpeechRecognition){voiceButton.disabled=true;voiceButton.title='এই browser-এ voice input support নেই';}
