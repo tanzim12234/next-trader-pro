@@ -48,8 +48,11 @@ export default async function handler(req, res) {
       return json(res, 400, { error: "ছবি PNG, JPEG বা WebP হতে হবে এবং 3.5MB-এর মধ্যে রাখতে হবে।" });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return json(res, 503, { error: "NEXT AI model এখনো সংযুক্ত হয়নি। Project owner-কে Vercel Environment Variables-এ OPENAI_API_KEY যোগ করতে হবে।" });
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!geminiKey && !openaiKey) {
+      return json(res, 503, { error: "NEXT AI model এখনো সংযুক্ত হয়নি। Project owner-কে Vercel Environment Variables-এ GEMINI_API_KEY যোগ করতে হবে।" });
+    }
 
     const id = validId(req.body?.conversationId) ? String(req.body.conversationId) : crypto.randomUUID();
     const key = historyKey(username, id);
@@ -63,32 +66,76 @@ export default async function handler(req, res) {
     const dailyLimit = Number(process.env.NEXT_AI_DAILY_LIMIT || 100);
     if (count >= dailyLimit) return json(res, 429, { error: "আজকের AI message limit শেষ। কাল আবার চেষ্টা করো।" });
 
-    const content = [];
-    const promptText = [message, attachmentText ? `[Attached file: ${attachmentName}]\n${attachmentText}` : ""].filter(Boolean).join("\n\n");
-    if (promptText) content.push({ type: "text", text: promptText });
-    if (image) content.push({ type: "image_url", image_url: { url: image, detail: "auto" } });
-    const userMessage = { role: "user", content: image ? content : promptText };
-    const model = process.env.NEXT_AI_MODEL || "gpt-4.1-mini";
-    const endpoint = process.env.NEXT_AI_API_URL || "https://api.openai.com/v1/chat/completions";
+    const promptText = [message, attachmentText ? `[Attached file: ${attachmentName}]\\n${attachmentText}` : ""].filter(Boolean).join("\\n\\n");
+    let reply = "";
+    let model = "";
 
-    const upstream = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history, userMessage],
-        temperature: 0.7,
-        max_tokens: 1800
-      }),
-      signal: AbortSignal.timeout(60000)
-    });
-    const payload = await upstream.json().catch(() => ({}));
-    if (!upstream.ok) {
-      console.error("NEXT AI provider error:", upstream.status, payload?.error?.type || "provider_error");
-      return json(res, 502, { error: "AI provider এখন উত্তর দিতে পারেনি। কিছুক্ষণ পর আবার চেষ্টা করো।" });
+    if (geminiKey) {
+      model = process.env.NEXT_AI_GEMINI_MODEL || "gemini-3.8-flash";
+      const toGeminiParts = value => {
+        if (typeof value === "string") return [{ text: value }];
+        if (!Array.isArray(value)) return [];
+        return value.flatMap(part => {
+          if (part?.type === "text" && typeof part.text === "string") return [{ text: part.text }];
+          if (part?.type === "image_url" && typeof part.image_url?.url === "string") {
+            const match = part.image_url.url.match(/^data:(image\\/(?:png|jpeg|webp));base64,([\\s\\S]+)$/);
+            if (match) return [{ inlineData: { mimeType: match[1], data: match[2] } }];
+          }
+          return [];
+        });
+      };
+      const contents = [
+        ...history.map(item => ({
+          role: item.role === "assistant" ? "model" : "user",
+          parts: toGeminiParts(item.content)
+        })).filter(item => item.parts.length),
+        { role: "user", parts: [
+          ...(promptText ? [{ text: promptText }] : []),
+          ...(image ? toGeminiParts([{ type: "image_url", image_url: { url: image } }]) : [])
+        ] }
+      ];
+      const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents,
+          generationConfig: { temperature: 0.7, maxOutputTokens: 1800 }
+        }),
+        signal: AbortSignal.timeout(60000)
+      });
+      const payload = await upstream.json().catch(() => ({}));
+      if (!upstream.ok) {
+        console.error("NEXT AI Gemini provider error:", upstream.status, payload?.error?.status || "provider_error");
+        return json(res, 502, { error: "Gemini এখন উত্তর দিতে পারেনি। API key, model access বা free-tier limit পরীক্ষা করে আবার চেষ্টা করো।" });
+      }
+      reply = (payload?.candidates?.[0]?.content?.parts || []).map(part => part.text || "").join("").trim();
+    } else {
+      model = process.env.NEXT_AI_MODEL || "gpt-4.1-mini";
+      const endpoint = process.env.NEXT_AI_API_URL || "https://api.openai.com/v1/chat/completions";
+      const content = [];
+      if (promptText) content.push({ type: "text", text: promptText });
+      if (image) content.push({ type: "image_url", image_url: { url: image, detail: "auto" } });
+      const userMessage = { role: "user", content: image ? content : promptText };
+      const upstream = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${openaiKey}` },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history, userMessage],
+          temperature: 0.7,
+          max_tokens: 1800
+        }),
+        signal: AbortSignal.timeout(60000)
+      });
+      const payload = await upstream.json().catch(() => ({}));
+      if (!upstream.ok) {
+        console.error("NEXT AI OpenAI provider error:", upstream.status, payload?.error?.type || "provider_error");
+        return json(res, 502, { error: "AI provider এখন উত্তর দিতে পারেনি। কিছুক্ষণ পর আবার চেষ্টা করো।" });
+      }
+      reply = payload?.choices?.[0]?.message?.content?.trim() || "";
     }
-    const reply = payload?.choices?.[0]?.message?.content;
-    if (typeof reply !== "string" || !reply.trim()) return json(res, 502, { error: "AI provider empty response দিয়েছে।" });
+    if (!reply) return json(res, 502, { error: "AI provider empty response দিয়েছে।" });
 
     const savedUserMessage = { role: "user", content: [message, attachmentText ? `[Attached file: ${attachmentName}]\n${attachmentText}` : "", image ? "[Image attached]" : ""].filter(Boolean).join("\n\n"), at: Date.now() };
     const savedAssistantMessage = { role: "assistant", content: reply.trim(), at: Date.now() };
