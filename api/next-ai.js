@@ -3,6 +3,7 @@ import { json, currentUser, redis } from "./store.js";
 
 const MAX_MESSAGE = 8000;
 const MAX_IMAGE_CHARS = 5_000_000;
+const MAX_ATTACHMENT_CHARS = 120_000;
 const SYSTEM_PROMPT = `You are NEXT AI, a capable, honest, multilingual assistant in the NEXT TRADER ecosystem.
 Reply in the language the user uses; prefer natural Bangla when they write Bangla. Be thoughtful, structured and practical.
 Support learning, writing, coding, planning, brainstorming, explanations, and analysis. Ask only necessary clarifying questions.
@@ -38,7 +39,10 @@ export default async function handler(req, res) {
 
     const message = String(req.body?.message || "").trim();
     const image = req.body?.image || null;
-    if (!message && !image) return json(res, 400, { error: "একটি message বা image দাও।" });
+    const attachmentText = String(req.body?.attachmentText || "");
+    const attachmentName = String(req.body?.attachmentName || "attached file").slice(0, 160);
+    if (!message && !image && !attachmentText) return json(res, 400, { error: "একটি message, image বা text file দাও।" });
+    if (attachmentText.length > MAX_ATTACHMENT_CHARS) return json(res, 400, { error: "Text file 120,000 characters-এর মধ্যে রাখতে হবে।" });
     if (message.length > MAX_MESSAGE) return json(res, 400, { error: "Message limit 8,000 characters." });
     if (image && (typeof image !== "string" || image.length > MAX_IMAGE_CHARS || !/^data:image\/(png|jpeg|webp);base64,/.test(image))) {
       return json(res, 400, { error: "ছবি PNG, JPEG বা WebP হতে হবে এবং 3.5MB-এর মধ্যে রাখতে হবে।" });
@@ -60,9 +64,10 @@ export default async function handler(req, res) {
     if (count >= dailyLimit) return json(res, 429, { error: "আজকের AI message limit শেষ। কাল আবার চেষ্টা করো।" });
 
     const content = [];
-    if (message) content.push({ type: "text", text: message });
+    const promptText = [message, attachmentText ? `[Attached file: ${attachmentName}]\\n${attachmentText}` : ""].filter(Boolean).join("\\n\\n");
+    if (promptText) content.push({ type: "text", text: promptText });
     if (image) content.push({ type: "image_url", image_url: { url: image, detail: "auto" } });
-    const userMessage = { role: "user", content: image ? content : message };
+    const userMessage = { role: "user", content: image ? content : promptText };
     const model = process.env.NEXT_AI_MODEL || "gpt-4.1-mini";
     const endpoint = process.env.NEXT_AI_API_URL || "https://api.openai.com/v1/chat/completions";
 
@@ -85,7 +90,7 @@ export default async function handler(req, res) {
     const reply = payload?.choices?.[0]?.message?.content;
     if (typeof reply !== "string" || !reply.trim()) return json(res, 502, { error: "AI provider empty response দিয়েছে।" });
 
-    const savedUserMessage = { role: "user", content: message || "[Image attached]", at: Date.now() };
+    const savedUserMessage = { role: "user", content: [message, attachmentText ? `[Attached file: ${attachmentName}]\\n${attachmentText}` : "", image ? "[Image attached]" : ""].filter(Boolean).join("\\n\\n"), at: Date.now() };
     const savedAssistantMessage = { role: "assistant", content: reply.trim(), at: Date.now() };
     history = [...history, savedUserMessage, savedAssistantMessage].slice(-18);
     await redis.set(key, JSON.stringify(history), { ex: 60 * 60 * 24 * 90 });
