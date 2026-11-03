@@ -42,6 +42,7 @@ export default async function handler(req, res) {
     const image = req.body?.image || null;
     const attachmentText = String(req.body?.attachmentText || "");
     const attachmentName = String(req.body?.attachmentName || "attached file").slice(0, 160);
+    const webSearch = req.body?.webSearch === true;
     if (!message && !image && !attachmentText) return json(res, 400, { error: "একটি message, image বা text file দাও।" });
     if (attachmentText.length > MAX_ATTACHMENT_CHARS) return json(res, 400, { error: "Text file 120,000 characters-এর মধ্যে রাখতে হবে।" });
     if (message.length > MAX_MESSAGE) return json(res, 400, { error: "Message limit 8,000 characters." });
@@ -51,6 +52,7 @@ export default async function handler(req, res) {
 
     const geminiKey = process.env.GEMINI_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
+    if (webSearch && !geminiKey) return json(res, 503, { error: "Web search চালাতে Gemini API key প্রয়োজন। Vercel Environment Variables-এ GEMINI_API_KEY যোগ করতে হবে।" });
     if (!geminiKey && !openaiKey) {
       return json(res, 503, { error: "NEXT AI model এখনো সংযুক্ত হয়নি। Project owner-কে Vercel Environment Variables-এ GEMINI_API_KEY যোগ করতে হবে।" });
     }
@@ -73,6 +75,7 @@ export default async function handler(req, res) {
     let reply = "";
     let model = "";
     let usage = null;
+    let sources = [];
 
     if (geminiKey) {
       stage = "gemini-request";
@@ -117,7 +120,8 @@ export default async function handler(req, res) {
             body: JSON.stringify({
               systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
               contents,
-              generationConfig: { temperature: 0.7, maxOutputTokens: 1800 }
+              ...(webSearch ? { tools: [{ google_search: {} }] } : {}),
+              generationConfig: { temperature: webSearch ? 0.2 : 0.7, maxOutputTokens: 1800 }
             }),
             signal: AbortSignal.timeout(18000)
           });
@@ -131,7 +135,13 @@ export default async function handler(req, res) {
         const payload = await upstream.json().catch(() => ({}));
         if (upstream.ok) {
           usage = payload?.usageMetadata || null;
-          reply = (payload?.candidates?.[0]?.content?.parts || []).map(part => part.text || "").join("").trim();
+          const candidateData = payload?.candidates?.[0];
+          reply = (candidateData?.content?.parts || []).map(part => part.text || "").join("").trim();
+          if (webSearch) {
+            const chunks = candidateData?.groundingMetadata?.groundingChunks || [];
+            sources = chunks.map(item => item.web).filter(item => item?.uri).map(item => ({ title: String(item.title || item.uri).slice(0, 240), url: item.uri })).filter((item, index, list) => list.findIndex(other => other.url === item.url) === index).slice(0, 8);
+            if (!sources.length) reply += "\\n\\n(এই উত্তরে কোনো যাচাইযোগ্য web source ফেরত আসেনি।)";
+          }
           break;
         }
         lastStatus = upstream.status;
@@ -181,7 +191,7 @@ export default async function handler(req, res) {
     history = [...history, savedUserMessage, savedAssistantMessage].slice(-18);
     await redis.set(key, JSON.stringify(history), { ex: 60 * 60 * 24 * 90 });
     await redis.set(quotaKey(username), String(count + 1), { ex: 60 * 60 * 30 });
-    return json(res, 200, { reply: reply.trim(), model, conversationId: id, usage, remainingToday: Math.max(0, dailyLimit - count - 1) });
+    return json(res, 200, { reply: reply.trim(), model, conversationId: id, usage, sources, grounded: sources.length > 0, remainingToday: Math.max(0, dailyLimit - count - 1) });
   } catch (error) {
     console.error("NEXT AI ERROR:", stage, error?.name || "unknown");
     const timeoutMessage = stage === "gemini-request" ? "Gemini উত্তর দিতে বেশি সময় নিচ্ছে। একটু পর আবার চেষ্টা করো।" : "NEXT AI সার্ভারে সাময়িক সমস্যা হয়েছে। আবার চেষ্টা করো।";
