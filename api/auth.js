@@ -8,7 +8,7 @@ import {
   getUser,
   saveUser,
   currentUser
-} from "./store.js";
+} from "../lib/store.js";
 
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
 
