@@ -5,7 +5,7 @@ import {
   getUser,
   saveUser,
   addCalendarMonths
-} from "./store.js";
+} from "../lib/store.js";
 
 function secureEqual(a, b) {
   const x = Buffer.from(String(a || ""));
