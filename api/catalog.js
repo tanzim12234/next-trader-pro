@@ -1,5 +1,5 @@
-import { json, currentUser } from "./store.js";
-import { CATALOG } from "./catalog-data.js";
+import { json, currentUser } from "../lib/store.js";
+import { CATALOG } from "../lib/catalog-data.js";
 export default async function handler(req,res){
   if(req.method!=="GET"){res.setHeader("Allow","GET");return json(res,405,{error:"Method not allowed."});}
   const user=await currentUser(req);
