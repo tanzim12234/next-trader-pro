@@ -2,8 +2,8 @@ import {
   json,
   currentUser,
   subscriptionActive
-} from "./store.js";
-import { getBinanceCandles, isAllowedBinanceSymbol } from "./lib/binance.js";
+} from "../lib/store.js";
+import { getBinanceCandles, isAllowedBinanceSymbol } from "../lib/binance.js";
 
 const MODEL = "gemini-3.5-flash-lite";
 
