@@ -27,11 +27,11 @@ jobs:
           java-version: "21"
       - name: Install dependencies
         run: npm install
-      - name: Build web assets
-        run: npm run build
       - name: Generate Android project
         run: npx cap add android
-      - name: Sync Capacitor
+      - name: Build web assets and Keystore plugin
+        run: npm run build
+      - name: Sync Capacitor plugins
         run: npx cap sync android
       - name: Build debug APK
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug
