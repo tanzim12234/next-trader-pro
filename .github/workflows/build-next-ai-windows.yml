@@ -23,8 +23,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: next-ai-desktop/package-lock.json
       - name: Install dependencies
         run: npm install
       - name: Build NSIS installer
