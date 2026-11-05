@@ -1,0 +1,38 @@
+name: Build NEXT AI Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "next-ai-desktop/**"
+      - ".github/workflows/build-next-ai-windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: next-ai-desktop
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: next-ai-desktop/package-lock.json
+      - name: Install dependencies
+        run: npm install
+      - name: Build NSIS installer
+        run: npm run dist
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEXT-AI-Windows-Installer
+          path: next-ai-desktop/release/*.exe
+          if-no-files-found: error
+          retention-days: 14
