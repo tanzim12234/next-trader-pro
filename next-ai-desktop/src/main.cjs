@@ -80,8 +80,9 @@ ipcMain.handle('action:run', async (_e, action) => {
     const keys = { playpause: '{MEDIA_PLAY_PAUSE}', pause: '{MEDIA_PLAY_PAUSE}', next: '{MEDIA_NEXT_TRACK}', previous: '{MEDIA_PREV_TRACK}' };
     const key = keys[action.command];
     if (!key) throw new Error('Unsupported media command.');
-    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
-      "$w=New-Object -ComObject WScript.Shell; $w.SendKeys('" + key + "')"],
+    const vk = { playpause: '0xB3', pause: '0xB3', next: '0xB0', previous: '0xB1' }[action.command];
+    const ps = "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class NextMediaKey { [StructLayout(LayoutKind.Sequential)] public struct INPUT { public UInt32 type; public KEYBDINPUT ki; } [StructLayout(LayoutKind.Sequential)] public struct KEYBDINPUT { public UInt16 wVk; public UInt16 wScan; public UInt32 dwFlags; public UInt32 time; public IntPtr dwExtraInfo; } [DllImport(\\"user32.dll\\", SetLastError=true)] public static extern UInt32 SendInput(UInt32 n, INPUT[] p, Int32 cb); }'; $v=[Convert]::ToUInt16('" + vk + "',16); $a=New-Object NextMediaKey+INPUT[] 2; $a[0].type=1; $a[0].ki.wVk=$v; $a[1].type=1; $a[1].ki.wVk=$v; $a[1].ki.dwFlags=2; [NextMediaKey]::SendInput(2,$a,[Runtime.InteropServices.Marshal]::SizeOf([type][NextMediaKey+INPUT])) | Out-Null";
+    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps],
       { windowsHide: true, timeout: 3000 }, err => { if (err) console.error('Media key failed:', err.message); });
     return { ok: true };
   }
