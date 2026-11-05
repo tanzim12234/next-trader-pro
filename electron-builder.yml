@@ -1,0 +1,19 @@
+appId: com.nexttrader.nextai
+productName: NEXT AI
+directories:
+  output: release
+files:
+  - electron/**
+  - package.json
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+artifactName: NEXT-AI-Setup-${version}-${arch}.${ext}
