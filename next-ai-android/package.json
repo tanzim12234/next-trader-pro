@@ -1,8 +1,8 @@
 {
   "name": "next-ai-android",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "NEXT AI Android app",
+  "description": "NEXT AI Android assistant",
   "scripts": {
     "build": "node scripts/copy-web.js",
     "cap:add:android": "cap add android",
@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
-    "@capacitor/core": "^7.4.3"
+    "@capacitor/core": "^7.4.3",
+    "@capacitor-community/speech-recognition": "^7.0.1"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3"
