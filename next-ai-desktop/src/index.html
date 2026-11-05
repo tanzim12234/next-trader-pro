@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXT AI Desktop</title>
+<style>
+:root{color-scheme:dark;--bg:#061018;--panel:#0b1c27;--line:#164454;--cyan:#43eaff;--txt:#e9faff;--muted:#8eacb8}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0,#123c4a 0,transparent 55%),var(--bg);color:var(--txt);font:15px system-ui}
+main{max-width:960px;margin:36px auto;padding:24px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{font-weight:900;letter-spacing:.16em;color:var(--cyan);font-size:24px}.tag{color:var(--muted);font-size:12px}
+.panel{background:#0b1c27e8;border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:18px;box-shadow:0 12px 50px #0005}
+h2{font-size:16px;color:var(--cyan);margin:0 0 12px}input,textarea,button{font:inherit;border-radius:10px;border:1px solid var(--line);padding:12px;background:#07151e;color:var(--txt)}input,textarea{width:100%;margin:6px 0 12px}button{cursor:pointer;background:#103442}button:hover{border-color:var(--cyan)}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}.hint{color:var(--muted);font-size:12px}.chat{min-height:170px;white-space:pre-wrap;line-height:1.6;background:#06141c;border-radius:12px;padding:14px;margin:12px 0}
+</style></head><body><main><div class="top"><div><div class="brand">NEXT AI</div><div class="tag">SECURE WINDOWS DESKTOP ASSISTANT · FOUNDATION BUILD</div></div><div id="state" class="tag">Checking…</div></div>
+<section class="panel"><h2>AI Brain Settings</h2><p class="hint">API key শুধু তোমার Windows user profile-এর encrypted storage-এ রাখা হবে। GitHub-এ পাঠানো হবে না।</p>
+<input id="gemini" type="password" placeholder="Gemini API key (optional)"><input id="groq" type="password" placeholder="Groq API key (optional)">
+<button id="save">Save keys securely</button><span id="saveState" class="hint"></span></section>
+<section class="panel"><h2>Chat with NEXT</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button></section>
+<section class="panel"><h2>Windows quick actions</h2><div class="row"><button id="yt">Open YouTube</button><button id="play">Play / Pause</button><button id="pause">Pause</button></div><p class="hint">YouTube search এবং focused app-এ text paste voice-command layer যোগ করার জন্য secure action handler প্রস্তুত।</p></section>
+<script src="renderer.js"></script></main></body></html>
