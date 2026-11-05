@@ -1,0 +1,4 @@
+const { app, BrowserWindow, shell } = require("electron");
+function createWindow(){const win=new BrowserWindow({width:1440,height:940,minWidth:900,minHeight:650,backgroundColor:"#061316",title:"NEXT AI",webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});win.loadURL("https://next-trader-ai.vercel.app/next-ai.html");win.webContents.setWindowOpenHandler(({url})=>{if(url.startsWith("https://"))shell.openExternal(url);return {action:"deny"};});}
+app.whenReady().then(()=>{createWindow();app.on("activate",()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});});
+app.on("window-all-closed",()=>{if(process.platform!=="darwin")app.quit();});
