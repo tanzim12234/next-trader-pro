@@ -8,7 +8,7 @@ on:
       - ".github/workflows/build-next-ai-android.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   android-apk:
@@ -35,10 +35,10 @@ jobs:
         run: npx cap sync android
       - name: Build debug APK
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Publish APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
         with:
-          name: NEXT-AI-Android-APK
-          path: next-ai-android/android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
+          tag_name: next-ai-android-${{ github.run_number }}
+          name: NEXT AI Android APK (build ${{ github.run_number }})
+          files: next-ai-android/android/app/build/outputs/apk/debug/app-debug.apk
+          generate_release_notes: true
