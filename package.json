@@ -20,5 +20,6 @@
   "dependencies": {
     "@capacitor/android": "^7.4.3",
     "@capacitor/core": "^7.4.3"
-  }
+  },
+  "main": "electron/main.cjs"
 }
