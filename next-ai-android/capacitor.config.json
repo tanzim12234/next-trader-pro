@@ -1,0 +1,8 @@
+{
+  "appId": "com.nexttrader.nextai",
+  "appName": "NEXT AI",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
