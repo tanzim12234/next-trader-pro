@@ -1,0 +1,34 @@
+name: Build NEXT AI Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "electron/**"
+      - "package.json"
+      - "electron-builder.yml"
+      - ".github/workflows/build-windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Build Windows x64 installer
+        run: npm run desktop:win
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEXT-AI-Windows-x64
+          path: release/*.exe
+          if-no-files-found: error
+          retention-days: 14
