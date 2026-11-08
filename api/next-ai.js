@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { json, currentUser, redis } from "./store.js";
+import { json, currentUser, redis } from "../lib/store.js";
 
 const MAX_MESSAGE = 8000;
 const MAX_IMAGE_CHARS = 5_000_000;
