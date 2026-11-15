@@ -222,3 +222,33 @@ $('saveConversation').onclick=async()=>{
 const voiceLanguage=$('voiceLanguage');if(voiceLanguage){voiceLanguage.value=localStorage.getItem('next-ai-voice-language')||'bn-BD';voiceLanguage.addEventListener('change',()=>{localStorage.setItem('next-ai-voice-language',voiceLanguage.value);if(listening){stopVoice();startVoice();}});}
 
 refreshTaskHistory();
+\n
+async function refreshFolderItems(){
+ try{
+  const result=await window.nextAI.listFolder();
+  $('folderState').textContent='Approved folder: '+result.folder;
+  const box=$('folderItems');box.innerHTML='';
+  if(!result.items.length){box.textContent='Folder is empty.';return;}
+  for(const item of result.items){
+   const row=document.createElement('div');row.className='memory-item';
+   const label=document.createElement('span');
+   const size=item.type==='file'?' · '+(item.size<1024?' '+item.size+' B':(item.size/1024).toFixed(1)+' KB'):'';
+   label.textContent=(item.type==='folder'?'📁 ':'📄 ')+item.name+size;
+   row.append(label);
+   if(item.type==='file'){
+    const open=document.createElement('button');open.textContent='Open';open.onclick=async()=>{try{await window.nextAI.openFileItem(item.name);$('folderState').textContent='Open request completed.';}catch(e){$('folderState').textContent=e.message;}};
+    const copy=document.createElement('button');copy.textContent='Copy';copy.onclick=async()=>{try{const out=await window.nextAI.copyFileItem(item.name);$('folderState').textContent=out.cancelled?'Copy cancelled.':'Copied: '+out.name;}catch(e){$('folderState').textContent=e.message;}};
+    row.append(open,copy);
+   }
+   box.append(row);
+  }
+ }catch(e){$('folderState').textContent=e.message;}
+}
+$('chooseFolder').onclick=async()=>{try{const result=await window.nextAI.chooseFolder();if(result.cancelled)return;await refreshFolderItems();}catch(e){$('folderState').textContent=e.message;}};
+$('refreshFolder').onclick=refreshFolderItems;
+$('createFolder').onclick=async()=>{const name=window.prompt('নতুন folder-এর নাম লিখো:');if(!name)return;try{const result=await window.nextAI.createFolder(name);if(result.cancelled)return;$('folderState').textContent='Folder created: '+result.name;await refreshFolderItems();}catch(e){$('folderState').textContent=e.message;}};
+$('browserOpen').onclick=async()=>{const button=$('browserOpen');button.disabled=true;$('browserState').textContent='Opening secure browser…';try{const result=await window.nextAI.openBrowser($('browserAddress').value);$('browserAddress').value=result.url;$('browserState').textContent='Secure Browser opened: '+result.url;}catch(e){$('browserState').textContent='Browser error: '+e.message;}finally{button.disabled=false;}};
+for(const [id,direction] of [['browserBack','back'],['browserForward','forward'],['browserReload','reload']]){
+ $(id).onclick=async()=>{try{await window.nextAI.browserNavigate(direction);$('browserState').textContent='Browser '+direction+' requested.';}catch(e){$('browserState').textContent=e.message;}};
+}
+\n
