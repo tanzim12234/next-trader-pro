@@ -150,6 +150,30 @@ ipcMain.handle('ai:learning-suggestions', async (_e, input) => {
   return parsed.filter(item => item && typeof item.text === 'string' && item.text.trim() && item.text.length <= 1000)
     .slice(0, 5).map(item => ({ text: item.text.trim(), category: ['preference','project','goal','workflow','general'].includes(item.category) ? item.category : 'general' }));
 });
+ipcMain.handle('ai:test-connection', async () => {
+  const s = readSettings();
+  const preferGroq = s.provider === 'groq' && !!s.groqKey;
+  if (!s.geminiKey && !s.groqKey) throw new Error('আগে Gemini অথবা Groq API key যোগ করো।');
+  const useGemini = !!s.geminiKey && !preferGroq;
+  if (useGemini) {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(s.geminiKey), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: 'Reply with exactly: NEXT AI connection successful.' }] }] }),
+      signal: AbortSignal.timeout(15000)
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || 'Gemini connection failed.');
+    return { ok: true, provider: 'Gemini', model: 'gemini-2.5-flash' };
+  }
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST', headers: { 'Authorization': 'Bearer ' + s.groqKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: 'Reply with exactly: NEXT AI connection successful.' }], max_tokens: 20 }),
+    signal: AbortSignal.timeout(15000)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error?.message || 'Groq connection failed.');
+  return { ok: true, provider: 'Groq', model: 'llama-3.3-70b-versatile' };
+});
 ipcMain.handle('ai:chat', async (_e, message) => {
   if (typeof message !== 'string' || !message.trim() || message.length > 8000) throw new Error('Message must be 1–8000 characters.');
   const s = readSettings();
