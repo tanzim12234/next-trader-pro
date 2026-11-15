@@ -5,6 +5,8 @@ const os = require('node:os');
 const { execFile, spawn } = require('node:child_process');
 const { createPersonalBrain } = require('./brain.cjs');
 const { APPS, normalizeTaskPlan, validateTaskStep } = require('./task-engine.cjs');
+const { createTaskStore } = require('./task-store.cjs');
+const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.json'));
 const brain = createPersonalBrain({ app, safeStorage });
 
 let win;
@@ -393,3 +395,6 @@ ipcMain.handle('brain:clear', async () => {
   if (choice.response !== 0) return { cancelled: true };
   return brain.clear();
 });
+
+ipcMain.handle('task:history-list', () => taskStore.list());
+ipcMain.handle('task:history-add', (_e, entry) => taskStore.add(entry));
