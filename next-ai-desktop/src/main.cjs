@@ -1,11 +1,13 @@
 const { app, BrowserWindow, ipcMain, safeStorage, shell, globalShortcut, clipboard } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
 const { execFile, spawn } = require('node:child_process');
 const { createPersonalBrain } = require('./brain.cjs');
 const brain = createPersonalBrain({ app, safeStorage });
 
 let win;
+let previousCpuSnapshot = null;
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.enc');
 
 function readSettings() {
@@ -55,6 +57,33 @@ ipcMain.handle('files:save-text', async (_e, input) => {
   if (result.canceled || !result.filePath) return { cancelled: true };
   fs.writeFileSync(result.filePath, input.content, { encoding: 'utf8', flag: 'w' });
   return { ok: true, name: path.basename(result.filePath) };
+});
+
+ipcMain.handle('system:stats', () => {
+  const cpuTimes = os.cpus().reduce((sum, cpu) => {
+    for (const value of Object.values(cpu.times)) sum.total += value;
+    sum.idle += cpu.times.idle;
+    return sum;
+  }, { total: 0, idle: 0 });
+  let cpuPercent = null;
+  if (previousCpuSnapshot) {
+    const totalDelta = cpuTimes.total - previousCpuSnapshot.total;
+    const idleDelta = cpuTimes.idle - previousCpuSnapshot.idle;
+    if (totalDelta > 0) cpuPercent = Math.max(0, Math.min(100, Math.round((1 - idleDelta / totalDelta) * 100)));
+  }
+  previousCpuSnapshot = cpuTimes;
+  const totalMemory = os.totalmem();
+  const freeMemory = os.freemem();
+  return {
+    cpuPercent,
+    memoryPercent: Math.round(((totalMemory - freeMemory) / totalMemory) * 100),
+    totalMemoryBytes: totalMemory,
+    freeMemoryBytes: freeMemory,
+    uptimeSeconds: os.uptime(),
+    platform: process.platform,
+    arch: process.arch,
+    cpuCores: os.cpus().length
+  };
 });
 
 ipcMain.handle('settings:status', () => {
