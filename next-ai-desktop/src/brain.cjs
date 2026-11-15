@@ -14,7 +14,8 @@ function createPersonalBrain({ app, safeStorage }) {
       const parsed = JSON.parse(safeStorage.decryptString(fs.readFileSync(file())));
       return Array.isArray(parsed.memories) ? parsed : { memories: [] };
     } catch (err) {
-      // A missing file means first run; corrupted or undecryptable data must never be silently overwritten.\n      if (err.code === 'ENOENT') return { memories: [] };
+      // A missing file means first run; corrupted or undecryptable data must never be silently overwritten.
+      if (err.code === 'ENOENT') return { memories: [] };
       throw err;
     }
   }
