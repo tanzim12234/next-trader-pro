@@ -38,3 +38,29 @@ function startVoice(){
 function stopVoice(){listening=false;if(recognition)recognition.stop();$('voice').textContent='Start voice listening';}
 $('voice').onclick=()=>listening?stopVoice():startVoice();
 refresh();
+
+async function refreshMemories(){
+ try{
+  const items=await window.nextAI.listMemories();
+  $('memoryList').innerHTML='';
+  if(!items.length){$('memoryList').textContent='No saved memories yet.';return;}
+  for(const item of items){
+   const row=document.createElement('div');row.className='memory-item';
+   const text=document.createElement('span');text.textContent=item.text;
+   const del=document.createElement('button');del.textContent='Forget';del.onclick=async()=>{await window.nextAI.forgetMemory(item.id);await refreshMemories();};
+   row.append(text,del);$('memoryList').append(row);
+  }
+  $('memoryState').textContent=items.length+' saved memory item(s). Stored encrypted on this PC.';
+ }catch(e){$('memoryState').textContent=e.message;}
+}
+$('remember').onclick=async()=>{
+ const text=$('memoryText').value.trim();if(!text)return;
+ try{await window.nextAI.remember({text,category:'personal'});$('memoryText').value='';$('memoryState').textContent='Saved to your encrypted Personal Brain.';await refreshMemories();}
+ catch(e){$('memoryState').textContent=e.message;}
+};
+$('refreshMemory').onclick=refreshMemories;
+$('clearMemory').onclick=async()=>{
+ try{const r=await window.nextAI.clearMemories();if(r.cancelled)return;await refreshMemories();$('memoryState').textContent='All saved memories cleared.';}
+ catch(e){$('memoryState').textContent=e.message;}
+};
+refreshMemories();
