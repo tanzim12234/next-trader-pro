@@ -60,6 +60,9 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <section class="panel"><h2>AI Brain Settings</h2><p class="hint">API key শুধু তোমার Windows user profile-এর encrypted storage-এ রাখা হবে। GitHub-এ পাঠানো হবে না।</p>
 <label for="aiProvider" class="hint">Preferred AI engine</label><select id="aiProvider"><option value="auto">Automatic · Gemini first, Groq fallback</option><option value="gemini">Gemini 2.5 Flash</option><option value="groq">Groq · Llama 3.3 70B</option></select><input id="gemini" type="password" autocomplete="off" placeholder="New Gemini API key (leave blank to keep saved key)"><input id="groq" type="password" autocomplete="off" placeholder="New Groq API key (leave blank to keep saved key)">
 <div class="row"><button id="save">Save keys securely</button><button id="testConnection">Test API connection</button></div><span id="saveState" class="hint"></span></section>
+<section class="panel"><h2>Fail-safe · Encrypted Backup & Restore</h2>
+<p class="hint">Personal Brain, API settings এবং task history-এর encrypted local snapshot তৈরি হবে। Backup একই Windows user account-এ restore করা যাবে। Restore করার আগে বর্তমান data-র rollback snapshot তৈরি হয় এবং confirmation লাগে।</p>
+<button id="createBackup">Create encrypted backup</button> <span id="backupState" class="hint">No backup action yet.</span><div id="backupList" class="memory-list"></div></section>
 <section class="panel"><h2>Personal Brain · Long-term Memory</h2>
 <p class="hint">শুধু তুমি স্পষ্টভাবে Save করলে তথ্য encrypted local storage-এ থাকবে। NEXT প্রাসঙ্গিক saved memory chat-এর সময় ব্যবহার করবে।</p>
 <input id="memoryText" maxlength="1000" placeholder="যেমন: আমার পছন্দের ভাষা বাংলা">
