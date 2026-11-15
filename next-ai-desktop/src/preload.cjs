@@ -2,6 +2,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('nextAI', Object.freeze({
   status: () => ipcRenderer.invoke('settings:status'),
   testConnection: () => ipcRenderer.invoke('ai:test-connection'),
+  webResearch: query => ipcRenderer.invoke('ai:web-research', query),
+  planTask: goal => ipcRenderer.invoke('ai:plan-task', goal),
+  executeTaskStep: action => ipcRenderer.invoke('task:execute-step', action),
   getSystemStats: () => ipcRenderer.invoke('system:stats'),
   saveKeys: keys => ipcRenderer.invoke('settings:save', keys),
   chat: message => ipcRenderer.invoke('ai:chat', message),
