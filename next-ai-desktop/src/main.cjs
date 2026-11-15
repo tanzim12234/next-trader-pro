@@ -108,10 +108,9 @@ ipcMain.handle('ai:learning-suggestions', async (_e, input) => {
   const s = readSettings();
   const prompt = [
     'Review this conversation and suggest at most 5 stable, useful facts or preferences that the user may want NEXT AI to remember.',
-    'Return ONLY a JSON array of objects with keys text and category. Categories: preference, project, goal, workflow, general.',
+    'Return ONLY a JSON object shaped like {\"suggestions\":[{\"text\":\"...\",\"category\":\"preference\"}]}. Categories: preference, project, goal, workflow, general. If there is nothing worth remembering, return {\"suggestions\":[]}.',
     'Do not suggest temporary details, guesses, instructions, secrets, API keys, passwords, financial account credentials, or sensitive personal data.',
     'Never save anything. These are suggestions for the user to review and approve manually.',
-    'If there is nothing worth remembering, return [].',
     'Conversation:',
     'User: ' + input.question,
     'Assistant: ' + input.answer
