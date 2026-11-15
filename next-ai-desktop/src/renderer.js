@@ -336,3 +336,14 @@ $('analyzeData').onclick=async()=>{
  }catch(e){$('dataState').textContent='Analysis failed: '+e.message;}
  finally{button.disabled=false;}
 };
+
+
+async function refreshBackups(){
+ try{
+  const items=await window.nextAI.listBackups();const box=$('backupList');box.textContent='';
+  if(!items.length){box.textContent='No encrypted backups yet.';return;}
+  for(const item of items){const row=document.createElement('div');row.className='memory-item';const label=document.createElement('span');label.textContent=new Date(item.createdAt).toLocaleString()+' · '+item.files+' encrypted file(s)';const restore=document.createElement('button');restore.textContent='Restore';restore.onclick=async()=>{restore.disabled=true;try{const result=await window.nextAI.restoreBackup(item.id);$('backupState').textContent=result.cancelled?'Restore cancelled.':'Restored '+result.restored+' encrypted file(s). Restart NEXT AI if settings do not refresh.';await refreshBackups();}catch(e){$('backupState').textContent='Restore failed: '+e.message;}finally{restore.disabled=false;}};row.append(label,restore);box.append(row);}
+ }catch(e){$('backupState').textContent=e.message;}
+}
+$('createBackup').onclick=async()=>{const button=$('createBackup');button.disabled=true;try{const result=await window.nextAI.createBackup();$('backupState').textContent='Encrypted backup created · '+result.files+' file(s).';await refreshBackups();}catch(e){$('backupState').textContent='Backup failed: '+e.message;}finally{button.disabled=false;}};
+refreshBackups();
