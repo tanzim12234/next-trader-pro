@@ -32,6 +32,23 @@ $('runResearch').onclick=async()=>{
  }catch(e){$('researchState').textContent='Research failed: '+e.message;}
  finally{button.disabled=false;}
 };
+async function refreshTaskHistory(){
+ try{
+  const items=await window.nextAI.listTaskHistory();
+  const box=document.createElement('div');box.className='memory-list';
+  if(!items.length){box.textContent='No task history yet.';}
+  for(const item of items){
+   const row=document.createElement('div');row.className='memory-item';
+   const label=document.createElement('span');label.textContent=item.goal+' · '+item.status+' · '+item.completed+'/'+item.total+' steps';
+   row.append(label);box.append(row);
+  }
+  const old=$('taskHistoryList');if(old)old.replaceWith(box);else $('taskState').after(box);
+  box.id='taskHistoryList';
+ }catch(e){$('taskState').textContent='History unavailable: '+e.message;}
+}
+async function saveTaskRun(goal,status,completed,total){
+ try{await window.nextAI.saveTaskHistory({id:Date.now().toString(),goal,status,completed,total,createdAt:new Date().toISOString()});await refreshTaskHistory();}catch(e){$('taskState').textContent+=' · History save failed: '+e.message;}
+}
 $('planTask').onclick=async()=>{
  const goal=$('taskGoal').value.trim();if(!goal)return;
  const button=$('planTask');button.disabled=true;$('executeTask').disabled=true;pendingTaskPlan=null;$('taskPlanList').textContent='';$('taskState').textContent='Creating a safe task proposal…';
@@ -57,11 +74,11 @@ $('executeTask').onclick=async()=>{
   for(const step of pendingTaskPlan.steps){
    $('taskState').textContent='Executing '+step.id+'/'+pendingTaskPlan.steps.length+': '+step.title;
    const result=await window.nextAI.executeTaskStep(step.action);
-   if(result.cancelled){$('taskState').textContent='Cancelled at step '+step.id+'. '+completed+' step(s) completed.';return;}
+   if(result.cancelled){$('taskState').textContent='Cancelled at step '+step.id+'. '+completed+' step(s) completed.';await saveTaskRun($('taskGoal').value.trim(),'cancelled',completed,pendingTaskPlan.steps.length);return;}
    completed++;
   }
-  $('taskState').textContent='Task finished. '+completed+' approved step(s) completed.';
- }catch(e){$('taskState').textContent='Stopped after '+completed+' step(s): '+e.message;}
+  $('taskState').textContent='Task finished. '+completed+' approved step(s) completed.';await saveTaskRun($('taskGoal').value.trim(),'completed',completed,pendingTaskPlan.steps.length);
+ }catch(e){$('taskState').textContent='Stopped after '+completed+' step(s): '+e.message;await saveTaskRun($('taskGoal').value.trim(),'failed',completed,pendingTaskPlan.steps.length);}
  finally{button.disabled=false;$('planTask').disabled=false;}
 };
 
@@ -203,3 +220,5 @@ $('saveConversation').onclick=async()=>{
 };
 
 const voiceLanguage=$('voiceLanguage');if(voiceLanguage){voiceLanguage.value=localStorage.getItem('next-ai-voice-language')||'bn-BD';voiceLanguage.addEventListener('change',()=>{localStorage.setItem('next-ai-voice-language',voiceLanguage.value);if(listening){stopVoice();startVoice();}});}
+
+refreshTaskHistory();
