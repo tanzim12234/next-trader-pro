@@ -16,6 +16,9 @@ $('save').onclick=async()=>{try{await window.nextAI.saveKeys({geminiKey:$('gemin
 $('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{$('chat').textContent=await window.nextAI.chat(q);setCoreState('speaking','Response ready');speak($('chat').textContent);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
 $('yt').onclick=()=>window.nextAI.runAction({type:'youtube-open'});
 $('play').onclick=()=>window.nextAI.runAction({type:'media',command:'playpause'});
+$('openNotepad').onclick=()=>window.nextAI.runAction({type:'open-app',app:'notepad'});
+$('openCalculator').onclick=()=>window.nextAI.runAction({type:'open-app',app:'calculator'});
+$('openExplorer').onclick=()=>window.nextAI.runAction({type:'open-app',app:'file-explorer'});
 function speak(text){if(!('speechSynthesis'in window))return;const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>setCoreState('', 'Awaiting input');speechSynthesis.speak(u);}
 async function runVoiceCommand(raw){
  let text=raw.trim().toLowerCase();
