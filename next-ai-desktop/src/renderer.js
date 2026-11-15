@@ -50,18 +50,18 @@ function stopVoice(){listening=false;if(recognition)recognition.stop();$('voice'
 $('voice').onclick=()=>listening?stopVoice():startVoice();
 refresh();
 
-async function refreshMemories(){
+async function refreshMemories(query=''){
  try{
-  const items=await window.nextAI.listMemories();
+  const [items,allItems]=await Promise.all([window.nextAI.listMemories(query),window.nextAI.listMemories()]);
   $('memoryList').innerHTML='';
-  if($('hudMemory'))$('hudMemory').textContent=items.length+' MEMORY RECORDS';if(!items.length){$('memoryList').textContent='No saved memories yet.';return;}
+  if($('hudMemory'))$('hudMemory').textContent=allItems.length+' MEMORY RECORDS';if(!items.length){$('memoryList').textContent='No saved memories yet.';return;}
   for(const item of items){
    const row=document.createElement('div');row.className='memory-item';
    const text=document.createElement('span');text.textContent=item.text;
    const del=document.createElement('button');del.textContent='Forget';del.onclick=async()=>{await window.nextAI.forgetMemory(item.id);await refreshMemories();};
    row.append(text,del);$('memoryList').append(row);
   }
-  $('memoryState').textContent=items.length+' saved memory item(s). Stored encrypted on this PC.';
+  $('memoryState').textContent=(query?items.length+' matching':' '+allItems.length+' saved')+' memory item(s). Stored encrypted on this PC.';
  }catch(e){$('memoryState').textContent=e.message;}
 }
 $('remember').onclick=async()=>{
