@@ -308,3 +308,22 @@ $('homeConnect').onclick=async()=>{
  finally{button.disabled=false;}
 };
 $('homeRefresh').onclick=refreshHomeEntities;
+
+
+$('analyzeData').onclick=async()=>{
+ const content=$('fileContent').value;
+ const ext=($('fileName').value.split('.').pop()||'').toLowerCase();
+ const format=ext==='json'?'json':ext==='csv'?'csv':'auto';
+ const button=$('analyzeData');button.disabled=true;$('dataState').textContent='Analyzing locally…';$('dataReport').textContent='';
+ try{
+  const report=await window.nextAI.analyzeData({content,format});
+  const summary=document.createElement('div');summary.className='memory-item';summary.textContent=report.rows+' rows · '+report.columns+' columns · '+report.duplicateRows+' duplicate rows · '+report.format.toUpperCase();$('dataReport').append(summary);
+  for(const col of report.columnsSummary){
+   const row=document.createElement('div');row.className='memory-item';
+   const details=col.kind==='numeric'?'min '+col.min+' · max '+col.max+' · mean '+col.mean.toFixed(3)+' · median '+col.median+' · missing '+col.missing:'unique '+col.unique+' · missing '+col.missing+' · top '+col.topValues.map(v=>v.value+' ('+v.count+')').join(', ');
+   row.textContent=col.name+' ['+col.kind+'] · '+details;$('dataReport').append(row);
+  }
+  $('dataState').textContent='Analysis complete. All calculations ran locally; file content was not uploaded.';
+ }catch(e){$('dataState').textContent='Analysis failed: '+e.message;}
+ finally{button.disabled=false;}
+};
