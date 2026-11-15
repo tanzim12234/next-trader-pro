@@ -10,6 +10,8 @@ const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-histo
 const brain = createPersonalBrain({ app, safeStorage });
 
 let win;
+let browserWin = null;
+let selectedFolder = null;
 let previousCpuSnapshot = null;
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.enc');
 
@@ -60,6 +62,96 @@ ipcMain.handle('files:save-text', async (_e, input) => {
   if (result.canceled || !result.filePath) return { cancelled: true };
   fs.writeFileSync(result.filePath, input.content, { encoding: 'utf8', flag: 'w' });
   return { ok: true, name: path.basename(result.filePath) };
+});
+
+
+function safeChildPath(root, candidate) {
+  const resolvedRoot = path.resolve(root);
+  const resolved = path.resolve(candidate);
+  if (resolved !== resolvedRoot && !resolved.startsWith(resolvedRoot + path.sep)) throw new Error('Selected path is outside the approved folder.');
+  return resolved;
+}
+ipcMain.handle('files:choose-folder', async () => {
+  const result = await require('electron').dialog.showOpenDialog(win, { title: 'Choose a folder for NEXT AI', properties: ['openDirectory'] });
+  if (result.canceled || !result.filePaths[0]) return { cancelled: true };
+  selectedFolder = await fs.promises.realpath(result.filePaths[0]);
+  return { path: selectedFolder, name: path.basename(selectedFolder) || selectedFolder };
+});
+ipcMain.handle('files:list-folder', async () => {
+  if (!selectedFolder) throw new Error('আগে একটি folder নির্বাচন করো।');
+  const entries = await fs.promises.readdir(selectedFolder, { withFileTypes: true });
+  const items = [];
+  for (const entry of entries.slice(0, 200)) {
+    if (entry.isSymbolicLink()) continue;
+    const fullPath = safeChildPath(selectedFolder, path.join(selectedFolder, entry.name));
+    const stat = await fs.promises.stat(fullPath);
+    items.push({ name: entry.name.slice(0, 180), type: entry.isDirectory() ? 'folder' : 'file', size: entry.isFile() ? stat.size : null });
+  }
+  return { folder: selectedFolder, items };
+});
+ipcMain.handle('files:create-folder', async (_e, input) => {
+  if (!selectedFolder) throw new Error('আগে একটি folder নির্বাচন করো।');
+  const name = typeof input?.name === 'string' ? input.name.trim() : '';
+  if (!name || name.length > 80 || /[\\/\\\\:*?"<>|]/.test(name) || name === '.' || name === '..') throw new Error('Folder name invalid.');
+  const target = safeChildPath(selectedFolder, path.join(selectedFolder, name));
+  const choice = await require('electron').dialog.showMessageBox(win, { type: 'question', buttons: ['Create folder', 'Cancel'], defaultId: 1, cancelId: 1, message: 'এই folder তৈরি করবে?', detail: target });
+  if (choice.response !== 0) return { cancelled: true };
+  await fs.promises.mkdir(target);
+  return { ok: true, name };
+});
+ipcMain.handle('files:open-item', async (_e, input) => {
+  if (!selectedFolder || typeof input?.name !== 'string') throw new Error('Invalid file selection.');
+  const target = safeChildPath(selectedFolder, path.join(selectedFolder, input.name));
+  const stat = await fs.promises.lstat(target);
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Only regular files can be opened.');
+  const choice = await require('electron').dialog.showMessageBox(win, { type: 'question', buttons: ['Open file', 'Cancel'], defaultId: 1, cancelId: 1, message: 'এই ফাইলটি default application-এ খুলবে?', detail: input.name });
+  if (choice.response !== 0) return { cancelled: true };
+  const error = await shell.openPath(target);
+  if (error) throw new Error(error);
+  return { ok: true };
+});
+ipcMain.handle('files:copy-item', async (_e, input) => {
+  if (!selectedFolder || typeof input?.name !== 'string') throw new Error('Invalid file selection.');
+  const source = safeChildPath(selectedFolder, path.join(selectedFolder, input.name));
+  const stat = await fs.promises.lstat(source);
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 20 * 1024 * 1024) throw new Error('Only regular files up to 20 MB can be copied.');
+  const result = await require('electron').dialog.showSaveDialog(win, { title: 'Copy file to…', defaultPath: input.name });
+  if (result.canceled || !result.filePath) return { cancelled: true };
+  const choice = await require('electron').dialog.showMessageBox(win, { type: 'warning', buttons: ['Copy file', 'Cancel'], defaultId: 1, cancelId: 1, message: 'নির্বাচিত স্থানে ফাইলের একটি copy তৈরি করবে?', detail: result.filePath });
+  if (choice.response !== 0) return { cancelled: true };
+  await fs.promises.copyFile(source, result.filePath, fs.constants.COPYFILE_EXCL);
+  return { ok: true, name: path.basename(result.filePath) };
+});
+function normalizeBrowserUrl(value) {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw || raw.length > 2048) throw new Error('Website address invalid.');
+  const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : 'https://' + raw;
+  const url = new URL(candidate);
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('Only public HTTP/HTTPS websites are supported.');
+  return url.toString();
+}
+ipcMain.handle('browser:open', async (_e, value) => {
+  const url = normalizeBrowserUrl(value);
+  if (!browserWin || browserWin.isDestroyed()) {
+    browserWin = new BrowserWindow({ width: 1180, height: 820, title: 'NEXT AI Secure Browser', webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true } });
+    browserWin.webContents.setWindowOpenHandler(({ url: target }) => {
+      try { const safe = normalizeBrowserUrl(target); require('electron').dialog.showMessageBox(browserWin, { type: 'question', buttons: ['Open in browser', 'Cancel'], defaultId: 1, cancelId: 1, message: 'নতুন website খুলবে?', detail: safe }).then(result => { if (result.response === 0) shell.openExternal(safe); }); } catch {}
+      return { action: 'deny' };
+    });
+    browserWin.webContents.on('will-navigate', (event, target) => {
+      try { normalizeBrowserUrl(target); } catch { event.preventDefault(); }
+    });
+    browserWin.on('closed', () => { browserWin = null; });
+  }
+  await browserWin.loadURL(url);
+  return { ok: true, url };
+});
+ipcMain.handle('browser:navigate', async (_e, direction) => {
+  if (!browserWin || browserWin.isDestroyed()) throw new Error('NEXT Secure Browser is not open.');
+  if (direction === 'back' && browserWin.webContents.canGoBack()) browserWin.webContents.goBack();
+  else if (direction === 'forward' && browserWin.webContents.canGoForward()) browserWin.webContents.goForward();
+  else if (direction === 'reload') browserWin.webContents.reload();
+  return { ok: true };
 });
 
 ipcMain.handle('system:stats', () => {
