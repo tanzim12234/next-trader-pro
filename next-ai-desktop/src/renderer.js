@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);
-let recognition=null, listening=false, awaitingCommand=false;
+let recognition=null, listening=false, awaitingCommand=false, lastExchange=null;
 const stage=$('jarvisStage');
 function setCoreState(state, activity){
  if(!stage)return;
@@ -13,7 +13,7 @@ function setCoreState(state, activity){
 
 async function refresh(){const s=await window.nextAI.status();$('state').textContent='Secure storage: '+(s.secureStorage?'ON':'UNAVAILABLE')+' · Gemini: '+(s.gemini?'SET':'NOT SET')+' · Groq: '+(s.groq?'SET':'NOT SET');if($('hudSystem'))$('hudSystem').textContent=s.secureStorage?'SECURE CORE ONLINE':'SECURE STORAGE OFF';if($('hudEngine'))$('hudEngine').textContent=s.gemini?'GEMINI ENGINE READY':s.groq?'GROQ ENGINE READY':'API KEY REQUIRED';}
 $('save').onclick=async()=>{try{await window.nextAI.saveKeys({geminiKey:$('gemini').value,groqKey:$('groq').value});$('gemini').value='';$('groq').value='';$('saveState').textContent='Saved securely.';await refresh();}catch(e){$('saveState').textContent=e.message;}};
-$('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{$('chat').textContent=await window.nextAI.chat(q);setCoreState('speaking','Response ready');speak($('chat').textContent);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
+$('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{const answer=await window.nextAI.chat(q);$('chat').textContent=answer;lastExchange={question:q,answer};$('saveConversation').disabled=false;$('conversationState').textContent='Conversation ready. Save only if you want NEXT to remember it.';setCoreState('speaking','Response ready');speak(answer);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
 $('openTextFile').onclick=async()=>{try{const file=await window.nextAI.openTextFile();if(file.cancelled)return;$('fileName').value=file.name;$('fileContent').value=file.content;$('fileState').textContent='Opened: '+file.name;}catch(e){$('fileState').textContent='Open failed: '+e.message;}};
 $('saveTextFile').onclick=async()=>{try{const result=await window.nextAI.saveTextFile({name:$('fileName').value,content:$('fileContent').value});if(!result.cancelled)$('fileState').textContent='Saved: '+result.name;}catch(e){$('fileState').textContent='Save failed: '+e.message;}};
 $('yt').onclick=()=>window.nextAI.runAction({type:'youtube-open'});
@@ -105,5 +105,16 @@ $('clearMemory').onclick=async()=>{
 };
 $('memorySearch').addEventListener('input',()=>refreshMemories($('memorySearch').value));
 refreshMemories();
+
+$('saveConversation').onclick=async()=>{
+ if(!lastExchange)return;
+ const combined='User: '+lastExchange.question+' | NEXT: '+lastExchange.answer;
+ const text=combined.length>1000?combined.slice(0,997)+'...':combined;
+ try{
+  await window.nextAI.remember({text,category:'conversation'});
+  $('conversationState').textContent='Saved securely to Personal Brain.';
+  await refreshMemories();
+ }catch(e){$('conversationState').textContent='Save failed: '+e.message;}
+};
 
 const voiceLanguage=$('voiceLanguage');if(voiceLanguage){voiceLanguage.value=localStorage.getItem('next-ai-voice-language')||'bn-BD';voiceLanguage.addEventListener('change',()=>{localStorage.setItem('next-ai-voice-language',voiceLanguage.value);if(listening){stopVoice();startVoice();}});}
