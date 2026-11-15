@@ -23,6 +23,13 @@ async function runVoiceCommand(raw){
  if(!text){awaitingCommand=true;$('voiceState').textContent='Wake word heard — say a command';speak('Yes?');return;}
  awaitingCommand=false;
  try{
+  const appCommands=[
+   {pattern:/^(open|launch)\s+notepad$|^নোটপ্যাড\s*(খোলো|চালু করো)$/i,app:'notepad',label:'Notepad'},
+   {pattern:/^(open|launch)\s+calculator$|^(ক্যালকুলেটর|ক্যালকুলেটরটা)\s*(খোলো|চালু করো)$/i,app:'calculator',label:'Calculator'},
+   {pattern:/^(open|launch)\s+(file explorer|explorer)$|^(ফাইল এক্সপ্লোরার|ফাইল ম্যানেজার)\s*(খোলো|চালু করো)$/i,app:'file-explorer',label:'File Explorer'}
+  ];
+  const appMatch=appCommands.find(item=>item.pattern.test(text));
+  if(appMatch){await window.nextAI.runAction({type:'open-app',app:appMatch.app});speak('Opening '+appMatch.label);return;}
   if(/^(open|launch)\s+youtube$/.test(text)||/^(ইউটিউব\s*(খোলো|চালু করো|ওপেন করো))$/.test(text)){
    await window.nextAI.runAction({type:'youtube-open'});speak('Opening YouTube');return;
   }
