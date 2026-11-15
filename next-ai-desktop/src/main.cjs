@@ -443,7 +443,7 @@ ipcMain.handle('ai:chat', async (_e, message) => {
   if (s.geminiKey && (s.provider !== 'groq' || !s.groqKey)) {
     const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(s.geminiKey), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: enrichedMessage }] }] })
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: 'You are NEXT AI, a smart, witty and helpful desktop assistant. Match the user language; prefer natural Bangla when the user speaks Bangla. Use light, friendly humor when appropriate, never insult or demean. Be honest about capabilities and connected devices. Never claim an action succeeded unless the tool confirms it. Ask for approval before consequential actions and never request or expose secrets.' }] }, contents: [{ parts: [{ text: enrichedMessage }] }] })
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error?.message || 'Gemini request failed.');
@@ -452,7 +452,7 @@ ipcMain.handle('ai:chat', async (_e, message) => {
   if (s.groqKey) {
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST', headers: { 'Authorization': 'Bearer ' + s.groqKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: enrichedMessage }] })
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: 'You are NEXT AI, a smart, witty and helpful desktop assistant. Match the user language; prefer natural Bangla when the user speaks Bangla. Use light, friendly humor when appropriate, never insult or demean. Be honest about capabilities and connected devices. Never claim an action succeeded unless the tool confirms it. Ask for approval before consequential actions and never request or expose secrets.' }, { role: 'user', content: enrichedMessage }] })
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error?.message || 'Groq request failed.');
