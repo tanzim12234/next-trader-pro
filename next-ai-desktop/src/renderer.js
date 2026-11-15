@@ -136,7 +136,22 @@ async function runVoiceCommand(raw){
    const q=raw.trim().replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').replace(/^(ask|জিজ্ঞেস করো|প্রশ্ন করো)\s*/i,'');
    $('prompt').value=q;$('send').click();return;
   }
-  speak('I did not recognize that command.');$('voiceState').textContent='Unknown command: '+raw;
+  $('voiceState').textContent='Understanding your request…';
+  try{
+   const proposal=await window.nextAI.planTask(raw);
+   if(proposal.steps&&proposal.steps.length){
+    pendingTaskPlan=proposal;$('taskPlanList').textContent='';
+    for(const step of proposal.steps){const row=document.createElement('div');row.className='memory-item';const label=document.createElement('span');label.textContent=step.id+'. '+step.title+' · '+step.action.type;row.append(label);$('taskPlanList').append(row);}
+    $('taskState').textContent=proposal.steps.length+' safe action(s) proposed from voice. Review and approve before execution.';
+    $('executeTask').disabled=false;$('taskGoal').value=raw;
+    speak('I prepared a safe action plan. Please review and approve it.');
+    return;
+   }
+  }catch{}
+  const answer=await window.nextAI.chat(raw);
+  $('chat').textContent=answer;lastExchange={question:raw,answer};
+  $('saveConversation').disabled=false;$('reviewLearning').disabled=false;
+  speak(answer);$('voiceState').textContent='Answered your voice request.';return;
  }catch(e){$('voiceState').textContent=e.message;speak('The action failed');}
 }
 function startVoice(){
