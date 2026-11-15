@@ -8,7 +8,7 @@ on:
       - ".github/workflows/build-windows.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-windows:
@@ -38,3 +38,13 @@ jobs:
           path: next-ai-desktop/release/*.exe
           if-no-files-found: error
           retention-days: 14
+      - name: Publish public GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: next-ai-desktop-v0.1.0
+          name: NEXT AI Desktop v0.1.0
+          draft: false
+          prerelease: false
+          make_latest: true
+          files: next-ai-desktop/release/*.exe
+          fail_on_unmatched_files: true
