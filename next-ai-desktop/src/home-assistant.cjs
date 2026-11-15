@@ -1,5 +1,7 @@
 'use strict';
 
+const READ_ONLY_DOMAINS = Object.freeze(['sensor', 'binary_sensor', 'weather', 'person']);
+
 const ALLOWED_SERVICES = Object.freeze({
   light: ['turn_on', 'turn_off', 'toggle'],
   switch: ['turn_on', 'turn_off', 'toggle'],
@@ -61,7 +63,7 @@ function createHomeAssistantClient({ baseUrl, token, fetchImpl = fetch }) {
     async listEntities() {
       const states = await request('/api/states');
       if (!Array.isArray(states)) throw new Error('Home Assistant returned an invalid entity list.');
-      return states.filter(item => item && typeof item.entity_id === 'string' && Object.hasOwn(ALLOWED_SERVICES, item.entity_id.split('.')[0]))
+      return states.filter(item => item && typeof item.entity_id === 'string' && (Object.hasOwn(ALLOWED_SERVICES, item.entity_id.split('.')[0]) || READ_ONLY_DOMAINS.includes(item.entity_id.split('.')[0])))
         .slice(0, 300).map(item => ({ entityId: item.entity_id, state: String(item.state || '').slice(0, 80), name: String(item.attributes?.friendly_name || item.entity_id).slice(0, 120), domain: item.entity_id.split('.')[0] }));
     },
     async call(input) {
@@ -71,7 +73,7 @@ function createHomeAssistantClient({ baseUrl, token, fetchImpl = fetch }) {
   };
 }
 
-module.exports = { ALLOWED_SERVICES, normalizeHomeAssistantUrl, validateServiceCall, createHomeAssistantClient };
+module.exports = { ALLOWED_SERVICES, READ_ONLY_DOMAINS, normalizeHomeAssistantUrl, validateServiceCall, createHomeAssistantClient };
 ).test(entityId))
     throw new Error('Invalid device entity ID.');
   const data = { entity_id: entityId };
