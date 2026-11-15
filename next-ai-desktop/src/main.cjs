@@ -6,6 +6,7 @@ const { execFile, spawn } = require('node:child_process');
 const { createPersonalBrain } = require('./brain.cjs');
 const { APPS, normalizeTaskPlan, validateTaskStep } = require('./task-engine.cjs');
 const { createTaskStore } = require('./task-store.cjs');
+const { classifyVoiceCommand } = require('./command-router.cjs');
 const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.enc'), safeStorage);
 const brain = createPersonalBrain({ app, safeStorage });
 
@@ -38,6 +39,10 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'index.html'));
 }
 app.whenReady().then(createWindow);
+ipcMain.handle('voice:classify', (_e, phrase) => {
+  if (typeof phrase !== 'string' || phrase.length > 2000) throw new Error('Voice command is too long.');
+  return classifyVoiceCommand(phrase);
+});
 app.on('window-all-closed', () => { globalShortcut.unregisterAll(); if (process.platform !== 'darwin') app.quit(); });
 
 ipcMain.handle('files:open-text', async () => {
