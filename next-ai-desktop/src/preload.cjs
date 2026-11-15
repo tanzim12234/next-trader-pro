@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('nextAI', Object.freeze({
   webResearch: query => ipcRenderer.invoke('ai:web-research', query),
   planTask: goal => ipcRenderer.invoke('ai:plan-task', goal),
   executeTaskStep: action => ipcRenderer.invoke('task:execute-step', action),
+  listTaskHistory: () => ipcRenderer.invoke('task:history-list'),
+  saveTaskHistory: entry => ipcRenderer.invoke('task:history-add', entry),
   getSystemStats: () => ipcRenderer.invoke('system:stats'),
   saveKeys: keys => ipcRenderer.invoke('settings:save', keys),
   chat: message => ipcRenderer.invoke('ai:chat', message),
