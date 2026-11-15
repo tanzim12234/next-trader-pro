@@ -222,7 +222,8 @@ $('saveConversation').onclick=async()=>{
 const voiceLanguage=$('voiceLanguage');if(voiceLanguage){voiceLanguage.value=localStorage.getItem('next-ai-voice-language')||'bn-BD';voiceLanguage.addEventListener('change',()=>{localStorage.setItem('next-ai-voice-language',voiceLanguage.value);if(listening){stopVoice();startVoice();}});}
 
 refreshTaskHistory();
-\n
+
+
 async function refreshFolderItems(){
  try{
   const result=await window.nextAI.listFolder();
@@ -251,4 +252,4 @@ $('browserOpen').onclick=async()=>{const button=$('browserOpen');button.disabled
 for(const [id,direction] of [['browserBack','back'],['browserForward','forward'],['browserReload','reload']]){
  $(id).onclick=async()=>{try{await window.nextAI.browserNavigate(direction);$('browserState').textContent='Browser '+direction+' requested.';}catch(e){$('browserState').textContent=e.message;}};
 }
-\n
+
