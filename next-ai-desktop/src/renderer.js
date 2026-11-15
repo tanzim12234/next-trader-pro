@@ -97,6 +97,16 @@ async function runVoiceCommand(raw){
  if(!text){awaitingCommand=true;$('voiceState').textContent='Wake word heard — say a command';speak('Yes?');return;}
  awaitingCommand=false;
  try{
+  const routed=await window.nextAI.classifyVoice(raw);
+  if(routed){
+   if(routed.intent==='open-app'){await window.nextAI.runAction({type:'open-app',app:routed.app});speak('Opening '+routed.app.replace('-', ' '));return;}
+   if(routed.intent==='youtube-open'){await window.nextAI.runAction({type:'youtube-open'});speak('Opening YouTube');return;}
+   if(routed.intent==='youtube-search'){await window.nextAI.runAction({type:'youtube-search',query:routed.query});speak('Searching YouTube');return;}
+   if(routed.intent==='web-search'){$('researchQuery').value=routed.query;$('runResearch').click();speak('Starting web research');return;}
+   if(routed.intent==='media-toggle'){await window.nextAI.runAction({type:'media',command:'playpause'});speak('Media control requested');return;}
+   if(routed.intent==='ask-ai'){$('prompt').value=routed.prompt;$('send').click();return;}
+   if(routed.intent==='type-text'){const result=await window.nextAI.runAction({type:'write-text',text:routed.text});speak(result.cancelled?'Cancelled':'Typing requested');return;}
+  }
   const appCommands=[
    {pattern:/^(open|launch)\s+notepad$|^নোটপ্যাড\s*(খোলো|চালু করো)$/i,app:'notepad',label:'Notepad'},
    {pattern:/^(open|launch)\s+calculator$|^(ক্যালকুলেটর|ক্যালকুলেটরটা)\s*(খোলো|চালু করো)$/i,app:'calculator',label:'Calculator'},
