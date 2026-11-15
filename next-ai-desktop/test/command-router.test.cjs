@@ -7,7 +7,7 @@ test('normalizes punctuation and whitespace without losing Bangla text', () => {
   assert.equal(normalizeVoiceText('  হেই   নেক্সট!  '), 'হেই নেক্সট');
 });
 test('understands English and Bangla app launch commands', () => {
-  assert.equal(classifyVoiceCommand('Hey NEXT, please open calculator').app, 'calculator');
+  assert.equal(classifyVoiceCommand('Hey NEXT, open calculator please').app, 'calculator');
   assert.equal(classifyVoiceCommand('নোটপ্যাড খুলে দাও').app, 'notepad');
   assert.equal(classifyVoiceCommand('ফাইল ম্যানেজার চালু করো').app, 'file-explorer');
 });
