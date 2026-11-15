@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('nextAI', Object.freeze({
+  getSecurityStatus: () => ipcRenderer.invoke('security:status'),
   createBackup: () => ipcRenderer.invoke('backup:create'),
   listBackups: () => ipcRenderer.invoke('backup:list'),
   restoreBackup: id => ipcRenderer.invoke('backup:restore', id),
