@@ -88,7 +88,13 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <input id="browserAddress" maxlength="2048" placeholder="https://example.com">
 <div class="row"><button id="browserOpen">Open website</button><button id="browserBack">Back</button><button id="browserForward">Forward</button><button id="browserReload">Reload</button></div>
 <div id="browserState" class="hint">Browser closed.</div></section>
-\n<section class="panel"><h2>Chat with NEXT</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button> <button id="saveConversation" disabled>Save conversation to Personal Brain</button><span id="conversationState" class="hint">Chat is not stored unless you choose Save.</span></section>
+\n<section class="panel"><h2>Smart Home · Home Assistant</h2>
+<p class="hint">তোমার নিজের Home Assistant server-এর URL ও long-lived access token encrypted local settings-এ থাকবে। Public server হলে HTTPS আবশ্যক। প্রতিটি device action-এর আগে Windows confirmation আসবে; camera/microphone access এই connector দেয় না।</p>
+<input id="homeUrl" maxlength="500" placeholder="http://192.168.1.20:8123 অথবা https://ha.example.com">
+<input id="homeToken" type="password" autocomplete="off" maxlength="4096" placeholder="Home Assistant long-lived access token">
+<div class="row"><button id="homeConnect">Connect securely</button><button id="homeRefresh">Refresh devices</button></div>
+<div id="homeState" class="hint">Not connected.</div><div id="homeEntities" class="memory-list"></div></section>
+<section class="panel"><h2>Chat with NEXT</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button> <button id="saveConversation" disabled>Save conversation to Personal Brain</button><span id="conversationState" class="hint">Chat is not stored unless you choose Save.</span></section>
 <section class="panel"><h2>Learning Review · User-approved knowledge</h2>
 <p class="hint">সাম্প্রতিক কথোপকথন থেকে AI সম্ভাব্য স্থায়ী তথ্য প্রস্তাব করবে। প্রতিটি তথ্য তুমি নিজে Save না করলে Personal Brain-এ যোগ হবে না।</p>
 <button id="reviewLearning" disabled>Analyze last conversation</button> <span id="learningState" class="hint">প্রথমে NEXT-এর সঙ্গে কথা বলো।</span>
