@@ -4,6 +4,8 @@ contextBridge.exposeInMainWorld('nextAI', Object.freeze({
   saveKeys: keys => ipcRenderer.invoke('settings:save', keys),
   chat: message => ipcRenderer.invoke('ai:chat', message),
   runAction: action => ipcRenderer.invoke('action:run', action),
+  openTextFile: () => ipcRenderer.invoke('files:open-text'),
+  saveTextFile: input => ipcRenderer.invoke('files:save-text', input),
   listMemories: query => ipcRenderer.invoke('brain:list', query || ''),
   remember: input => ipcRenderer.invoke('brain:remember', input),
   forgetMemory: id => ipcRenderer.invoke('brain:forget', id),
