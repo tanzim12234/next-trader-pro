@@ -13,6 +13,9 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
+    env:
+      CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
     defaults:
       run:
         working-directory: next-ai-desktop
@@ -32,6 +35,14 @@ jobs:
           node --check src/renderer.js
       - name: Test Personal Brain
         run: npm test
+      - name: Report signing configuration
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CSC_LINK)) {
+            Write-Warning "No code-signing certificate configured. The installer will be unsigned."
+          } else {
+            Write-Host "Code-signing certificate configured."
+          }
       - name: Build Windows x64 installer
         run: npm run dist
       - name: Upload installer
