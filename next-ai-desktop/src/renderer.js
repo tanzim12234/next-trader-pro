@@ -100,6 +100,15 @@ async function runVoiceCommand(raw){
  try{
   const routed=await window.nextAI.classifyVoice(raw);
   if(routed){
+   if(routed.intent==='home-control'){
+    const entities=await window.nextAI.listHomeEntities();
+    const wanted=routed.deviceQuery.toLocaleLowerCase('en-US').trim();
+    const matches=entities.filter(item=>item.name.toLocaleLowerCase('en-US')===wanted||item.entityId.toLocaleLowerCase('en-US')===wanted||item.name.toLocaleLowerCase('en-US').includes(wanted));
+    if(matches.length!==1){speak(matches.length?'I found more than one matching device. Please use its exact name.':'I could not find that device in Home Assistant.');$('voiceState').textContent='Smart-home device match count: '+matches.length;return;}
+    const device=matches[0];
+    const result=await window.nextAI.callHomeService({domain:device.domain,entityId:device.entityId,service:routed.service,temperature:routed.temperature});
+    speak(result.cancelled?'Device action cancelled.':'Device action request completed.');$('voiceState').textContent='Smart-home action: '+device.name+' · '+routed.service;return;
+   }
    if(routed.intent==='open-app'){await window.nextAI.runAction({type:'open-app',app:routed.app});speak('Opening '+routed.app.replace('-', ' '));return;}
    if(routed.intent==='youtube-open'){await window.nextAI.runAction({type:'youtube-open'});speak('Opening YouTube');return;}
    if(routed.intent==='youtube-search'){await window.nextAI.runAction({type:'youtube-search',query:routed.query});speak('Searching YouTube');return;}
