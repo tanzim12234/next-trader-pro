@@ -114,7 +114,7 @@ ipcMain.handle('ai:learning-suggestions', async (_e, input) => {
     'Conversation:',
     'User: ' + input.question,
     'Assistant: ' + input.answer
-  ].join('\\n');
+  ].join('\n');
   let raw = '';
   if (s.geminiKey) {
     const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(s.geminiKey), {
@@ -128,7 +128,7 @@ ipcMain.handle('ai:learning-suggestions', async (_e, input) => {
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST', headers: { 'Authorization': 'Bearer ' + s.groqKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [
-        { role: 'system', content: 'Return only a valid JSON array. Never include secrets or sensitive personal data.' },
+        { role: 'system', content: 'Return only a JSON object with a suggestions array. Never include secrets or sensitive personal data.' },
         { role: 'user', content: prompt }
       ], response_format: { type: 'json_object' } })
     });
@@ -143,7 +143,7 @@ ipcMain.handle('ai:learning-suggestions', async (_e, input) => {
     parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) parsed = parsed.suggestions || [];
   } catch {
-    const match = raw.match(/\\[[\\s\\S]*\\]/);
+    const match = raw.match(/\[[\s\S]*\]/);
     try { parsed = match ? JSON.parse(match[0]) : []; } catch { parsed = []; }
   }
   return parsed.filter(item => item && typeof item.text === 'string' && item.text.trim() && item.text.length <= 1000)
