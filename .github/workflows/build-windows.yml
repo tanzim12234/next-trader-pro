@@ -4,9 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "electron/**"
-      - "package.json"
-      - "electron-builder.yml"
+      - "next-ai-desktop/**"
       - ".github/workflows/build-windows.yml"
 
 permissions:
@@ -15,20 +13,30 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: next-ai-desktop
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: next-ai-desktop/package-lock.json
       - name: Install dependencies
         run: npm install
+      - name: Check JavaScript syntax
+        shell: pwsh
+        run: |
+          node --check src/main.cjs
+          node --check src/preload.cjs
+          node --check src/brain.cjs
       - name: Build Windows x64 installer
-        run: npm run desktop:win
+        run: npm run dist
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: NEXT-AI-Windows-x64
-          path: release/*.exe
+          path: next-ai-desktop/release/*.exe
           if-no-files-found: error
           retention-days: 14
