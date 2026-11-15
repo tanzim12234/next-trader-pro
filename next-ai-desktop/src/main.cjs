@@ -17,6 +17,7 @@ const backupManager = createBackupManager(app.getPath('userData'));
 let win;
 let browserWin = null;
 let selectedFolder = null;
+let currentFolder = null;
 let previousCpuSnapshot = null;
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.enc');
 
@@ -84,25 +85,42 @@ ipcMain.handle('files:choose-folder', async () => {
   const result = await require('electron').dialog.showOpenDialog(win, { title: 'Choose a folder for NEXT AI', properties: ['openDirectory'] });
   if (result.canceled || !result.filePaths[0]) return { cancelled: true };
   selectedFolder = await fs.promises.realpath(result.filePaths[0]);
-  return { path: selectedFolder, name: path.basename(selectedFolder) || selectedFolder };
+  currentFolder = selectedFolder;
+  return { path: currentFolder, name: path.basename(currentFolder) || currentFolder };
 });
 ipcMain.handle('files:list-folder', async () => {
   if (!selectedFolder) throw new Error('আগে একটি folder নির্বাচন করো।');
-  const entries = await fs.promises.readdir(selectedFolder, { withFileTypes: true });
+  const entries = await fs.promises.readdir(currentFolder, { withFileTypes: true });
   const items = [];
   for (const entry of entries.slice(0, 200)) {
     if (entry.isSymbolicLink()) continue;
-    const fullPath = safeChildPath(selectedFolder, path.join(selectedFolder, entry.name));
+    const fullPath = safeChildPath(selectedFolder, path.join(currentFolder, entry.name));
     const stat = await fs.promises.stat(fullPath);
     items.push({ name: entry.name.slice(0, 180), type: entry.isDirectory() ? 'folder' : 'file', size: entry.isFile() ? stat.size : null });
   }
-  return { folder: selectedFolder, items };
+  return { folder: currentFolder, root: selectedFolder, items };
+});
+ipcMain.handle('files:enter-folder', async (_e, input) => {
+  if (!selectedFolder || !currentFolder || typeof input?.name !== 'string') throw new Error('Invalid folder selection.');
+  const target = safeChildPath(selectedFolder, path.join(currentFolder, input.name));
+  const stat = await fs.promises.lstat(target);
+  if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('Only regular folders can be opened.');
+  const real = await fs.promises.realpath(target);
+  safeChildPath(selectedFolder, real);
+  currentFolder = real;
+  return { folder: currentFolder };
+});
+ipcMain.handle('files:go-parent', async () => {
+  if (!selectedFolder || !currentFolder) throw new Error('No approved folder selected.');
+  if (currentFolder !== selectedFolder) currentFolder = path.dirname(currentFolder);
+  safeChildPath(selectedFolder, currentFolder);
+  return { folder: currentFolder, root: selectedFolder };
 });
 ipcMain.handle('files:create-folder', async (_e, input) => {
   if (!selectedFolder) throw new Error('আগে একটি folder নির্বাচন করো।');
   const name = typeof input?.name === 'string' ? input.name.trim() : '';
   if (!name || name.length > 80 || /[\\/\\\\:*?"<>|]/.test(name) || name === '.' || name === '..') throw new Error('Folder name invalid.');
-  const target = safeChildPath(selectedFolder, path.join(selectedFolder, name));
+  const target = safeChildPath(selectedFolder, path.join(currentFolder, name));
   const choice = await require('electron').dialog.showMessageBox(win, { type: 'question', buttons: ['Create folder', 'Cancel'], defaultId: 1, cancelId: 1, message: 'এই folder তৈরি করবে?', detail: target });
   if (choice.response !== 0) return { cancelled: true };
   await fs.promises.mkdir(target);
@@ -110,7 +128,7 @@ ipcMain.handle('files:create-folder', async (_e, input) => {
 });
 ipcMain.handle('files:open-item', async (_e, input) => {
   if (!selectedFolder || typeof input?.name !== 'string') throw new Error('Invalid file selection.');
-  const target = safeChildPath(selectedFolder, path.join(selectedFolder, input.name));
+  const target = safeChildPath(selectedFolder, path.join(currentFolder, input.name));
   const stat = await fs.promises.lstat(target);
   if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Only regular files can be opened.');
   const choice = await require('electron').dialog.showMessageBox(win, { type: 'question', buttons: ['Open file', 'Cancel'], defaultId: 1, cancelId: 1, message: 'এই ফাইলটি default application-এ খুলবে?', detail: input.name });
@@ -121,7 +139,7 @@ ipcMain.handle('files:open-item', async (_e, input) => {
 });
 ipcMain.handle('files:copy-item', async (_e, input) => {
   if (!selectedFolder || typeof input?.name !== 'string') throw new Error('Invalid file selection.');
-  const source = safeChildPath(selectedFolder, path.join(selectedFolder, input.name));
+  const source = safeChildPath(selectedFolder, path.join(currentFolder, input.name));
   const stat = await fs.promises.lstat(source);
   if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 20 * 1024 * 1024) throw new Error('Only regular files up to 20 MB can be copied.');
   const result = await require('electron').dialog.showSaveDialog(win, { title: 'Copy file to…', defaultPath: input.name });
