@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('nextAI', Object.freeze({
+  analyzeData: input => ipcRenderer.invoke('data:analyze', input),
   connectHomeAssistant: input => ipcRenderer.invoke('home:connect', input),
   listHomeEntities: () => ipcRenderer.invoke('home:entities'),
   callHomeService: input => ipcRenderer.invoke('home:call', input),
