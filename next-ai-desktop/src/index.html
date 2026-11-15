@@ -61,7 +61,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <button id="save">Save keys securely</button><span id="saveState" class="hint"></span></section>
 <section class="panel"><h2>Personal Brain · Long-term Memory</h2>
 <p class="hint">শুধু তুমি স্পষ্টভাবে Save করলে তথ্য encrypted local storage-এ থাকবে। NEXT প্রাসঙ্গিক saved memory chat-এর সময় ব্যবহার করবে।</p>
-<input id="memoryText" maxlength="1000" placeholder="যেমন: আমার পছন্দের ভাষা বাংলা">
+<input id="memoryText" maxlength="1000" placeholder="যেমন: আমার পছন্দের ভাষা বাংলা">\n<input id="memorySearch" type="search" placeholder="Search saved memories…">
 <div class="row"><button id="remember">Remember this</button><button id="refreshMemory">Refresh memories</button><button id="clearMemory">Clear all</button></div>
 <div id="memoryState" class="hint"></div><div id="memoryList" class="memory-list">No saved memories.</div></section>
 <section class="panel"><h2>Chat with NEXT</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button></section>
