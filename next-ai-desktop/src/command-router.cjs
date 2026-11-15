@@ -10,6 +10,18 @@ function classifyVoiceCommand(value) {
     .replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i, '').trim();
   if (!text || text.length > 2000) return null;
 
+  const appPatterns = [
+    { re: /^(?:open|launch|start)\s+(?:notepad|নোটপ্যাড)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'notepad' },
+    { re: /^(?:open|launch|start)\s+(?:calculator|ক্যালকুলেটর)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'calculator' },
+    { re: /^(?:open|launch|start)\s+(?:file explorer|explorer|ফাইল এক্সপ্লোরার|ফাইল ম্যানেজার)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'file-explorer' },
+    { re: /^(?:(?:নোটপ্যাড|ক্যালকুলেটর|ফাইল এক্সপ্লোরার|ফাইল ম্যানেজার)\s*(?:খুলে দাও|খোলো|চালু করো))$/i, app: null }
+  ];
+  for (const item of appPatterns) {
+    if (!item.re.test(text)) continue;
+    const app = item.app || (text.includes('নোটপ্যাড') ? 'notepad' : text.includes('ক্যালকুলেটর') ? 'calculator' : 'file-explorer');
+    return { intent: 'open-app', app, confidence: 0.99 };
+  }
+
   const temperature = text.match(/^(?:set|change)\s+(.+?)\s+to\s+(\d+(?:\.\d+)?)\s*(?:degrees?|°c)?$/i);
   if (temperature) return { intent: 'home-control', deviceQuery: temperature[1].trim(), service: 'set_temperature', temperature: Number(temperature[2]), confidence: 0.93 };
   const homePatterns = [
@@ -25,18 +37,6 @@ function classifyVoiceCommand(value) {
   for (const item of homePatterns) {
     const match = text.match(item.re);
     if (match?.[1]) return { intent: 'home-control', deviceQuery: match[1].trim(), service: item.service, confidence: 0.9 };
-  }
-
-  const appPatterns = [
-    { re: /^(?:open|launch|start)\s+(?:notepad|নোটপ্যাড)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'notepad' },
-    { re: /^(?:open|launch|start)\s+(?:calculator|ক্যালকুলেটর)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'calculator' },
-    { re: /^(?:open|launch|start)\s+(?:file explorer|explorer|ফাইল এক্সপ্লোরার|ফাইল ম্যানেজার)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'file-explorer' },
-    { re: /^(?:(?:নোটপ্যাড|ক্যালকুলেটর|ফাইল এক্সপ্লোরার|ফাইল ম্যানেজার)\s*(?:খুলে দাও|খোলো|চালু করো))$/i, app: null }
-  ];
-  for (const item of appPatterns) {
-    if (!item.re.test(text)) continue;
-    const app = item.app || (text.includes('নোটপ্যাড') ? 'notepad' : text.includes('ক্যালকুলেটর') ? 'calculator' : 'file-explorer');
-    return { intent: 'open-app', app, confidence: 0.99 };
   }
 
   if (/^(?:open|launch|start)\s+youtube$|^ইউটিউব\s*(?:খোলো|খুলে দাও|চালু করো|ওপেন করো)$/i.test(text))
