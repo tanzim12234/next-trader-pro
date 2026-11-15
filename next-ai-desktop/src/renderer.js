@@ -121,6 +121,24 @@ $('clearMemory').onclick=async()=>{
 $('memorySearch').addEventListener('input',()=>refreshMemories($('memorySearch').value));
 refreshMemories();
 
+$('reviewLearning').onclick=async()=>{
+ if(!lastExchange)return;
+ const button=$('reviewLearning');button.disabled=true;$('learningState').textContent='Reviewing conversation…';
+ const list=$('learningSuggestions');list.textContent='';
+ try{
+  const suggestions=await window.nextAI.suggestLearning(lastExchange);
+  if(!suggestions.length){$('learningState').textContent='এই কথোপকথন থেকে সংরক্ষণের মতো স্থায়ী তথ্য পাওয়া যায়নি।';return;}
+  $('learningState').textContent=suggestions.length+'টি প্রস্তাব পাওয়া গেছে। যেগুলো রাখতে চাও শুধু সেগুলো Save করো।';
+  for(const item of suggestions){
+   const row=document.createElement('div');row.className='memory-item';
+   const text=document.createElement('span');text.textContent=item.text;
+   const save=document.createElement('button');save.textContent='Approve & Save';
+   save.onclick=async()=>{save.disabled=true;try{await window.nextAI.remember({text:item.text,category:item.category});row.remove();$('learningState').textContent='Approved item saved securely.';await refreshMemories();}catch(e){save.disabled=false;$('learningState').textContent=e.message;}};
+   row.append(text,save);list.append(row);
+  }
+ }catch(e){$('learningState').textContent='Review failed: '+e.message;}
+ finally{button.disabled=false;}
+};
 $('saveConversation').onclick=async()=>{
  if(!lastExchange)return;
  const combined='User: '+lastExchange.question+' | NEXT: '+lastExchange.answer;
