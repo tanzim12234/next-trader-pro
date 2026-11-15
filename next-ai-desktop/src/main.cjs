@@ -6,7 +6,7 @@ const { execFile, spawn } = require('node:child_process');
 const { createPersonalBrain } = require('./brain.cjs');
 const { APPS, normalizeTaskPlan, validateTaskStep } = require('./task-engine.cjs');
 const { createTaskStore } = require('./task-store.cjs');
-const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.json'));
+const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.enc'), safeStorage);
 const brain = createPersonalBrain({ app, safeStorage });
 
 let win;
