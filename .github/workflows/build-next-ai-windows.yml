@@ -16,6 +16,11 @@ jobs:
     defaults:
       run:
         working-directory: next-ai-desktop
+    env:
+      # Configure these GitHub Actions secrets after obtaining a trusted
+      # Windows code-signing certificate (.pfx/.p12).
+      CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,6 +31,14 @@ jobs:
           package-manager-cache: false
       - name: Install dependencies
         run: npm install
+      - name: Report signing configuration
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CSC_LINK)) {
+            Write-Warning "No code-signing certificate configured. This build will be unsigned and Smart App Control may block it."
+          } else {
+            Write-Host "Code-signing certificate is configured; electron-builder will sign the installer."
+          }
       - name: Build NSIS installer
         run: npm run dist
       - name: Upload installer
