@@ -74,4 +74,5 @@ $('clearMemory').onclick=async()=>{
  try{const r=await window.nextAI.clearMemories();if(r.cancelled)return;await refreshMemories();$('memoryState').textContent='All saved memories cleared.';}
  catch(e){$('memoryState').textContent=e.message;}
 };
+$('memorySearch').addEventListener('input',()=>refreshMemories($('memorySearch').value));
 refreshMemories();
