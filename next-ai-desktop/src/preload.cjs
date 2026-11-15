@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('nextAI', Object.freeze({
+  classifyVoice: phrase => ipcRenderer.invoke('voice:classify', phrase),
   status: () => ipcRenderer.invoke('settings:status'),
   testConnection: () => ipcRenderer.invoke('ai:test-connection'),
   webResearch: query => ipcRenderer.invoke('ai:web-research', query),
