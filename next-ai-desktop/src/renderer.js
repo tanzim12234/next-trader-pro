@@ -19,22 +19,39 @@ $('play').onclick=()=>window.nextAI.runAction({type:'media',command:'playpause'}
 function speak(text){if(!('speechSynthesis'in window))return;const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>setCoreState('', 'Awaiting input');speechSynthesis.speak(u);}
 async function runVoiceCommand(raw){
  let text=raw.trim().toLowerCase();
- if(text.startsWith('hey next')) text=text.slice(8).trim();
+ text=text.replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').trim();
  if(!text){awaitingCommand=true;$('voiceState').textContent='Wake word heard — say a command';speak('Yes?');return;}
  awaitingCommand=false;
  try{
-  if(/^(open|launch) youtube$/.test(text)){await window.nextAI.runAction({type:'youtube-open'});speak('Opening YouTube');return;}
-  if(text.startsWith('search ')){const q=text.slice(7).trim();await window.nextAI.runAction({type:'youtube-search',query:q});speak('Searching YouTube');return;}
-  if(/^(play|pause|play music|pause music|play this music|pause this music)$/.test(text)){await window.nextAI.runAction({type:'media',command:'playpause'});speak('Media toggle sent');return;}
-  if(text.startsWith('write ')){const value=raw.trim().replace(/^hey next\s*/i,'').replace(/^write\s*/i,'');const r=await window.nextAI.runAction({type:'write-text',text:value});speak(r.cancelled?'Cancelled':'Paste requested');return;}
-  if(text.startsWith('ask ')){const q=raw.trim().replace(/^hey next\s*/i,'').replace(/^ask\s*/i,'');$('prompt').value=q;$('send').click();return;}
+  if(/^(open|launch)\s+youtube$/.test(text)||/^(ইউটিউব\s*(খোলো|চালু করো|ওপেন করো))$/.test(text)){
+   await window.nextAI.runAction({type:'youtube-open'});speak('Opening YouTube');return;
+  }
+  let query='';
+  if(text.startsWith('search ')) query=text.slice(7).trim();
+  else if(text.startsWith('সার্চ ')) query=text.slice(6).trim();
+  else {
+   const match=text.match(/^(ইউটিউবে|ইউটিউব)\s+(.+?)\s*(খোঁজো|সার্চ করো|সার্চ দাও)$/);
+   if(match)query=match[2].trim();
+  }
+  if(query){await window.nextAI.runAction({type:'youtube-search',query});speak('Searching YouTube');return;}
+  if(/^(play|pause|play music|pause music|play this music|pause this music|গান চালাও|গান বন্ধ করো|মিউজিক চালাও|মিউজিক বন্ধ করো|প্লে|পজ)$/.test(text)){
+   await window.nextAI.runAction({type:'media',command:'playpause'});speak('Media toggle sent');return;
+  }
+  if(text.startsWith('write ')||text.startsWith('লিখো ')||text.startsWith('লিখে দাও ')){
+   const value=raw.trim().replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').replace(/^(write|লিখো|লিখে দাও)\s*/i,'');
+   const r=await window.nextAI.runAction({type:'write-text',text:value});speak(r.cancelled?'Cancelled':'Paste requested');return;
+  }
+  if(text.startsWith('ask ')||text.startsWith('জিজ্ঞেস করো ')||text.startsWith('প্রশ্ন করো ')){
+   const q=raw.trim().replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').replace(/^(ask|জিজ্ঞেস করো|প্রশ্ন করো)\s*/i,'');
+   $('prompt').value=q;$('send').click();return;
+  }
   speak('I did not recognize that command.');$('voiceState').textContent='Unknown command: '+raw;
  }catch(e){$('voiceState').textContent=e.message;speak('The action failed');}
 }
 function startVoice(){
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  if(!SR){$('voiceState').textContent='Speech recognition is not available in this Electron build. Use the chat box.';return;}
- recognition=new SR();recognition.lang='en-US';recognition.continuous=true;recognition.interimResults=false;
+ recognition=new SR();recognition.lang=$('voiceLanguage')?.value||'bn-BD';recognition.continuous=true;recognition.interimResults=false;
  recognition.onstart=()=>{$('voiceState').textContent='Listening for “Hey NEXT”…';setCoreState('listening','Wake word detection active');};
  recognition.onresult=async ev=>{
   const result=ev.results[ev.results.length-1];if(!result.isFinal)return;
@@ -76,3 +93,5 @@ $('clearMemory').onclick=async()=>{
 };
 $('memorySearch').addEventListener('input',()=>refreshMemories($('memorySearch').value));
 refreshMemories();
+
+const voiceLanguage=$('voiceLanguage');if(voiceLanguage){voiceLanguage.value=localStorage.getItem('next-ai-voice-language')||'bn-BD';voiceLanguage.addEventListener('change',()=>{localStorage.setItem('next-ai-voice-language',voiceLanguage.value);if(listening){stopVoice();startVoice();}});}
