@@ -7,7 +7,55 @@
 main{max-width:960px;margin:36px auto;padding:24px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{font-weight:900;letter-spacing:.16em;color:var(--cyan);font-size:24px}.tag{color:var(--muted);font-size:12px}
 .panel{background:#0b1c27e8;border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:18px;box-shadow:0 12px 50px #0005}
 h2{font-size:16px;color:var(--cyan);margin:0 0 12px}input,textarea,button{font:inherit;border-radius:10px;border:1px solid var(--line);padding:12px;background:#07151e;color:var(--txt)}input,textarea{width:100%;margin:6px 0 12px}button{cursor:pointer;background:#103442}button:hover{border-color:var(--cyan)}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}.hint{color:var(--muted);font-size:12px}.chat{min-height:170px;white-space:pre-wrap;line-height:1.6;background:#06141c;border-radius:12px;padding:14px;margin:12px 0}
- .memory-item{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px;border-bottom:1px solid var(--line);font-size:13px}.memory-item button{padding:6px 9px;font-size:12px}.memory-list{max-height:220px;overflow:auto;background:#06141c;border-radius:10px;margin-top:12px}\n</style></head><body><main><div class="top"><div><div class="brand">NEXT AI Desktop</div><div class="tag">SECURE WINDOWS DESKTOP ASSISTANT · FOUNDATION BUILD</div></div><div id="state" class="tag">Checking…</div></div>
+ .memory-item{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px;border-bottom:1px solid var(--line);font-size:13px}.memory-item button{padding:6px 9px;font-size:12px}.memory-list{max-height:220px;overflow:auto;background:#06141c;border-radius:10px;margin-top:12px}\n
+/* JARVIS-inspired original holographic interface animations */
+body{overflow-x:hidden;background:radial-gradient(ellipse at 50% 0,#123c4a 0,transparent 55%),radial-gradient(ellipse at 50% 55%,#071b27 0,#030910 72%);background-attachment:fixed}
+main{position:relative;z-index:1;max-width:1180px}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.28;background:linear-gradient(rgba(67,234,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(67,234,255,.08) 1px,transparent 1px);background-size:38px 38px;mask-image:radial-gradient(ellipse at center,#000,transparent 85%)}
+.jarvis-stage{position:relative;min-height:390px;margin-top:22px;border:1px solid #1b7182;border-radius:22px;overflow:hidden;background:radial-gradient(ellipse at center,rgba(8,65,83,.7),rgba(4,18,29,.94) 62%,#030b12);box-shadow:0 0 45px #00c9ef18,inset 0 0 45px #00c9ef0d;display:grid;grid-template-columns:1fr minmax(230px,340px) 1fr;align-items:center;padding:24px}
+.jarvis-stage:before{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(80,220,255,.035) 4px);animation:hudScan 8s linear infinite}
+.jarvis-stage:after{content:"";position:absolute;left:0;right:0;top:-20%;height:24%;background:linear-gradient(transparent,rgba(67,234,255,.12),transparent);animation:hudSweep 7s linear infinite;pointer-events:none}
+.hud-column{position:relative;z-index:1;display:grid;gap:12px;align-content:center}
+.hud-card{border:1px solid #1a6678;background:rgba(4,23,34,.64);padding:12px 14px;border-radius:12px;box-shadow:inset 0 0 20px #00c9ef09;backdrop-filter:blur(6px)}
+.hud-label{font-size:9px;letter-spacing:.2em;color:#68dff2;text-transform:uppercase}
+.hud-value{font:700 14px ui-monospace,monospace;color:#e0fbff;margin-top:6px;text-shadow:0 0 12px #4bdcf477}
+.hud-sub{font-size:10px;color:#79aebd;margin-top:4px}
+.core-wrap{position:relative;z-index:1;width:min(100%,310px);aspect-ratio:1;margin:auto;display:grid;place-items:center}
+.core-ring{position:absolute;border:1px solid rgba(69,228,255,.5);border-radius:50%;box-shadow:0 0 18px #00d9ff20,inset 0 0 18px #00d9ff13}
+.core-ring.r1{inset:2%;border-style:dashed;animation:coreSpin 22s linear infinite}
+.core-ring.r2{inset:10%;border-width:2px;border-color:#45eaff88;animation:coreSpin 14s linear infinite reverse}
+.core-ring.r3{inset:19%;border-style:dotted;animation:coreSpin 9s linear infinite}
+.core-ring.r4{inset:28%;border-color:#a2faff66;animation:corePulse 3s ease-in-out infinite}
+.core-orbit{position:absolute;inset:0;border:1px solid transparent;border-top-color:#a4faff;border-bottom-color:#39b9e8;border-radius:50%;transform:rotateX(67deg);animation:coreSpin 6s linear infinite}
+.core-orbit:after{content:"";position:absolute;left:50%;top:-5px;width:9px;height:9px;border-radius:50%;background:#b7ffff;box-shadow:0 0 18px 5px #29dfff}
+.core-center{width:32%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 36% 30%,#f0ffff 0,#83f5ff 9%,#1b91b9 30%,#07506e 56%,#031724 75%);box-shadow:0 0 22px #37dfff,0 0 65px #00bce866,inset 0 0 22px #cfffff88;animation:coreBreath 3.5s ease-in-out infinite}
+.core-center span{font:900 22px system-ui;letter-spacing:.12em;color:#eaffff;text-shadow:0 0 15px #fff}
+.core-caption{position:absolute;bottom:-19px;text-align:center;font:10px ui-monospace,monospace;letter-spacing:.22em;color:#83eaff}
+.waveform{height:42px;display:flex;align-items:center;gap:3px;overflow:hidden;margin-top:9px}
+.waveform i{display:block;width:3px;height:10%;min-height:4px;border-radius:4px;background:#5ceaff;box-shadow:0 0 8px #39dfff;animation:wave 1s ease-in-out infinite alternate}
+.waveform i:nth-child(3n){animation-delay:-.4s}.waveform i:nth-child(4n){animation-delay:-.7s}.waveform i:nth-child(5n){animation-delay:-.2s}
+.jarvis-stage.listening .waveform i{animation-duration:.35s;background:#b3ffff;box-shadow:0 0 12px #65f5ff}
+.jarvis-stage.thinking .core-ring.r1{animation-duration:3s}.jarvis-stage.thinking .core-center{animation-duration:.65s}
+.jarvis-stage.speaking .core-orbit{animation-duration:2s}.jarvis-stage.speaking .waveform i{animation-duration:.2s}
+.stage-footer{position:absolute;bottom:13px;left:18px;right:18px;display:flex;justify-content:space-between;gap:8px;color:#5c9aaa;font:9px ui-monospace,monospace;letter-spacing:.12em;z-index:2}
+@keyframes coreSpin{to{transform:rotate(360deg)}}@keyframes corePulse{0%,100%{transform:scale(.94);opacity:.65}50%{transform:scale(1.06);opacity:1}}@keyframes coreBreath{0%,100%{transform:scale(.92);filter:brightness(.9)}50%{transform:scale(1.08);filter:brightness(1.3)}}@keyframes hudScan{to{background-position:0 80px}}@keyframes hudSweep{0%{top:-24%}100%{top:120%}}@keyframes wave{from{height:12%}to{height:95%}}
+@media(max-width:760px){.jarvis-stage{grid-template-columns:1fr;gap:20px;padding:24px 16px 48px}.core-wrap{grid-row:1;width:min(65vw,250px)}.hud-column{grid-template-columns:1fr 1fr}.stage-footer{font-size:8px}}
+@media(prefers-reduced-motion:reduce){.jarvis-stage:before,.jarvis-stage:after,.core-ring,.core-orbit,.core-center,.waveform i{animation:none!important}}
+
+</style></head><body><main><section class="jarvis-stage" id="jarvisStage" aria-label="NEXT AI holographic system visualizer">
+<div class="hud-column">
+<div class="hud-card"><div class="hud-label">System diagnostics</div><div class="hud-value" id="hudSystem">INITIALIZING</div><div class="hud-sub">LOCAL CORE · SECURE SESSION</div></div>
+<div class="hud-card"><div class="hud-label">Personal brain</div><div class="hud-value" id="hudMemory">MEMORY STANDBY</div><div class="hud-sub">LONG-TERM MEMORY MODULE</div></div>
+<div class="hud-card"><div class="hud-label">Voice interface</div><div class="hud-value" id="hudVoice">VOICE OFFLINE</div><div class="waveform" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+</div>
+<div class="core-wrap" aria-hidden="true"><div class="core-ring r1"></div><div class="core-ring r2"></div><div class="core-ring r3"></div><div class="core-ring r4"></div><div class="core-orbit"></div><div class="core-center"><span>N</span></div><div class="core-caption">N E X T · C O R E</div></div>
+<div class="hud-column">
+<div class="hud-card"><div class="hud-label">Cognitive engine</div><div class="hud-value" id="hudEngine">READY TO CONNECT</div><div class="hud-sub">REASONING · PLANNING · LEARNING</div></div>
+<div class="hud-card"><div class="hud-label">Environment</div><div class="hud-value" id="hudEnvironment">WINDOWS DESKTOP</div><div class="hud-sub">DEVICE CONTROL · PERMISSION BASED</div></div>
+<div class="hud-card"><div class="hud-label">Activity stream</div><div class="hud-value" id="hudActivity">AWAITING INPUT</div><div class="hud-sub">LIVE STATUS VISUALIZATION</div></div>
+</div>
+<div class="stage-footer"><span>NEXT AI // HOLOGRAPHIC INTERFACE</span><span>VISUAL CORE · ANIMATED HUD</span></div>
+</section><div class="top"><div><div class="brand">NEXT AI Desktop</div><div class="tag">SECURE WINDOWS DESKTOP ASSISTANT · FOUNDATION BUILD</div></div><div id="state" class="tag">Checking…</div></div>
 <section class="panel"><h2>AI Brain Settings</h2><p class="hint">API key শুধু তোমার Windows user profile-এর encrypted storage-এ রাখা হবে। GitHub-এ পাঠানো হবে না।</p>
 <input id="gemini" type="password" placeholder="Gemini API key (optional)"><input id="groq" type="password" placeholder="Groq API key (optional)">
 <button id="save">Save keys securely</button><span id="saveState" class="hint"></span></section>
