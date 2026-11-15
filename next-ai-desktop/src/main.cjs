@@ -8,6 +8,7 @@ const { APPS, normalizeTaskPlan, validateTaskStep } = require('./task-engine.cjs
 const { createTaskStore } = require('./task-store.cjs');
 const { classifyVoiceCommand } = require('./command-router.cjs');
 const { createHomeAssistantClient, validateServiceCall } = require('./home-assistant.cjs');
+const { analyzeData } = require('./data-analysis.cjs');
 const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.enc'), safeStorage);
 const brain = createPersonalBrain({ app, safeStorage });
 
@@ -164,6 +165,8 @@ ipcMain.handle('browser:navigate', async (_e, direction) => {
   else if (direction === 'reload') browserWin.webContents.reload();
   return { ok: true };
 });
+
+ipcMain.handle('data:analyze', (_e, input) => analyzeData(input?.content, input?.format || 'auto'));
 
 ipcMain.handle('system:stats', () => {
   const cpuTimes = os.cpus().reduce((sum, cpu) => {
