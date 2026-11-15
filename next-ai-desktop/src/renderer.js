@@ -270,7 +270,9 @@ async function refreshFolderItems(){
    const size=item.type==='file'?' · '+(item.size<1024?' '+item.size+' B':(item.size/1024).toFixed(1)+' KB'):'';
    label.textContent=(item.type==='folder'?'📁 ':'📄 ')+item.name+size;
    row.append(label);
-   if(item.type==='file'){
+   if(item.type==='folder'){
+    const enter=document.createElement('button');enter.textContent='Open folder';enter.onclick=async()=>{try{await window.nextAI.enterFolder(item.name);await refreshFolderItems();}catch(e){$('folderState').textContent=e.message;}};row.append(enter);
+   }else{
     const open=document.createElement('button');open.textContent='Open';open.onclick=async()=>{try{await window.nextAI.openFileItem(item.name);$('folderState').textContent='Open request completed.';}catch(e){$('folderState').textContent=e.message;}};
     const copy=document.createElement('button');copy.textContent='Copy';copy.onclick=async()=>{try{const out=await window.nextAI.copyFileItem(item.name);$('folderState').textContent=out.cancelled?'Copy cancelled.':'Copied: '+out.name;}catch(e){$('folderState').textContent=e.message;}};
     row.append(open,copy);
@@ -281,6 +283,7 @@ async function refreshFolderItems(){
 }
 $('chooseFolder').onclick=async()=>{try{const result=await window.nextAI.chooseFolder();if(result.cancelled)return;await refreshFolderItems();}catch(e){$('folderState').textContent=e.message;}};
 $('refreshFolder').onclick=refreshFolderItems;
+$('parentFolder').onclick=async()=>{try{await window.nextAI.goParentFolder();await refreshFolderItems();}catch(e){$('folderState').textContent=e.message;}};
 $('createFolder').onclick=async()=>{const name=window.prompt('নতুন folder-এর নাম লিখো:');if(!name)return;try{const result=await window.nextAI.createFolder(name);if(result.cancelled)return;$('folderState').textContent='Folder created: '+result.name;await refreshFolderItems();}catch(e){$('folderState').textContent=e.message;}};
 $('browserOpen').onclick=async()=>{const button=$('browserOpen');button.disabled=true;$('browserState').textContent='Opening secure browser…';try{const result=await window.nextAI.openBrowser($('browserAddress').value);$('browserAddress').value=result.url;$('browserState').textContent='Secure Browser opened: '+result.url;}catch(e){$('browserState').textContent='Browser error: '+e.message;}finally{button.disabled=false;}};
 for(const [id,direction] of [['browserBack','back'],['browserForward','forward'],['browserReload','reload']]){
