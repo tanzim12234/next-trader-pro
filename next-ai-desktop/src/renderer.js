@@ -278,3 +278,33 @@ for(const [id,direction] of [['browserBack','back'],['browserForward','forward']
  $(id).onclick=async()=>{try{await window.nextAI.browserNavigate(direction);$('browserState').textContent='Browser '+direction+' requested.';}catch(e){$('browserState').textContent=e.message;}};
 }
 
+
+
+async function refreshHomeEntities(){
+ try{
+  const entities=await window.nextAI.listHomeEntities();
+  const box=$('homeEntities');box.textContent='';
+  if(!entities.length){box.textContent='No supported devices found.';return;}
+  for(const entity of entities){
+   const row=document.createElement('div');row.className='memory-item';
+   const label=document.createElement('span');label.textContent=entity.name+' · '+entity.entityId+' · '+entity.state;
+   row.append(label);
+   const addAction=(service,title,extra={})=>{const button=document.createElement('button');button.textContent=title;button.onclick=async()=>{button.disabled=true;try{const result=await window.nextAI.callHomeService({domain:entity.domain,entityId:entity.entityId,service,...extra});$('homeState').textContent=result.cancelled?'Action cancelled.':'Device action completed.';await refreshHomeEntities();}catch(e){$('homeState').textContent='Device action failed: '+e.message;}finally{button.disabled=false;}};row.append(button);};
+   if(['light','switch'].includes(entity.domain)){addAction('turn_on','On');addAction('turn_off','Off');}
+   else if(entity.domain==='climate'){
+    const temp=document.createElement('input');temp.type='number';temp.min='5';temp.max='35';temp.step='0.5';temp.placeholder='°C';temp.style.maxWidth='85px';row.append(temp);
+    const button=document.createElement('button');button.textContent='Set °C';button.onclick=async()=>{button.disabled=true;try{const result=await window.nextAI.callHomeService({domain:'climate',entityId:entity.entityId,service:'set_temperature',temperature:Number(temp.value)});$('homeState').textContent=result.cancelled?'Action cancelled.':'Temperature updated.';await refreshHomeEntities();}catch(e){$('homeState').textContent=e.message;}finally{button.disabled=false;}};row.append(button);
+   }else if(entity.domain==='media_player'){addAction('media_play_pause','Play / Pause');addAction('turn_off','Off');}
+   else if(entity.domain==='lock'){addAction('lock','Lock');addAction('unlock','Unlock');}
+   box.append(row);
+  }
+  $('homeState').textContent=entities.length+' supported device(s) loaded. Each action requires confirmation.';
+ }catch(e){$('homeState').textContent='Device list unavailable: '+e.message;}
+}
+$('homeConnect').onclick=async()=>{
+ const button=$('homeConnect');button.disabled=true;$('homeState').textContent='Testing Home Assistant connection…';
+ try{await window.nextAI.connectHomeAssistant({url:$('homeUrl').value.trim(),token:$('homeToken').value.trim()});$('homeToken').value='';$('homeState').textContent='Connected. Token stored encrypted on this PC.';await refreshHomeEntities();}
+ catch(e){$('homeState').textContent='Connection failed: '+e.message;}
+ finally{button.disabled=false;}
+};
+$('homeRefresh').onclick=refreshHomeEntities;
