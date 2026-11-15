@@ -347,3 +347,23 @@ async function refreshBackups(){
 }
 $('createBackup').onclick=async()=>{const button=$('createBackup');button.disabled=true;try{const result=await window.nextAI.createBackup();$('backupState').textContent='Encrypted backup created · '+result.files+' file(s).';await refreshBackups();}catch(e){$('backupState').textContent='Backup failed: '+e.message;}finally{button.disabled=false;}};
 refreshBackups();
+
+
+async function refreshSecurityStatus(){
+ try{
+  const s=await window.nextAI.getSecurityStatus();const box=$('securityState');box.textContent='';
+  const checks=[
+   ['Encrypted local storage',s.secureStorage?'Available':'Unavailable'],
+   ['Renderer isolation',s.contextIsolation?'Enabled':'Disabled'],
+   ['Node integration',s.nodeIntegration?'Enabled · review required':'Disabled'],
+   ['Renderer sandbox',s.rendererSandbox?'Enabled':'Disabled'],
+   ['Browser site permissions',s.browserPermissions],
+   ['Allowlisted desktop apps',(s.allowedDesktopApps||[]).join(', ')],
+   ['Task execution actions',(s.allowedTaskActions||[]).join(', ')],
+   ['Home Assistant',s.homeAssistantConfigured?'Configured':'Not configured'],
+   ['Encrypted backup snapshots',String(s.encryptedBackups)]
+  ];
+  for(const [name,value] of checks){const row=document.createElement('div');row.className='memory-item';const left=document.createElement('span');left.textContent=name;const right=document.createElement('strong');right.textContent=value;row.append(left,right);box.append(row);}
+ }catch(e){$('securityState').textContent='Security status unavailable: '+e.message;}
+}
+refreshSecurityStatus();
