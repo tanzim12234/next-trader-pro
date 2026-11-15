@@ -21,7 +21,7 @@ $('play').onclick=()=>window.nextAI.runAction({type:'media',command:'playpause'}
 $('openNotepad').onclick=()=>window.nextAI.runAction({type:'open-app',app:'notepad'});
 $('openCalculator').onclick=()=>window.nextAI.runAction({type:'open-app',app:'calculator'});
 $('openExplorer').onclick=()=>window.nextAI.runAction({type:'open-app',app:'file-explorer'});
-function speak(text){if(!('speechSynthesis'in window))return;const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>setCoreState('', 'Awaiting input');speechSynthesis.speak(u);}
+function speak(text){if(!('speechSynthesis'in window))return;const u=new SpeechSynthesisUtterance(text);u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>setCoreState('', 'Awaiting input');speechSynthesis.speak(u);}
 async function runVoiceCommand(raw){
  let text=raw.trim().toLowerCase();
  text=text.replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').trim();
@@ -68,7 +68,7 @@ function startVoice(){
  recognition.onresult=async ev=>{
   const result=ev.results[ev.results.length-1];if(!result.isFinal)return;
   const phrase=result[0].transcript.trim();$('voiceState').textContent='Heard: '+phrase;
-  if(/\bhey next\b/i.test(phrase)){await runVoiceCommand(phrase);return;}
+  if(/(?:\bhey\s+next\b|হেই\s+নেক্সট|হে\s+নেক্সট)/i.test(phrase)){await runVoiceCommand(phrase);return;}
   if(awaitingCommand){await runVoiceCommand(phrase);return;}
  };
  recognition.onerror=ev=>{$('voiceState').textContent='Voice error: '+ev.error;};
