@@ -1,10 +1,12 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-function createTaskStore(filePath) {
+function createTaskStore(filePath, safeStorage) {
   function read() {
     try {
-      const value = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      if (!safeStorage || !safeStorage.isEncryptionAvailable()) return [];
+      const encrypted = fs.readFileSync(filePath);
+      const value = JSON.parse(safeStorage.decryptString(encrypted));
       return Array.isArray(value) ? value.filter(item => item && typeof item.id === 'string').slice(0, 50) : [];
     } catch { return []; }
   }
@@ -22,7 +24,8 @@ function createTaskStore(filePath) {
     if (!safe.goal) throw new Error('Task goal is required.');
     const items = [safe, ...read()].slice(0, 50);
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(items, null, 2), { mode: 0o600 });
+    if (!safeStorage || !safeStorage.isEncryptionAvailable()) throw new Error('Secure storage is unavailable; task history was not saved.');
+    fs.writeFileSync(filePath, safeStorage.encryptString(JSON.stringify(items)), { mode: 0o600 });
     return safe;
   }
   return { list, add };
