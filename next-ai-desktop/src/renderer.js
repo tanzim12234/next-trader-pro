@@ -1,5 +1,6 @@
 const $=id=>document.getElementById(id);
 let recognition=null, listening=false, awaitingCommand=false, lastExchange=null;
+const metricsHistory=[];
 const stage=$('jarvisStage');
 function setCoreState(state, activity){
  if(!stage)return;
@@ -183,6 +184,14 @@ async function refreshSystemStats(){
   const hours=Math.floor(s.uptimeSeconds/3600),minutes=Math.floor((s.uptimeSeconds%3600)/60);
   $('systemUptime').textContent=hours+'h '+minutes+'m';
   $('systemState').textContent=s.platform+' · '+s.arch+' · '+s.cpuCores+' CPU cores · Updated '+new Date().toLocaleTimeString();
+  metricsHistory.push({time:Date.now(),cpu:s.cpuPercent,memory:s.memoryPercent});if(metricsHistory.length>60)metricsHistory.shift();
+  const valid=metricsHistory.filter(x=>x.cpu!==null);
+  const trend=(key)=>{if(valid.length<6)return null;const first=valid[0],last=valid[valid.length-1],seconds=(last.time-first.time)/1000;if(seconds<20)return null;return (last[key]-first[key])/seconds;};
+  const memSlope=trend('memory'),cpuSlope=trend('cpu');
+  const memForecast=memSlope===null?null:Math.max(0,Math.min(100,s.memoryPercent+memSlope*300));
+  const cpuForecast=cpuSlope===null||s.cpuPercent===null?null:Math.max(0,Math.min(100,s.cpuPercent+cpuSlope*300));
+  const warnings=[];if(s.memoryPercent>=90)warnings.push('High memory use now');if(s.cpuPercent>=95)warnings.push('High CPU use now');if(memForecast>=95)warnings.push('Memory may reach critical level within ~5 min');
+  $('systemPrediction').textContent=(memForecast===null?'Collecting trend samples…':'5-min estimate · RAM '+memForecast.toFixed(1)+'%'+(cpuForecast===null?'':' · CPU '+cpuForecast.toFixed(1)+'%'))+(warnings.length?' · ALERT: '+warnings.join('; '):' · No critical threshold detected');
  }catch(e){$('systemState').textContent='Monitoring unavailable: '+e.message;}
 }
 refreshSystemStats();
