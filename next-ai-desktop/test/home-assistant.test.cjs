@@ -19,7 +19,8 @@ test('uses bearer auth and returns only supported entities', async () => {
   const calls=[];
   const client=createHomeAssistantClient({baseUrl:'http://homeassistant.local:8123',token:'x'.repeat(30),fetchImpl:async(url,options)=>{calls.push({url,options});return {ok:true,status:200,text:async()=>JSON.stringify([{entity_id:'light.desk',state:'on',attributes:{friendly_name:'Desk'}},{entity_id:'sensor.temp',state:'21'}])};}});
   const entities=await client.listEntities();
-  assert.equal(entities.length,1);
+  assert.equal(entities.length,2);
   assert.equal(entities[0].name,'Desk');
+  assert.equal(entities[1].domain,'sensor');
   assert.match(calls[0].options.headers.Authorization,/^Bearer /);
 });
