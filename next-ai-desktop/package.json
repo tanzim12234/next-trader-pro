@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis",
-    "test": "node --test test/*.test.cjs"
+    "test": "node --test"
   },
   "devDependencies": {
     "electron": "^39.0.0",
