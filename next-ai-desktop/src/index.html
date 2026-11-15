@@ -78,7 +78,17 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <textarea id="taskGoal" rows="2" maxlength="1500" placeholder="কী কাজ করাতে চাও? যেমন: Notepad খোলো এবং YouTube-এ AI tutorial খুঁজে দাও"></textarea>
 <div class="row"><button id="planTask">Create task plan</button><button id="executeTask" disabled>Approve & execute plan</button></div>
 <div id="taskState" class="hint">No task plan yet.</div><div id="taskPlanList" class="memory-list"></div></section>
-<section class="panel"><h2>Chat with NEXT</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button> <button id="saveConversation" disabled>Save conversation to Personal Brain</button><span id="conversationState" class="hint">Chat is not stored unless you choose Save.</span></section>
+
+<section class="panel"><h2>File Control · Permission-based workspace</h2>
+<p class="hint">প্রথমে তুমি একটি folder নির্বাচন করবে। NEXT কেবল সেই folder-এর file list দেখবে। File open, copy বা folder create করার আগে confirmation লাগবে। Delete operation নেই।</p>
+<div class="row"><button id="chooseFolder">Choose approved folder</button><button id="refreshFolder">Refresh list</button><button id="createFolder">Create folder</button></div>
+<div id="folderState" class="hint">No folder selected.</div><div id="folderItems" class="memory-list"></div></section>
+<section class="panel"><h2>NEXT Secure Browser · Browser Control</h2>
+<p class="hint">নিজে দেওয়া HTTP/HTTPS address খুলবে। Popup নতুন tab block করে confirmation নেবে; file://, javascript: এবং অন্য protocol অনুমোদিত নয়।</p>
+<input id="browserAddress" maxlength="2048" placeholder="https://example.com">
+<div class="row"><button id="browserOpen">Open website</button><button id="browserBack">Back</button><button id="browserForward">Forward</button><button id="browserReload">Reload</button></div>
+<div id="browserState" class="hint">Browser closed.</div></section>
+\n<section class="panel"><h2>Chat with NEXT</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button> <button id="saveConversation" disabled>Save conversation to Personal Brain</button><span id="conversationState" class="hint">Chat is not stored unless you choose Save.</span></section>
 <section class="panel"><h2>Learning Review · User-approved knowledge</h2>
 <p class="hint">সাম্প্রতিক কথোপকথন থেকে AI সম্ভাব্য স্থায়ী তথ্য প্রস্তাব করবে। প্রতিটি তথ্য তুমি নিজে Save না করলে Personal Brain-এ যোগ হবে না।</p>
 <button id="reviewLearning" disabled>Analyze last conversation</button> <span id="learningState" class="hint">প্রথমে NEXT-এর সঙ্গে কথা বলো।</span>
