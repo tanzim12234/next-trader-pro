@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('nextAI', Object.freeze({
+  batchResearch: queries => ipcRenderer.invoke('ai:batch-research', queries),
   getSecurityStatus: () => ipcRenderer.invoke('security:status'),
   createBackup: () => ipcRenderer.invoke('backup:create'),
   listBackups: () => ipcRenderer.invoke('backup:list'),
