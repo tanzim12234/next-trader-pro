@@ -240,6 +240,20 @@ ipcMain.handle('home:call', async (_e, input) => {
   return { ok: true };
 });
 
+ipcMain.handle('security:status', () => {
+  const settings = readSettings();
+  return {
+    secureStorage: safeStorage.isEncryptionAvailable(),
+    contextIsolation: true,
+    nodeIntegration: false,
+    rendererSandbox: true,
+    browserPermissions: 'denied',
+    allowedDesktopApps: Object.keys(APPS),
+    allowedTaskActions: ['open-app', 'open-url', 'youtube-search'],
+    homeAssistantConfigured: !!(settings.homeAssistantUrl && settings.homeAssistantToken),
+    encryptedBackups: backupManager.list().length
+  };
+});
 ipcMain.handle('settings:status', () => {
   const s = readSettings();
   return { gemini: !!s.geminiKey, groq: !!s.groqKey, provider: ['gemini','groq','auto'].includes(s.provider) ? s.provider : 'auto', secureStorage: safeStorage.isEncryptionAvailable() };
