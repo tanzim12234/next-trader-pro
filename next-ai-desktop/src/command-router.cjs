@@ -10,17 +10,17 @@ function classifyVoiceCommand(value) {
     .replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i, '').trim();
   if (!text || text.length > 2000) return null;
 
-  const temperature = text.match(/^(?:set|change)\\s+(.+?)\\s+to\\s+(\\d+(?:\\.\\d+)?)\\s*(?:degrees?|°c)?$/i);
+  const temperature = text.match(/^(?:set|change)\s+(.+?)\s+to\s+(\d+(?:\.\d+)?)\s*(?:degrees?|°c)?$/i);
   if (temperature) return { intent: 'home-control', deviceQuery: temperature[1].trim(), service: 'set_temperature', temperature: Number(temperature[2]), confidence: 0.93 };
   const homePatterns = [
-    { re: /^(?:turn on|switch on|enable)\\s+(.+)$/i, service: 'turn_on' },
-    { re: /^(?:turn off|switch off|disable)\\s+(.+)$/i, service: 'turn_off' },
-    { re: /^lock\\s+(.+)$/i, service: 'lock' },
-    { re: /^unlock\\s+(.+)$/i, service: 'unlock' },
-    { re: /^(.+?)\\s+(?:জ্বালাও|চালু করো)$/i, service: 'turn_on' },
-    { re: /^(.+?)\\s+বন্ধ করো$/i, service: 'turn_off' },
-    { re: /^(.+?)\\s+লক করো$/i, service: 'lock' },
-    { re: /^(.+?)\\s+আনলক করো$/i, service: 'unlock' }
+    { re: /^(?:turn on|switch on|enable)\s+(.+)$/i, service: 'turn_on' },
+    { re: /^(?:turn off|switch off|disable)\s+(.+)$/i, service: 'turn_off' },
+    { re: /^lock\s+(.+)$/i, service: 'lock' },
+    { re: /^unlock\s+(.+)$/i, service: 'unlock' },
+    { re: /^(.+?)\s+(?:জ্বালাও|চালু করো)$/i, service: 'turn_on' },
+    { re: /^(.+?)\s+বন্ধ করো$/i, service: 'turn_off' },
+    { re: /^(.+?)\s+লক করো$/i, service: 'lock' },
+    { re: /^(.+?)\s+আনলক করো$/i, service: 'unlock' }
   ];
   for (const item of homePatterns) {
     const match = text.match(item.re);
