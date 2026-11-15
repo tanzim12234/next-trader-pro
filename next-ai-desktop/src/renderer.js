@@ -367,3 +367,20 @@ async function refreshSecurityStatus(){
  }catch(e){$('securityState').textContent='Security status unavailable: '+e.message;}
 }
 refreshSecurityStatus();
+
+
+$('runBatchResearch').onclick=async()=>{
+ const queries=$('batchQueries').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ const button=$('runBatchResearch');button.disabled=true;$('batchResearchResults').textContent='Running up to three research tasks in parallel…';
+ try{
+  const results=await window.nextAI.batchResearch(queries);
+  const box=$('batchResearchResults');box.textContent='';
+  for(const result of results){
+   const card=document.createElement('div');card.className='memory-item';card.style.display='block';
+   const heading=document.createElement('strong');heading.textContent='Research: '+result.query;const answer=document.createElement('p');answer.textContent=result.answer;card.append(heading,answer);
+   for(const source of result.sources){const link=document.createElement('a');link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent=source.title;link.style.display='block';link.style.color='#75eaff';card.append(link);}
+   box.append(card);
+  }
+ }catch(e){$('batchResearchResults').textContent='Parallel research failed: '+e.message;}
+ finally{button.disabled=false;}
+};
