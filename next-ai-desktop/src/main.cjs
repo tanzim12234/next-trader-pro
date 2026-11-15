@@ -33,6 +33,30 @@ function createWindow() {
 app.whenReady().then(createWindow);
 app.on('window-all-closed', () => { globalShortcut.unregisterAll(); if (process.platform !== 'darwin') app.quit(); });
 
+ipcMain.handle('files:open-text', async () => {
+  const result = await require('electron').dialog.showOpenDialog(win, {
+    title: 'Open a text file',
+    properties: ['openFile'],
+    filters: [{ name: 'Text and data files', extensions: ['txt', 'md', 'json', 'csv'] }]
+  });
+  if (result.canceled || !result.filePaths[0]) return { cancelled: true };
+  const filePath = result.filePaths[0];
+  const stat = fs.statSync(filePath);
+  if (!stat.isFile() || stat.size > 1024 * 1024) throw new Error('Only text files up to 1 MB can be opened.');
+  return { name: path.basename(filePath), content: fs.readFileSync(filePath, 'utf8') };
+});
+ipcMain.handle('files:save-text', async (_e, input) => {
+  if (!input || typeof input.content !== 'string' || input.content.length > 1024 * 1024) throw new Error('Text must be under 1 MB.');
+  const result = await require('electron').dialog.showSaveDialog(win, {
+    title: 'Save text file',
+    defaultPath: String(input.name || 'NEXT-note.txt').replace(/[^a-zA-Z0-9._-]/g, '_'),
+    filters: [{ name: 'Text files', extensions: ['txt', 'md', 'json', 'csv'] }]
+  });
+  if (result.canceled || !result.filePath) return { cancelled: true };
+  fs.writeFileSync(result.filePath, input.content, { encoding: 'utf8', flag: 'w' });
+  return { ok: true, name: path.basename(result.filePath) };
+});
+
 ipcMain.handle('settings:status', () => {
   const s = readSettings();
   return { gemini: !!s.geminiKey, groq: !!s.groqKey, secureStorage: safeStorage.isEncryptionAvailable() };
