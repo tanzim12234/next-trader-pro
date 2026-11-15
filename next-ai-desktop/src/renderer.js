@@ -1,11 +1,22 @@
 const $=id=>document.getElementById(id);
 let recognition=null, listening=false, awaitingCommand=false;
-async function refresh(){const s=await window.nextAI.status();$('state').textContent='Secure storage: '+(s.secureStorage?'ON':'UNAVAILABLE')+' · Gemini: '+(s.gemini?'SET':'NOT SET')+' · Groq: '+(s.groq?'SET':'NOT SET');}
+const stage=$('jarvisStage');
+function setCoreState(state, activity){
+ if(!stage)return;
+ stage.classList.remove('listening','thinking','speaking');
+ if(state)stage.classList.add(state);
+ const labels={listening:'VOICE LISTENING',thinking:'PROCESSING REQUEST',speaking:'VOICE RESPONSE'};
+ const voice=$('hudVoice'),act=$('hudActivity');
+ if(voice)voice.textContent=labels[state]||'VOICE STANDBY';
+ if(act&&activity)act.textContent=activity.toUpperCase().slice(0,30);
+}
+
+async function refresh(){const s=await window.nextAI.status();$('state').textContent='Secure storage: '+(s.secureStorage?'ON':'UNAVAILABLE')+' · Gemini: '+(s.gemini?'SET':'NOT SET')+' · Groq: '+(s.groq?'SET':'NOT SET');if($('hudSystem'))$('hudSystem').textContent=s.secureStorage?'SECURE CORE ONLINE':'SECURE STORAGE OFF';if($('hudEngine'))$('hudEngine').textContent=s.gemini?'GEMINI ENGINE READY':s.groq?'GROQ ENGINE READY':'API KEY REQUIRED';}
 $('save').onclick=async()=>{try{await window.nextAI.saveKeys({geminiKey:$('gemini').value,groqKey:$('groq').value});$('gemini').value='';$('groq').value='';$('saveState').textContent='Saved securely.';await refresh();}catch(e){$('saveState').textContent=e.message;}};
-$('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';try{$('chat').textContent=await window.nextAI.chat(q);}catch(e){$('chat').textContent='Error: '+e.message;}};
+$('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{$('chat').textContent=await window.nextAI.chat(q);setCoreState('speaking','Response ready');speak($('chat').textContent);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
 $('yt').onclick=()=>window.nextAI.runAction({type:'youtube-open'});
 $('play').onclick=()=>window.nextAI.runAction({type:'media',command:'playpause'});
-function speak(text){if(!('speechSynthesis'in window))return;const u=new SpeechSynthesisUtterance(text);u.lang='en-US';speechSynthesis.speak(u);}
+function speak(text){if(!('speechSynthesis'in window))return;const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>setCoreState('', 'Awaiting input');speechSynthesis.speak(u);}
 async function runVoiceCommand(raw){
  let text=raw.trim().toLowerCase();
  if(text.startsWith('hey next')) text=text.slice(8).trim();
@@ -24,7 +35,7 @@ function startVoice(){
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  if(!SR){$('voiceState').textContent='Speech recognition is not available in this Electron build. Use the chat box.';return;}
  recognition=new SR();recognition.lang='en-US';recognition.continuous=true;recognition.interimResults=false;
- recognition.onstart=()=>{$('voiceState').textContent='Listening for “Hey NEXT”…';};
+ recognition.onstart=()=>{$('voiceState').textContent='Listening for “Hey NEXT”…';setCoreState('listening','Wake word detection active');};
  recognition.onresult=async ev=>{
   const result=ev.results[ev.results.length-1];if(!result.isFinal)return;
   const phrase=result[0].transcript.trim();$('voiceState').textContent='Heard: '+phrase;
@@ -32,7 +43,7 @@ function startVoice(){
   if(awaitingCommand){await runVoiceCommand(phrase);return;}
  };
  recognition.onerror=ev=>{$('voiceState').textContent='Voice error: '+ev.error;};
- recognition.onend=()=>{if(listening){try{recognition.start();}catch{}}else $('voiceState').textContent='Voice stopped';};
+ recognition.onend=()=>{if(listening){try{recognition.start();}catch{}}else {$('voiceState').textContent='Voice stopped';setCoreState('', 'Voice standby');}};
  listening=true;recognition.start();$('voice').textContent='Stop voice listening';
 }
 function stopVoice(){listening=false;if(recognition)recognition.stop();$('voice').textContent='Start voice listening';}
@@ -43,7 +54,7 @@ async function refreshMemories(){
  try{
   const items=await window.nextAI.listMemories();
   $('memoryList').innerHTML='';
-  if(!items.length){$('memoryList').textContent='No saved memories yet.';return;}
+  if($('hudMemory'))$('hudMemory').textContent=items.length+' MEMORY RECORDS';if(!items.length){$('memoryList').textContent='No saved memories yet.';return;}
   for(const item of items){
    const row=document.createElement('div');row.className='memory-item';
    const text=document.createElement('span');text.textContent=item.text;
