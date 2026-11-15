@@ -79,6 +79,21 @@ function stopVoice(){listening=false;if(recognition)recognition.stop();$('voice'
 $('voice').onclick=()=>listening?stopVoice():startVoice();
 refresh();
 
+async function refreshSystemStats(){
+ try{
+  const s=await window.nextAI.getSystemStats();
+  $('systemCpu').textContent=s.cpuPercent===null?'Sampling…':s.cpuPercent+'%';
+  const used=(s.totalMemoryBytes-s.freeMemoryBytes)/1073741824;
+  const total=s.totalMemoryBytes/1073741824;
+  $('systemMemory').textContent=s.memoryPercent+'% · '+used.toFixed(1)+' / '+total.toFixed(1)+' GB';
+  const hours=Math.floor(s.uptimeSeconds/3600),minutes=Math.floor((s.uptimeSeconds%3600)/60);
+  $('systemUptime').textContent=hours+'h '+minutes+'m';
+  $('systemState').textContent=s.platform+' · '+s.arch+' · '+s.cpuCores+' CPU cores · Updated '+new Date().toLocaleTimeString();
+ }catch(e){$('systemState').textContent='Monitoring unavailable: '+e.message;}
+}
+refreshSystemStats();
+setInterval(refreshSystemStats,5000);
+
 async function refreshMemories(query=''){
  try{
   const [items,allItems]=await Promise.all([window.nextAI.listMemories(query),window.nextAI.listMemories()]);
