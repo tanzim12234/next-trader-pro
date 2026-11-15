@@ -27,7 +27,7 @@ function validateServiceCall(input) {
   const { entityId, service, domain } = input;
   if (!Object.hasOwn(ALLOWED_SERVICES, domain) || !ALLOWED_SERVICES[domain].includes(service))
     throw new Error('This device service is not allowed.');
-  if (typeof entityId !== 'string' || !new RegExp('^' + domain + '\\.[a-z0-9_]+.test(entityId))
+  if (typeof entityId !== 'string' || !new RegExp('^' + domain + '\\.[a-z0-9_]+$').test(entityId))
     throw new Error('Invalid device entity ID.');
   const data = { entity_id: entityId };
   if (service === 'set_temperature') {
