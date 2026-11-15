@@ -26,6 +26,8 @@ contextBridge.exposeInMainWorld('nextAI', Object.freeze({
   saveTextFile: input => ipcRenderer.invoke('files:save-text', input),
   chooseFolder: () => ipcRenderer.invoke('files:choose-folder'),
   listFolder: () => ipcRenderer.invoke('files:list-folder'),
+  enterFolder: name => ipcRenderer.invoke('files:enter-folder', { name }),
+  goParentFolder: () => ipcRenderer.invoke('files:go-parent'),
   createFolder: name => ipcRenderer.invoke('files:create-folder', { name }),
   openFileItem: name => ipcRenderer.invoke('files:open-item', { name }),
   copyFileItem: name => ipcRenderer.invoke('files:copy-item', { name }),
