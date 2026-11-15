@@ -5,9 +5,10 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { createTaskStore } = require('../src/task-store.cjs');
+const safeStorage = { isEncryptionAvailable: () => true, encryptString: value => Buffer.from(value).toString('base64'), decryptString: value => Buffer.from(value.toString(), 'base64').toString() };
 test('task history persists newest-first and limits to 50 entries', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'next-task-'));
-  const store = createTaskStore(path.join(dir, 'history.json'));
+  const store = createTaskStore(path.join(dir, 'history.enc'), safeStorage);
   for (let i = 0; i < 55; i++) store.add({ id: String(i), goal: 'Task ' + i, status: 'completed', completed: 1, total: 1 });
   const items = store.list();
   assert.equal(items.length, 50);
