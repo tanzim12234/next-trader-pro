@@ -100,6 +100,56 @@ ipcMain.handle('settings:save', (_e, input) => {
   writeSettings(next);
   return { ok: true };
 });
+ipcMain.handle('ai:learning-suggestions', async (_e, input) => {
+  if (!input || typeof input.question !== 'string' || typeof input.answer !== 'string' ||
+      input.question.length > 8000 || input.answer.length > 12000) {
+    throw new Error('Invalid conversation for learning review.');
+  }
+  const s = readSettings();
+  const prompt = [
+    'Review this conversation and suggest at most 5 stable, useful facts or preferences that the user may want NEXT AI to remember.',
+    'Return ONLY a JSON array of objects with keys text and category. Categories: preference, project, goal, workflow, general.',
+    'Do not suggest temporary details, guesses, instructions, secrets, API keys, passwords, financial account credentials, or sensitive personal data.',
+    'Never save anything. These are suggestions for the user to review and approve manually.',
+    'If there is nothing worth remembering, return [].',
+    'Conversation:',
+    'User: ' + input.question,
+    'Assistant: ' + input.answer
+  ].join('\\n');
+  let raw = '';
+  if (s.geminiKey) {
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(s.geminiKey), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: 'application/json' } })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error?.message || 'Learning review failed.');
+    raw = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '[]';
+  } else if (s.groqKey) {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST', headers: { 'Authorization': 'Bearer ' + s.groqKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [
+        { role: 'system', content: 'Return only a valid JSON array. Never include secrets or sensitive personal data.' },
+        { role: 'user', content: prompt }
+      ], response_format: { type: 'json_object' } })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error?.message || 'Learning review failed.');
+    raw = data.choices?.[0]?.message?.content || '[]';
+  } else {
+    throw new Error('Learning review-এর জন্য Gemini অথবা Groq API key প্রয়োজন।');
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) parsed = parsed.suggestions || [];
+  } catch {
+    const match = raw.match(/\\[[\\s\\S]*\\]/);
+    try { parsed = match ? JSON.parse(match[0]) : []; } catch { parsed = []; }
+  }
+  return parsed.filter(item => item && typeof item.text === 'string' && item.text.trim() && item.text.length <= 1000)
+    .slice(0, 5).map(item => ({ text: item.text.trim(), category: ['preference','project','goal','workflow','general'].includes(item.category) ? item.category : 'general' }));
+});
 ipcMain.handle('ai:chat', async (_e, message) => {
   if (typeof message !== 'string' || !message.trim() || message.length > 8000) throw new Error('Message must be 1–8000 characters.');
   const s = readSettings();
