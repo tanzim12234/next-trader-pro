@@ -67,6 +67,17 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <div class="row"><button id="remember">Remember this</button><button id="refreshMemory">Refresh memories</button><button id="clearMemory">Clear all</button></div>
 <div id="memoryState" class="hint"></div><div id="memoryList" class="memory-list">No saved memories.</div></section>
 <section class="panel"><h2>File workspace</h2><p class="hint">তুমি নিজে ফাইল নির্বাচন করবে। শুধু TXT, MD, JSON ও CSV ফাইল (সর্বোচ্চ 1 MB) খোলা বা Save করা যাবে।</p><div class="row"><button id="openTextFile">Open text file</button><button id="saveTextFile">Save a copy</button><span id="fileState" class="hint">No file selected</span></div><input id="fileName" maxlength="120" value="NEXT-note.txt" aria-label="File name"><textarea id="fileContent" rows="8" maxlength="1000000" placeholder="Selected file content will appear here…"></textarea></section>
+
+<section class="panel"><h2>Web Research · Google Search Grounding</h2>
+<p class="hint">Gemini Google Search দিয়ে তথ্য খুঁজে সংক্ষিপ্ত রিপোর্ট ও উৎসের লিংক দেখাবে। ওয়েবের লেখা নির্দেশ নয়—তথ্য হিসেবে বিবেচিত হবে।</p>
+<textarea id="researchQuery" rows="2" maxlength="1200" placeholder="কী বিষয়ে গবেষণা করবে? যেমন: ২০২৬ সালের AI প্রযুক্তির নতুন অগ্রগতি"></textarea>
+<button id="runResearch">Research the web</button> <span id="researchState" class="hint">Gemini API key প্রয়োজন।</span>
+<div id="researchAnswer" class="chat" aria-live="polite"></div><div id="researchSources" class="memory-list"></div></section>
+<section class="panel"><h2>Autonomous Task Execution · Approval Required</h2>
+<p class="hint">NEXT কাজের পরিকল্পনা প্রস্তাব করবে। তুমি Execute চাপার পরই অনুমোদিত ধাপগুলো চলবে। Website খোলার আগে আলাদা confirmation আসবে। Shell command, file deletion, install বা account action অনুমোদিত নয়।</p>
+<textarea id="taskGoal" rows="2" maxlength="1500" placeholder="কী কাজ করাতে চাও? যেমন: Notepad খোলো এবং YouTube-এ AI tutorial খুঁজে দাও"></textarea>
+<div class="row"><button id="planTask">Create task plan</button><button id="executeTask" disabled>Approve & execute plan</button></div>
+<div id="taskState" class="hint">No task plan yet.</div><div id="taskPlanList" class="memory-list"></div></section>
 <section class="panel"><h2>Chat with NEXT</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button> <button id="saveConversation" disabled>Save conversation to Personal Brain</button><span id="conversationState" class="hint">Chat is not stored unless you choose Save.</span></section>
 <section class="panel"><h2>Learning Review · User-approved knowledge</h2>
 <p class="hint">সাম্প্রতিক কথোপকথন থেকে AI সম্ভাব্য স্থায়ী তথ্য প্রস্তাব করবে। প্রতিটি তথ্য তুমি নিজে Save না করলে Personal Brain-এ যোগ হবে না।</p>
