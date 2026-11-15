@@ -134,11 +134,16 @@ ipcMain.handle('browser:open', async (_e, value) => {
   const url = normalizeBrowserUrl(value);
   if (!browserWin || browserWin.isDestroyed()) {
     browserWin = new BrowserWindow({ width: 1180, height: 820, title: 'NEXT AI Secure Browser', webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true } });
+    browserWin.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+    browserWin.webContents.session.setPermissionCheckHandler(() => false);
     browserWin.webContents.setWindowOpenHandler(({ url: target }) => {
       try { const safe = normalizeBrowserUrl(target); require('electron').dialog.showMessageBox(browserWin, { type: 'question', buttons: ['Open in browser', 'Cancel'], defaultId: 1, cancelId: 1, message: 'নতুন website খুলবে?', detail: safe }).then(result => { if (result.response === 0) shell.openExternal(safe); }); } catch {}
       return { action: 'deny' };
     });
     browserWin.webContents.on('will-navigate', (event, target) => {
+      try { normalizeBrowserUrl(target); } catch { event.preventDefault(); }
+    });
+    browserWin.webContents.on('will-redirect', (event, target) => {
       try { normalizeBrowserUrl(target); } catch { event.preventDefault(); }
     });
     browserWin.on('closed', () => { browserWin = null; });
