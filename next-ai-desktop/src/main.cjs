@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, safeStorage, shell, globalShortcut, clipboard } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
-const { execFile } = require('node:child_process');
+const { execFile, spawn } = require('node:child_process');
 const { createPersonalBrain } = require('./brain.cjs');
 const brain = createPersonalBrain({ app, safeStorage });
 
@@ -75,6 +75,20 @@ ipcMain.handle('ai:chat', async (_e, message) => {
 });
 ipcMain.handle('action:run', async (_e, action) => {
   if (!action || typeof action.type !== 'string') throw new Error('Invalid action.');
+  if (action.type === 'open-app') {
+    if (process.platform !== 'win32') throw new Error('App launcher is available on Windows only.');
+    const allowedApps = {
+      notepad: { command: 'notepad.exe', args: [] },
+      calculator: { command: 'calc.exe', args: [] },
+      'file-explorer': { command: 'explorer.exe', args: [] }
+    };
+    const target = allowedApps[action.app];
+    if (!target) throw new Error('এই অ্যাপটি allowlist-এ নেই।');
+    const child = spawn(target.command, target.args, { detached: true, stdio: 'ignore', windowsHide: false });
+    child.on('error', err => console.error('Allowed app launch failed:', err.message));
+    child.unref();
+    return { ok: true, app: action.app };
+  }
   if (action.type === 'youtube-open') return shell.openExternal('https://www.youtube.com');
   if (action.type === 'youtube-search') {
     const q = String(action.query || '').trim().slice(0, 200);
