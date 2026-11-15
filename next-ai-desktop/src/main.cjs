@@ -9,8 +9,10 @@ const { createTaskStore } = require('./task-store.cjs');
 const { classifyVoiceCommand } = require('./command-router.cjs');
 const { createHomeAssistantClient, validateServiceCall } = require('./home-assistant.cjs');
 const { analyzeData } = require('./data-analysis.cjs');
+const { createBackupManager } = require('./backup-manager.cjs');
 const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.enc'), safeStorage);
 const brain = createPersonalBrain({ app, safeStorage });
+const backupManager = createBackupManager(app.getPath('userData'));
 
 let win;
 let browserWin = null;
@@ -164,6 +166,19 @@ ipcMain.handle('browser:navigate', async (_e, direction) => {
   else if (direction === 'forward' && browserWin.webContents.canGoForward()) browserWin.webContents.goForward();
   else if (direction === 'reload') browserWin.webContents.reload();
   return { ok: true };
+});
+
+ipcMain.handle('backup:create', () => backupManager.create());
+ipcMain.handle('backup:list', () => backupManager.list());
+ipcMain.handle('backup:restore', async (_e, id) => {
+  const choice = await require('electron').dialog.showMessageBox(win, {
+    type: 'warning', buttons: ['Restore backup', 'Cancel'], defaultId: 1, cancelId: 1,
+    message: 'এই backup restore করলে বর্তমান Personal Brain, settings ও task history প্রতিস্থাপিত হতে পারে।',
+    detail: 'NEXT AI restore-এর আগে বর্তমান encrypted data-র একটি rollback backup তৈরি করবে।'
+  });
+  if (choice.response !== 0) return { cancelled: true };
+  try { backupManager.create(); } catch {}
+  return backupManager.restore(id);
 });
 
 ipcMain.handle('data:analyze', (_e, input) => analyzeData(input?.content, input?.format || 'auto'));
