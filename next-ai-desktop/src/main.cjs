@@ -7,6 +7,7 @@ const { createPersonalBrain } = require('./brain.cjs');
 const { APPS, normalizeTaskPlan, validateTaskStep } = require('./task-engine.cjs');
 const { createTaskStore } = require('./task-store.cjs');
 const { classifyVoiceCommand } = require('./command-router.cjs');
+const { createHomeAssistantClient, validateServiceCall } = require('./home-assistant.cjs');
 const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.enc'), safeStorage);
 const brain = createPersonalBrain({ app, safeStorage });
 
@@ -189,6 +190,36 @@ ipcMain.handle('system:stats', () => {
     arch: process.arch,
     cpuCores: os.cpus().length
   };
+});
+
+function configuredHomeAssistant() {
+  const settings = readSettings();
+  if (!settings.homeAssistantUrl || !settings.homeAssistantToken) throw new Error('Home Assistant is not connected yet.');
+  return createHomeAssistantClient({ baseUrl: settings.homeAssistantUrl, token: settings.homeAssistantToken });
+}
+ipcMain.handle('home:connect', async (_e, input) => {
+  if (!input || typeof input.url !== 'string' || typeof input.token !== 'string') throw new Error('Home Assistant URL and token are required.');
+  const client = createHomeAssistantClient({ baseUrl: input.url, token: input.token });
+  await client.test();
+  const settings = readSettings();
+  settings.homeAssistantUrl = input.url.trim();
+  settings.homeAssistantToken = input.token.trim();
+  writeSettings(settings);
+  return { ok: true };
+});
+ipcMain.handle('home:entities', async () => configuredHomeAssistant().listEntities());
+ipcMain.handle('home:call', async (_e, input) => {
+  const action = validateServiceCall(input);
+  const labels = { turn_on: 'turn on', turn_off: 'turn off', toggle: 'toggle', set_temperature: 'set temperature', media_play_pause: 'toggle media playback', volume_set: 'change media volume', lock: 'lock', unlock: 'unlock' };
+  const choice = await require('electron').dialog.showMessageBox(win, {
+    type: action.domain === 'lock' ? 'warning' : 'question',
+    buttons: ['Allow action', 'Cancel'], defaultId: 1, cancelId: 1,
+    message: 'Allow NEXT AI to ' + labels[action.service] + '?',
+    detail: input.entityId + (action.data.temperature ? ' · ' + action.data.temperature + '°C' : '')
+  });
+  if (choice.response !== 0) return { cancelled: true };
+  await configuredHomeAssistant().call(input);
+  return { ok: true };
 });
 
 ipcMain.handle('settings:status', () => {
