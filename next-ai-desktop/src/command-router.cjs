@@ -1,0 +1,49 @@
+'use strict';
+
+function normalizeVoiceText(value) {
+  return String(value || '').normalize('NFKC').trim().toLocaleLowerCase('en-US')
+    .replace(/[।!?！？]+$/g, '').replace(/\\s+/g, ' ');
+}
+
+function classifyVoiceCommand(value) {
+  const text = normalizeVoiceText(value)
+    .replace(/^(hey\\s+next|হেই\\s+নেক্সট|হে\\s+নেক্সট)\\s*[,،]?\\s*/i, '').trim();
+  if (!text || text.length > 2000) return null;
+
+  const appPatterns = [
+    { re: /^(?:open|launch|start)\\s+(?:notepad|নোটপ্যাড)(?:\\s*(?:please|খোলো|চালু করো))?$/i, app: 'notepad' },
+    { re: /^(?:open|launch|start)\\s+(?:calculator|ক্যালকুলেটর)(?:\\s*(?:please|খোলো|চালু করো))?$/i, app: 'calculator' },
+    { re: /^(?:open|launch|start)\\s+(?:file explorer|explorer|ফাইল এক্সপ্লোরার|ফাইল ম্যানেজার)(?:\\s*(?:please|খোলো|চালু করো))?$/i, app: 'file-explorer' },
+    { re: /^(?:(?:নোটপ্যাড|ক্যালকুলেটর|ফাইল এক্সপ্লোরার|ফাইল ম্যানেজার)\\s*(?:খুলে দাও|খোলো|চালু করো))$/i, app: null }
+  ];
+  for (const item of appPatterns) {
+    if (!item.re.test(text)) continue;
+    const app = item.app || (text.includes('নোটপ্যাড') ? 'notepad' : text.includes('ক্যালকুলেটর') ? 'calculator' : 'file-explorer');
+    return { intent: 'open-app', app, confidence: 0.99 };
+  }
+
+  if (/^(?:open|launch|start)\\s+youtube$|^ইউটিউব\\s*(?:খোলো|খুলে দাও|চালু করো|ওপেন করো)$/i.test(text))
+    return { intent: 'youtube-open', confidence: 0.99 };
+
+  const yt = text.match(/^(?:search|find)\\s+(?:on\\s+)?youtube\\s+(.+)$/i)
+    || text.match(/^ইউটিউবে\\s+(.+?)\\s*(?:খোঁজো|সার্চ করো|সার্চ দাও)$/i);
+  if (yt?.[1]) return { intent: 'youtube-search', query: yt[1].trim().slice(0, 200), confidence: 0.96 };
+
+  const web = text.match(/^(?:search|google|find)\\s+(?:the\\s+web\\s+for\\s+)?(.+)$/i)
+    || text.match(/^গুগলে\\s+(.+?)\\s*(?:খোঁজো|সার্চ করো|সার্চ দাও)$/i)
+    || text.match(/^ওয়েবে\\s+(.+?)\\s*(?:খোঁজো|সার্চ করো|সার্চ দাও)$/i);
+  if (web?.[1]) return { intent: 'web-search', query: web[1].trim().slice(0, 500), confidence: 0.94 };
+
+  if (/^(?:play|pause|toggle music|play music|pause music|গান চালাও|গান বন্ধ করো|মিউজিক চালাও|মিউজিক বন্ধ করো|প্লে|পজ)$/i.test(text))
+    return { intent: 'media-toggle', confidence: 0.98 };
+
+  const ask = text.match(/^(?:ask|tell me|explain|জিজ্ঞেস করো|প্রশ্ন করো|আমাকে বলো)\\s+(.+)$/i);
+  if (ask?.[1]) return { intent: 'ask-ai', prompt: ask[1].trim().slice(0, 1500), confidence: 0.9 };
+
+  const write = text.match(/^(?:write|type|লিখে দাও|লিখো|টাইপ করো)\\s+(.+)$/i);
+  if (write?.[1]) return { intent: 'type-text', text: write[1].trim().slice(0, 1000), confidence: 0.92 };
+
+  return null;
+}
+
+module.exports = { normalizeVoiceText, classifyVoiceCommand };
