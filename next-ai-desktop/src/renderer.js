@@ -14,6 +14,57 @@ function setCoreState(state, activity){
 async function refresh(){const s=await window.nextAI.status();$('state').textContent='Secure storage: '+(s.secureStorage?'ON':'UNAVAILABLE')+' · Gemini: '+(s.gemini?'SET':'NOT SET')+' · Groq: '+(s.groq?'SET':'NOT SET');if($('aiProvider'))$('aiProvider').value=s.provider||'auto';if($('hudSystem'))$('hudSystem').textContent=s.secureStorage?'SECURE CORE ONLINE':'SECURE STORAGE OFF';if($('hudEngine'))$('hudEngine').textContent=s.provider==='groq'&&s.groq?'GROQ ENGINE READY':s.gemini?'GEMINI ENGINE READY':s.groq?'GROQ ENGINE READY':'API KEY REQUIRED';}
 $('save').onclick=async()=>{try{await window.nextAI.saveKeys({geminiKey:$('gemini').value,groqKey:$('groq').value,provider:$('aiProvider').value});$('gemini').value='';$('groq').value='';$('saveState').textContent='Saved securely.';await refresh();}catch(e){$('saveState').textContent=e.message;}};
 $('testConnection').onclick=async()=>{const b=$('testConnection');b.disabled=true;$('saveState').textContent='Testing API connection…';try{const r=await window.nextAI.testConnection();$('saveState').textContent=r.provider+' connection successful · '+r.model;}catch(e){$('saveState').textContent='Connection failed: '+e.message;}finally{b.disabled=false;}};
+
+let pendingTaskPlan=null;
+$('runResearch').onclick=async()=>{
+ const query=$('researchQuery').value.trim();if(!query)return;
+ const button=$('runResearch');button.disabled=true;$('researchState').textContent='Searching the web and checking sources…';$('researchAnswer').textContent='';$('researchSources').textContent='';
+ try{
+  const result=await window.nextAI.webResearch(query);
+  $('researchAnswer').textContent=result.answer;
+  if(!result.sources.length)$('researchSources').textContent='Search response did not include source links.';
+  for(const source of result.sources){
+   const row=document.createElement('div');row.className='memory-item';
+   const link=document.createElement('a');link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent=source.title;link.style.color='#75eaff';
+   row.append(link);$('researchSources').append(row);
+  }
+  $('researchState').textContent='Research complete · '+result.sources.length+' source link(s).';
+ }catch(e){$('researchState').textContent='Research failed: '+e.message;}
+ finally{button.disabled=false;}
+};
+$('planTask').onclick=async()=>{
+ const goal=$('taskGoal').value.trim();if(!goal)return;
+ const button=$('planTask');button.disabled=true;$('executeTask').disabled=true;pendingTaskPlan=null;$('taskPlanList').textContent='';$('taskState').textContent='Creating a safe task proposal…';
+ try{
+  const plan=await window.nextAI.planTask(goal);pendingTaskPlan=plan;
+  for(const step of plan.steps){
+   const row=document.createElement('div');row.className='memory-item';
+   const label=document.createElement('span');label.textContent=step.id+'. '+step.title+' · '+step.action.type;
+   row.append(label);$('taskPlanList').append(row);
+  }
+  $('taskState').textContent=plan.steps.length+' safe step(s) proposed. Review them before approval.';
+  $('executeTask').disabled=!plan.steps.length;
+ }catch(e){$('taskState').textContent='Planning failed: '+e.message;}
+ finally{button.disabled=false;}
+};
+$('executeTask').onclick=async()=>{
+ if(!pendingTaskPlan||!pendingTaskPlan.steps.length)return;
+ const approved=window.confirm('এই '+pendingTaskPlan.steps.length+'টি task step চালানোর অনুমতি দিচ্ছ? প্রতিটি website খোলার আগে আলাদা confirmation আসবে।');
+ if(!approved)return;
+ const button=$('executeTask');button.disabled=true;$('planTask').disabled=true;
+ let completed=0;
+ try{
+  for(const step of pendingTaskPlan.steps){
+   $('taskState').textContent='Executing '+step.id+'/'+pendingTaskPlan.steps.length+': '+step.title;
+   const result=await window.nextAI.executeTaskStep(step.action);
+   if(result.cancelled){$('taskState').textContent='Cancelled at step '+step.id+'. '+completed+' step(s) completed.';return;}
+   completed++;
+  }
+  $('taskState').textContent='Task finished. '+completed+' approved step(s) completed.';
+ }catch(e){$('taskState').textContent='Stopped after '+completed+' step(s): '+e.message;}
+ finally{button.disabled=false;$('planTask').disabled=false;}
+};
+
 $('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{const answer=await window.nextAI.chat(q);$('chat').textContent=answer;lastExchange={question:q,answer};$('saveConversation').disabled=false;$('reviewLearning').disabled=false;$('conversationState').textContent='Conversation ready. Save only if you want NEXT to remember it.';setCoreState('speaking','Response ready');speak(answer);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
 $('openTextFile').onclick=async()=>{try{const file=await window.nextAI.openTextFile();if(file.cancelled)return;$('fileName').value=file.name;$('fileContent').value=file.content;$('fileState').textContent='Opened: '+file.name;}catch(e){$('fileState').textContent='Open failed: '+e.message;}};
 $('saveTextFile').onclick=async()=>{try{const result=await window.nextAI.saveTextFile({name:$('fileName').value,content:$('fileContent').value});if(!result.cancelled)$('fileState').textContent='Saved: '+result.name;}catch(e){$('fileState').textContent='Save failed: '+e.message;}};
