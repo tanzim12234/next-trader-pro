@@ -238,11 +238,11 @@ $('remember').onclick=async()=>{
  catch(e){$('memoryState').textContent=e.message;}
 };
 $('importLearningFile').onclick=async()=>{
- const button=$('importLearningFile');button.disabled=true;$('documentImportState').textContent='Extracting document text locally…';
+ const button=$('importLearningFile');button.disabled=true;$('documentImportState').textContent='Extracting text / running Bengali + English OCR locally…';
  try{
   const result=await window.nextAI.extractLearningFile();if(result.cancelled)return;
   $('knowledgeText').value=result.text;
-  $('documentImportState').textContent=result.name+' · '+result.characters.toLocaleString()+' characters extracted'+(result.truncated?' · preview limited to first 50,000 characters':'')+'. Review the text, then press Teach NEXT.';
+  $('documentImportState').textContent=result.name+' · '+result.characters.toLocaleString()+' characters extracted · '+(result.note||'text extraction')+(result.truncated?' · preview limited to first 50,000 characters':'')+'. Review the text, then press Teach NEXT.';
   $('knowledgeText').focus();
  }catch(e){$('documentImportState').textContent='Import failed: '+e.message;}
  finally{button.disabled=false;}
