@@ -43,7 +43,11 @@
     "asarUnpack": [
       "node_modules/tesseract.js/**/*",
       "node_modules/tesseract.js-core/**/*",
-      "node_modules/@napi-rs/canvas/**/*"
+      "node_modules/@napi-rs/canvas/**/*",
+      "node_modules/@huggingface/transformers/**/*",
+      "node_modules/onnxruntime-node/**/*",
+      "node_modules/onnxruntime-web/**/*",
+      "node_modules/onnxruntime-common/**/*"
     ]
   },
   "dependencies": {
