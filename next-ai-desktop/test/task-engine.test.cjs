@@ -26,6 +26,12 @@ test('rejects arbitrary commands and unknown applications', () => {
   assert.throws(() => validateTaskStep({ type: 'shell', command: 'del *' }), /not supported/);
   assert.throws(() => validateTaskStep({ type: 'open-app', app: 'powershell' }), /allowlist/);
 });
+test('allows only fixed Windows desktop utilities from the shared allowlist', () => {
+  for (const app of ['task-manager', 'snipping-tool', 'paint']) {
+    assert.equal(validateTaskStep({ type: 'open-app', app }).app, app);
+  }
+  assert.throws(() => validateTaskStep({ type: 'open-app', app: 'powershell' }), /allowlist/);
+});
 test('limits task plans to six validated steps', () => {
   const steps = Array.from({ length: 8 }, (_, i) => ({ title: 'Open app ' + i, action: { type: 'open-app', app: 'notepad' } }));
   assert.equal(normalizeTaskPlan({ steps }).steps.length, 6);
