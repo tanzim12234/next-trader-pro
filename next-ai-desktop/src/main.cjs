@@ -14,11 +14,15 @@ const { createSystemMonitor } = require('./system-monitor.cjs');
 const { createSkillManager } = require('./skill-manager.cjs');
 const { validateCode } = require('./code-lab.cjs');
 const { createPatchProposal, applyPatchProposal, rollbackPatchProposal } = require('./patch-manager.cjs');
+const { createSelfHealing } = require('./self-healing.cjs');
 const systemMonitor = createSystemMonitor();
 const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.enc'), safeStorage);
 const brain = createPersonalBrain({ app, safeStorage });
 const backupManager = createBackupManager(app.getPath('userData'));
 const skillManager = createSkillManager({ app });
+const selfHealing = createSelfHealing({ userDataPath: app.getPath('userData') });
+let rendererRecoveryCount = 0;
+let lastRendererRecovery = 0;
 
 let win;
 let browserWin = null;
@@ -48,9 +52,41 @@ function createWindow() {
       contextIsolation: true, nodeIntegration: false, sandbox: true
     }
   });
+  win.webContents.on('render-process-gone', (_event, details) => {
+    selfHealing.recordError({ source: 'renderer-process', message: 'Renderer process stopped: ' + (details?.reason || 'unknown'), code: details?.exitCode || '', stack: JSON.stringify(details || {}) });
+    const now = Date.now();
+    if (now - lastRendererRecovery > 5 * 60 * 1000) rendererRecoveryCount = 0;
+    lastRendererRecovery = now;
+    if (rendererRecoveryCount < 1 && !app.isQuitting) {
+      rendererRecoveryCount++;
+      setTimeout(() => {
+        if (win && !win.isDestroyed()) win.destroy();
+        if (!app.isQuitting) createWindow();
+      }, 1200);
+    } else {
+      require('electron').dialog.showErrorBox('NEXT AI recovery needed', 'NEXT AI detected repeated interface crashes. The error has been saved to its diagnostics log. Restart the app and share the self-healing report if the problem continues.');
+    }
+  });
+  win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, _validatedURL, isMainFrame) => {
+    if (isMainFrame && errorCode !== -3) selfHealing.recordError({ source: 'renderer-load', message: errorDescription, code: errorCode });
+  });
   win.loadFile(path.join(__dirname, 'index.html'));
 }
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  try { await selfHealing.runDiagnostics({ appPath: app.getAppPath(), platform: process.platform, appVersion: app.getVersion(), electronVersion: process.versions.electron, nodeVersion: process.versions.node, safeStorageAvailable: safeStorage.isEncryptionAvailable() }); }
+  catch (error) { selfHealing.recordError({ source: 'startup-diagnostics', message: error.message, stack: error.stack }); }
+  createWindow();
+});
+process.on('unhandledRejection', reason => {
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  selfHealing.recordError({ source: 'main-unhandled-rejection', message: error.message, stack: error.stack });
+});
+ipcMain.handle('self-heal:status', () => selfHealing.getStatus());
+ipcMain.handle('self-heal:diagnostics', async () => selfHealing.runDiagnostics({ appPath: app.getAppPath(), platform: process.platform, appVersion: app.getVersion(), electronVersion: process.versions.electron, nodeVersion: process.versions.node, safeStorageAvailable: safeStorage.isEncryptionAvailable() }));
+ipcMain.handle('self-heal:report', (_e, input) => {
+  if (!input || typeof input.message !== 'string' || input.message.length > 4000) throw new Error('Invalid diagnostic report.');
+  return selfHealing.recordError({ source: 'renderer', message: input.message, code: String(input.code || '').slice(0, 120), stack: String(input.stack || '').slice(0, 12000) });
+});
 ipcMain.handle('voice:classify', (_e, phrase) => {
   if (typeof phrase !== 'string' || phrase.length > 2000) throw new Error('Voice command is too long.');
   return classifyVoiceCommand(phrase);
