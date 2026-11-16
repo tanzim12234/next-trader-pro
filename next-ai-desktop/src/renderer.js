@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);
-let recognition=null, listening=false, awaitingCommand=false, lastExchange=null;
+let recognition=null, listening=false, awaitingCommand=false, voiceProcessing=false, lastExchange=null;
 const metricsHistory=[];
 const stage=$('jarvisStage');
 function setCoreState(state, activity){
@@ -102,12 +102,14 @@ $('play').onclick=()=>window.nextAI.runAction({type:'media',command:'playpause'}
 $('openNotepad').onclick=()=>window.nextAI.runAction({type:'open-app',app:'notepad'});
 $('openCalculator').onclick=()=>window.nextAI.runAction({type:'open-app',app:'calculator'});
 $('openExplorer').onclick=()=>window.nextAI.runAction({type:'open-app',app:'file-explorer'});
-function speak(text){if(!('speechSynthesis'in window))return;const u=new SpeechSynthesisUtterance(text);u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>setCoreState('', 'Awaiting input');speechSynthesis.speak(u);}
+function speak(text){if(!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>setCoreState('', 'Awaiting input');u.onerror=()=>setCoreState('', 'Voice output unavailable');speechSynthesis.speak(u);}
 async function runVoiceCommand(raw){
  let text=raw.trim().toLowerCase();
  text=text.replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').trim();
  if(!text){awaitingCommand=true;$('voiceState').textContent='Wake word heard — say a command';speak('Yes?');return;}
  awaitingCommand=false;
+ if(voiceProcessing)return;
+ voiceProcessing=true;
  try{
   const routed=await window.nextAI.classifyVoice(raw);
   if(routed){
@@ -175,23 +177,35 @@ async function runVoiceCommand(raw){
   void autoLearnExchange(lastExchange);
   speak(answer);$('voiceState').textContent='Answered your voice request.';return;
  }catch(e){$('voiceState').textContent=e.message;speak('The action failed');}
+ finally{voiceProcessing=false;}
 }
 function startVoice(){
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  if(!SR){$('voiceState').textContent='Speech recognition is not available in this Electron build. Use the chat box.';return;}
- recognition=new SR();recognition.lang=$('voiceLanguage')?.value||'bn-BD';recognition.continuous=true;recognition.interimResults=false;
+ recognition=new SR();recognition.lang=$('voiceLanguage')?.value||'bn-BD';recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=1;
  recognition.onstart=()=>{$('voiceState').textContent='Listening for “Hey NEXT”…';setCoreState('listening','Wake word detection active');};
  recognition.onresult=async ev=>{
-  const result=ev.results[ev.results.length-1];if(!result.isFinal)return;
-  const phrase=result[0].transcript.trim();$('voiceState').textContent='Heard: '+phrase;
-  if(/(?:\bhey\s+next\b|হেই\s+নেক্সট|হে\s+নেক্সট)/i.test(phrase)){await runVoiceCommand(phrase);return;}
-  if(awaitingCommand){await runVoiceCommand(phrase);return;}
+  if(voiceProcessing)return;
+  for(let i=ev.resultIndex;i<ev.results.length;i++){
+   const result=ev.results[i],phrase=result[0].transcript.trim();
+   if(!result.isFinal){if(phrase)$('voiceState').textContent='Hearing: '+phrase;continue;}
+   if(!phrase)continue;
+   $('voiceState').textContent='Heard: '+phrase;
+   if(/(?:\bhey\s+next\b|হেই\s+নেক্সট|হে\s+নেক্সট)/i.test(phrase)){await runVoiceCommand(phrase);break;}
+   if(awaitingCommand){await runVoiceCommand(phrase);break;}
+  }
  };
- recognition.onerror=ev=>{$('voiceState').textContent='Voice error: '+ev.error;};
- recognition.onend=()=>{if(listening){try{recognition.start();}catch{}}else {$('voiceState').textContent='Voice stopped';setCoreState('', 'Voice standby');}};
- listening=true;recognition.start();$('voice').textContent='Stop voice listening';
+ recognition.onerror=ev=>{
+  const messages={ 'not-allowed':'Microphone permission denied. Allow microphone access in Windows settings.', 'service-not-allowed':'Speech recognition service is blocked in this environment.', 'audio-capture':'No working microphone was found.', 'network':'Speech recognition needs an internet connection.' };
+  $('voiceState').textContent=messages[ev.error]||('Voice error: '+ev.error);
+  if(['not-allowed','service-not-allowed','audio-capture'].includes(ev.error)){listening=false;$('voice').textContent='Start voice listening';setCoreState('', 'Voice unavailable');}
+ };
+ recognition.onend=()=>{if(listening){$('voiceState').textContent='Reconnecting voice recognition…';setTimeout(()=>{if(!listening||!recognition)return;try{recognition.start();}catch(e){$('voiceState').textContent='Voice restart failed: '+e.message;}},450);}else {$('voiceState').textContent='Voice stopped';setCoreState('', 'Voice standby');}};
+ listening=true;
+ try{recognition.start();$('voice').textContent='Stop voice listening';}
+ catch(e){listening=false;$('voice').textContent='Start voice listening';$('voiceState').textContent='Could not start microphone: '+e.message;}
 }
-function stopVoice(){listening=false;if(recognition)recognition.stop();$('voice').textContent='Start voice listening';}
+function stopVoice(){listening=false;awaitingCommand=false;if(recognition)recognition.stop();if('speechSynthesis'in window)speechSynthesis.cancel();$('voice').textContent='Start voice listening';}
 $('voice').onclick=()=>listening?stopVoice():startVoice();
 refresh();
 
