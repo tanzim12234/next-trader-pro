@@ -83,7 +83,18 @@ $('executeTask').onclick=async()=>{
  finally{button.disabled=false;$('planTask').disabled=false;}
 };
 
-$('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{const answer=await window.nextAI.chat(q);$('chat').textContent=answer;lastExchange={question:q,answer};$('saveConversation').disabled=false;$('reviewLearning').disabled=false;$('conversationState').textContent='Conversation ready. Save only if you want NEXT to remember it.';setCoreState('speaking','Response ready');speak(answer);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
+async function autoLearnExchange(exchange){
+ try{
+  const result=await window.nextAI.suggestLearning(exchange);
+  if(result && result.saved){
+   $('learningState').textContent='NEXT নিজে '+result.saved+'টি স্থায়ী তথ্য Personal Brain-এ শিখেছে।';
+   await refreshMemories();
+  }else if(result){
+   $('learningState').textContent='এই কথোপকথনে নতুন স্থায়ী তথ্য পাওয়া যায়নি।';
+  }
+ }catch(error){$('learningState').textContent='স্বয়ংক্রিয় শেখা সাময়িকভাবে হয়নি: '+error.message;}
+}
+$('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{const answer=await window.nextAI.chat(q);$('chat').textContent=answer;lastExchange={question:q,answer};$('saveConversation').disabled=false;$('reviewLearning').disabled=false;$('conversationState').textContent='NEXT কথোপকথন থেকে স্থায়ী জ্ঞান শেখার চেষ্টা করছে…';setCoreState('speaking','Response ready');speak(answer);void autoLearnExchange(lastExchange);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
 $('openTextFile').onclick=async()=>{try{const file=await window.nextAI.openTextFile();if(file.cancelled)return;$('fileName').value=file.name;$('fileContent').value=file.content;$('fileState').textContent='Opened: '+file.name;}catch(e){$('fileState').textContent='Open failed: '+e.message;}};
 $('saveTextFile').onclick=async()=>{try{const result=await window.nextAI.saveTextFile({name:$('fileName').value,content:$('fileContent').value});if(!result.cancelled)$('fileState').textContent='Saved: '+result.name;}catch(e){$('fileState').textContent='Save failed: '+e.message;}};
 $('yt').onclick=()=>window.nextAI.runAction({type:'youtube-open'});
@@ -161,6 +172,7 @@ async function runVoiceCommand(raw){
   const answer=await window.nextAI.chat(raw);
   $('chat').textContent=answer;lastExchange={question:raw,answer};
   $('saveConversation').disabled=false;$('reviewLearning').disabled=false;
+  void autoLearnExchange(lastExchange);
   speak(answer);$('voiceState').textContent='Answered your voice request.';return;
  }catch(e){$('voiceState').textContent=e.message;speak('The action failed');}
 }
@@ -256,20 +268,8 @@ refreshMemories();
 
 $('reviewLearning').onclick=async()=>{
  if(!lastExchange)return;
- const button=$('reviewLearning');button.disabled=true;$('learningState').textContent='Reviewing conversation…';
- const list=$('learningSuggestions');list.textContent='';
- try{
-  const suggestions=await window.nextAI.suggestLearning(lastExchange);
-  if(!suggestions.length){$('learningState').textContent='এই কথোপকথন থেকে সংরক্ষণের মতো স্থায়ী তথ্য পাওয়া যায়নি।';return;}
-  $('learningState').textContent=suggestions.length+'টি প্রস্তাব পাওয়া গেছে। যেগুলো রাখতে চাও শুধু সেগুলো Save করো।';
-  for(const item of suggestions){
-   const row=document.createElement('div');row.className='memory-item';
-   const text=document.createElement('span');text.textContent=item.text;
-   const save=document.createElement('button');save.textContent='Approve & Save';
-   save.onclick=async()=>{save.disabled=true;try{await window.nextAI.remember({text:item.text,category:item.category});row.remove();$('learningState').textContent='Approved item saved securely.';await refreshMemories();}catch(e){save.disabled=false;$('learningState').textContent=e.message;}};
-   row.append(text,save);list.append(row);
-  }
- }catch(e){$('learningState').textContent='Review failed: '+e.message;}
+ const button=$('reviewLearning');button.disabled=true;
+ try{await autoLearnExchange(lastExchange);}
  finally{button.disabled=false;}
 };
 $('saveConversation').onclick=async()=>{
