@@ -242,7 +242,10 @@ $('importLearningFile').onclick=async()=>{
  try{
   const result=await window.nextAI.extractLearningFile();if(result.cancelled)return;
   $('knowledgeText').value=result.text;
-  $('documentImportState').textContent=result.name+' · '+result.characters.toLocaleString()+' characters extracted · '+(result.note||'text extraction')+(result.truncated?' · preview limited to first 50,000 characters':'')+'. Review the text, then press Teach NEXT.';
+  const learned=await window.nextAI.teachKnowledge({text:result.text,category:$('knowledgeCategory').value});
+  $('knowledgeState').textContent='Automatically learned '+learned.saved+' searchable chunk(s) from '+result.name+'.';
+  $('documentImportState').textContent=result.name+' · '+result.characters.toLocaleString()+' characters · '+(result.note||'text extraction')+(result.truncated?' · first 50,000 characters saved':'')+'. Automatically saved to encrypted Personal Brain.';
+  await refreshMemories();
   $('knowledgeText').focus();
  }catch(e){$('documentImportState').textContent='Import failed: '+e.message;}
  finally{button.disabled=false;}
