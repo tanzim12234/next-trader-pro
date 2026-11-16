@@ -96,6 +96,29 @@ function readProposal(workspace, id) {
   return { base, file, record };
 }
 
+function createLineDiff(before, after, relativePath) {
+  const oldLines = before.split('\\n');
+  const newLines = after.split('\\n');
+  let prefix = 0;
+  while (prefix < oldLines.length && prefix < newLines.length && oldLines[prefix] === newLines[prefix]) prefix++;
+  let suffix = 0;
+  while (suffix < oldLines.length - prefix && suffix < newLines.length - prefix
+    && oldLines[oldLines.length - 1 - suffix] === newLines[newLines.length - 1 - suffix]) suffix++;
+  const contextStart = Math.max(0, prefix - 3);
+  const oldEnd = Math.min(oldLines.length, oldLines.length - suffix + 3);
+  const newEnd = Math.min(newLines.length, newLines.length - suffix + 3);
+  const lines = ['--- a/' + relativePath, '+++ b/' + relativePath,
+    '@@ -' + (contextStart + 1) + ',' + (oldEnd - contextStart) + ' +' + (contextStart + 1) + ',' + (newEnd - contextStart) + ' @@'];
+  for (let i = contextStart; i < prefix; i++) lines.push(' ' + oldLines[i]);
+  const removed = oldLines.slice(prefix, oldLines.length - suffix);
+  const added = newLines.slice(prefix, newLines.length - suffix);
+  if (removed.length + added.length > 400) return lines.concat(['[large change: ' + removed.length + ' lines removed, ' + added.length + ' lines added; inspect the full draft]']).join('\\n');
+  for (const line of removed) lines.push('-' + line);
+  for (const line of added) lines.push('+' + line);
+  for (let i = 0; i < suffix && i < 3; i++) lines.push(' ' + oldLines[oldLines.length - suffix + i]);
+  return lines.join('\\n');
+}
+
 function summarize(record) {
   return {
     id: record.id,
