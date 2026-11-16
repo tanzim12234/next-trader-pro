@@ -601,7 +601,7 @@ async function refreshSkillLibrary(){
    };
    const remove=document.createElement('button');remove.textContent='Remove';remove.onclick=async()=>{
     if(!confirm('Remove this locally installed Markdown skill?'))return;
-    try{await window.nextAI.removeSkill(skill.id);$('skillPreview').textContent='Skill removed.';await refreshSkillLibrary();}
+    try{await window.nextAI.removeSkill(skill.id);if(selectedSkillId===skill.id){selectedSkillId=null;$('activeSkillState').textContent='Selected skill removed; no skill reference is active.';} $('skillPreview').textContent='Skill removed.';await refreshSkillLibrary();}
     catch(e){$('skillPreview').textContent='Remove failed: '+e.message;}
    };
    row.append(info,use,toggle,inspect,remove);box.append(row);
