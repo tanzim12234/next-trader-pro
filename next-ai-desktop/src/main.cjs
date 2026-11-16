@@ -689,6 +689,7 @@ $a[1].ki.dwFlags = 2
 
 
 ipcMain.handle('brain:list', (_e, query) => brain.list(query || ''));
+ipcMain.handle('brain:graph', () => brain.graph());
 ipcMain.handle('brain:remember', (_e, input) => {
   if (!input || typeof input.text !== 'string') throw new Error('Memory text is required.');
   return brain.remember(input.text, input.category || 'general');
