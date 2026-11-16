@@ -65,7 +65,7 @@ jobs:
       - name: Build Windows x64 installer
         run: npm run dist
       - name: Create signed update manifest
-        if: ${{ secrets.NEXT_AI_UPDATE_PRIVATE_KEY != '' }}
+        if: ${{ secrets.NEXT_AI_UPDATE_PRIVATE_KEY != '' && secrets.NEXT_AI_UPDATE_PUBLIC_KEY != '' }}
         env:
           NEXT_AI_UPDATE_PRIVATE_KEY: ${{ secrets.NEXT_AI_UPDATE_PRIVATE_KEY }}
         run: node scripts/sign-update-manifest.cjs
