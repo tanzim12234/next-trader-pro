@@ -249,6 +249,7 @@ function startVoice(){
  };
  recognition.onerror=ev=>{
   const messages={ 'not-allowed':'Microphone permission denied. Allow microphone access in Windows settings.', 'service-not-allowed':'Speech recognition service is blocked in this environment.', 'audio-capture':'No working microphone was found.', 'network':'Speech recognition needs an internet connection.' };
+  if(pendingVoiceConfirmation&&['not-allowed','service-not-allowed','audio-capture'].includes(ev.error)){pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}}
   $('voiceState').textContent=messages[ev.error]||('Voice error: '+ev.error);
   if(['not-allowed','service-not-allowed','audio-capture'].includes(ev.error)){listening=false;$('voice').textContent='Start voice listening';setCoreState('', 'Voice unavailable');}
  };
