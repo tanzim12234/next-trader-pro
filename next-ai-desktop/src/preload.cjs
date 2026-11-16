@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('nextAI', Object.freeze({
   listHomeEntities: () => ipcRenderer.invoke('home:entities'),
   callHomeService: input => ipcRenderer.invoke('home:call', input),
   classifyVoice: phrase => ipcRenderer.invoke('voice:classify', phrase),
+  classifyVoiceConfirmation: phrase => ipcRenderer.invoke('voice:classify-confirmation', phrase),
   status: () => ipcRenderer.invoke('settings:status'),
   testConnection: () => ipcRenderer.invoke('ai:test-connection'),
   webResearch: query => ipcRenderer.invoke('ai:web-research', query),
