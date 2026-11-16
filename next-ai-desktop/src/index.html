@@ -74,6 +74,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <div id="memoryState" class="hint"></div><div id="memoryList" class="memory-list">No saved memories.</div></section>
 <section class="panel"><h2>Teach NEXT · Knowledge Ingestion</h2>
 <p class="hint">নিজের নোট, পড়ার বিষয় বা যাচাই করা তথ্য এখানে দাও। NEXT সেগুলো ছোট searchable অংশে ভাগ করে encrypted Personal Brain-এ রাখবে। সর্বোচ্চ 50,000 characters প্রতি lesson; সংরক্ষণের আগে তোমার অনুমতি লাগবে।</p>
+<div class="row"><button id="importLearningFile">Import PDF / DOCX</button><span id="documentImportState" class="hint">Document import is preview-only until you press Teach NEXT.</span></div>
 <textarea id="knowledgeText" rows="6" maxlength="50000" placeholder="NEXT-কে কী শেখাতে চাও? এখানে text paste করো…"></textarea>
 <div class="row"><select id="knowledgeCategory" aria-label="Knowledge category"><option value="knowledge">General knowledge</option><option value="project">Project notes</option><option value="workflow">Workflow / instructions</option><option value="preference">Preferences</option><option value="study">Study notes</option></select><button id="teachKnowledge">Teach NEXT</button></div>
 <div id="knowledgeState" class="hint">No lesson submitted yet.</div></section>
