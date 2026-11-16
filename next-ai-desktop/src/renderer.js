@@ -130,6 +130,7 @@ $('openPaint').onclick=()=>window.nextAI.runAction({type:'open-app',app:'paint'}
 function speak(text,after){if(!('speechSynthesis'in window)){if(typeof after==='function')after();return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>{setCoreState('', 'Awaiting input');if(typeof after==='function')after();};u.onerror=()=>{setCoreState('', 'Voice output unavailable');if(typeof after==='function')after();};speechSynthesis.speak(u);}
 let pendingVoiceConfirmation=null;
 function requestVoiceConfirmation(question,action){
+ if(listening){listening=false;if(recognition)recognition.stop();$('voice').textContent='Start voice listening';}
  pendingVoiceConfirmation=action;awaitingCommand=false;
  $('voiceState').textContent='Confirmation required · say “Yes sure” or “No”';
  speak(question+' Sir, are you sure? Say “Yes sure” to continue or “No” to cancel.',()=>{if(!listening)startVoice();});
