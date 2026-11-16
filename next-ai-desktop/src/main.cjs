@@ -96,7 +96,7 @@ ipcMain.handle('files:extract-learning-file', async () => {
     let worker;
     try {
       const tesseractRoot = path.dirname(require.resolve('tesseract.js'));
-      const workerPath = path.join(tesseractRoot, 'worker.min.js').replace(/app\\.asar([/\\\\])/u, 'app.asar.unpacked$1');
+      const workerPath = path.join(tesseractRoot, 'worker.min.js').replace(/app\.asar([/\\])/u, 'app.asar.unpacked$1');
       worker = await createWorker('eng+ben', 1, {
         workerPath,
         langPath: 'https://tessdata.projectnaptha.com/4.0.0',
