@@ -388,7 +388,7 @@ async function runVoiceCommand(raw){
    if(routed.intent==='youtube-search'){await window.nextAI.runAction({type:'youtube-search',query:routed.query});speak('Searching YouTube');return;}
    if(routed.intent==='web-search'){$('researchQuery').value=routed.query;$('runResearch').click();speak('Starting web research');return;}
    if(routed.intent==='media-toggle'){await window.nextAI.runAction({type:'media',command:'playpause'});speak('Media control requested');return;}
-   if(routed.intent==='ask-ai'){$('prompt').value=routed.prompt;$('send').click();return;}
+   if(routed.intent==='ask-ai'){const answer=await window.nextAI.chat({message:routed.prompt,skillId:selectedSkillId});$('prompt').value=routed.prompt;$('chat').textContent=answer;lastExchange={question:routed.prompt,answer};$('saveConversation').disabled=false;$('reviewLearning').disabled=false;void autoLearnExchange(lastExchange);speak(answer);return;}
    if(routed.intent==='type-text'){const result=await window.nextAI.runAction({type:'write-text',text:routed.text});speak('Done. Text pasted.');return;}
   }
   const appCommands=[
