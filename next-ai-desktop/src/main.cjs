@@ -328,13 +328,13 @@ ipcMain.handle('ai:learning-suggestions', async (_e, input) => {
   }
   const s = readSettings();
   const prompt = [
-    'Review this conversation and suggest at most 5 stable, useful facts or preferences that the user may want NEXT AI to remember.',
-    'Return ONLY a JSON object shaped like {\"suggestions\":[{\"text\":\"...\",\"category\":\"preference\"}]}. Categories: preference, project, goal, workflow, general. If there is nothing worth remembering, return {\"suggestions\":[]}.',
-    'Do not suggest temporary details, guesses, instructions, secrets, API keys, passwords, financial account credentials, or sensitive personal data.',
-    'Never save anything. These are suggestions for the user to review and approve manually.',
-    'Conversation:',
-    'User: ' + input.question,
-    'Assistant: ' + input.answer
+    'Extract at most 5 stable, useful facts explicitly stated by the USER that will improve future assistance.',
+    'Return ONLY JSON shaped like {"suggestions":[{"text":"...","category":"preference"}]}. Categories: preference, project, goal, workflow, general.',
+    'Only learn clear user-stated facts, durable preferences, ongoing projects, and corrections. Do not infer identity or invent facts. Ignore one-off questions and temporary situations.',
+    'NEVER store passwords, API keys, tokens, account numbers, payment credentials, precise addresses, health/medical details, sexual details, religion, political beliefs, or other sensitive personal data. If uncertain, return no suggestion.',
+    'The assistant answer is context only; extract facts from the USER message, not assistant claims.',
+    'User message: ' + input.question,
+    'Assistant context: ' + input.answer
   ].join('\n');
   let raw = '';
   if (s.geminiKey && (s.provider !== 'groq' || !s.groqKey)) {
@@ -367,8 +367,15 @@ ipcMain.handle('ai:learning-suggestions', async (_e, input) => {
     const match = raw.match(/\[[\s\S]*\]/);
     try { parsed = match ? JSON.parse(match[0]) : []; } catch { parsed = []; }
   }
-  return parsed.filter(item => item && typeof item.text === 'string' && item.text.trim() && item.text.length <= 1000)
-    .slice(0, 5).map(item => ({ text: item.text.trim(), category: ['preference','project','goal','workflow','general'].includes(item.category) ? item.category : 'general' }));
+  const safeSuggestions = parsed.filter(item => item && typeof item.text === 'string' && item.text.trim() && item.text.length <= 500)
+    .slice(0, 5).map(item => ({ text: item.text.trim(), category: ['preference','project','goal','workflow','general'].includes(item.category) ? item.category : 'general' }))
+    .filter(item => !/(api[_ -]?key|password|passwd|token|secret|\b\d{10,}\b|account number|পাসওয়ার্ড|পাসওয়ার্ড|এপিআই কী|গোপন নম্বর)/iu.test(item.text));
+  const saved = [];
+  for (const item of safeSuggestions) {
+    try { saved.push(brain.remember(item.text, item.category)); }
+    catch (error) { console.warn('Automatic learning item skipped:', error.message); }
+  }
+  return { saved: saved.length, items: saved.map(item => ({ text: item.text, category: item.category })) };
 });
 ipcMain.handle('ai:test-connection', async () => {
   const s = readSettings();
