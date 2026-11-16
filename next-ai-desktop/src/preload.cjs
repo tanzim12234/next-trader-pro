@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('nextAI', Object.freeze({
   suggestLearning: exchange => ipcRenderer.invoke('ai:learning-suggestions', exchange),
   runAction: action => ipcRenderer.invoke('action:run', action),
   openTextFile: () => ipcRenderer.invoke('files:open-text'),
+  extractLearningFile: () => ipcRenderer.invoke('files:extract-learning-file'),
   saveTextFile: input => ipcRenderer.invoke('files:save-text', input),
   chooseFolder: () => ipcRenderer.invoke('files:choose-folder'),
   listFolder: () => ipcRenderer.invoke('files:list-folder'),
