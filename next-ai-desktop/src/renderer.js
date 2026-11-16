@@ -128,10 +128,10 @@ $('openTaskManager').onclick=()=>window.nextAI.runAction({type:'open-app',app:'t
 $('openSnippingTool').onclick=()=>window.nextAI.runAction({type:'open-app',app:'snipping-tool'});
 $('openPaint').onclick=()=>window.nextAI.runAction({type:'open-app',app:'paint'});
 function speak(text,after){if(!('speechSynthesis'in window)){if(typeof after==='function')after();return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>{setCoreState('', 'Awaiting input');if(typeof after==='function')after();};u.onerror=()=>{setCoreState('', 'Voice output unavailable');if(typeof after==='function')after();};speechSynthesis.speak(u);}
-let pendingVoiceConfirmation=null;
-function requestVoiceConfirmation(question,action){
+let pendingVoiceConfirmation=null,pendingVoiceCancel=null;
+function requestVoiceConfirmation(question,action,onCancel){
  if(listening){listening=false;if(recognition)recognition.stop();$('voice').textContent='Start voice listening';}
- pendingVoiceConfirmation=action;awaitingCommand=false;
+ pendingVoiceConfirmation=action;pendingVoiceCancel=typeof onCancel==='function'?onCancel:null;awaitingCommand=false;
  $('voiceState').textContent='Confirmation required · say “Yes sure” or “No”';
  speak(question+' Sir, are you sure? Say “Yes sure” to continue or “No” to cancel.',()=>{if(!listening)startVoice();});
 }
@@ -139,8 +139,8 @@ async function handleVoiceConfirmation(phrase){
  if(!pendingVoiceConfirmation)return false;
  const decision=await window.nextAI.classifyVoiceConfirmation(phrase);
  if(!decision){speak('Please say yes sure to continue, or no to cancel.');return true;}
- const action=pendingVoiceConfirmation;pendingVoiceConfirmation=null;
- if(decision==='no'){$('voiceState').textContent='Voice action cancelled.';speak('Understood. Action cancelled.');return true;}
+ const action=pendingVoiceConfirmation,cancel=pendingVoiceCancel;pendingVoiceConfirmation=null;pendingVoiceCancel=null;
+ if(decision==='no'){if(cancel)cancel();$('voiceState').textContent='Voice action cancelled.';speak('Understood. Action cancelled.');return true;}
  $('voiceState').textContent='Voice confirmation accepted. Executing…';voiceProcessing=true;
  try{await action();$('voiceState').textContent='Confirmed action completed.';speak('Confirmed. The action has been completed.');}
  catch(e){$('voiceState').textContent='Confirmed action failed: '+e.message;speak('The confirmed action failed.');}
@@ -257,7 +257,7 @@ function startVoice(){
  try{recognition.start();$('voice').textContent='Stop voice listening';}
  catch(e){listening=false;$('voice').textContent='Start voice listening';$('voiceState').textContent='Could not start microphone: '+e.message;}
 }
-function stopVoice(){listening=false;awaitingCommand=false;pendingVoiceConfirmation=null;if(recognition)recognition.stop();if('speechSynthesis'in window)speechSynthesis.cancel();$('voice').textContent='Start voice listening';}
+function stopVoice(){listening=false;awaitingCommand=false;pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}if(recognition)recognition.stop();if('speechSynthesis'in window)speechSynthesis.cancel();$('voice').textContent='Start voice listening';}
 $('voice').onclick=()=>listening?stopVoice():startVoice();
 refresh();
 
@@ -467,7 +467,7 @@ async function refreshBackups(){
  try{
   const items=await window.nextAI.listBackups();const box=$('backupList');box.textContent='';
   if(!items.length){box.textContent='No encrypted backups yet.';return;}
-  for(const item of items){const row=document.createElement('div');row.className='memory-item';const label=document.createElement('span');label.textContent=new Date(item.createdAt).toLocaleString()+' · '+item.files+' encrypted file(s)';const restore=document.createElement('button');restore.textContent='Restore';restore.onclick=()=>{restore.disabled=true;requestVoiceConfirmation('Restore the encrypted backup created '+new Date(item.createdAt).toLocaleString()+'. This can replace current memory, settings and task history.',async()=>{try{const result=await window.nextAI.restoreBackup(item.id);$('backupState').textContent='Restored '+result.restored+' encrypted file(s). Restart NEXT AI if settings do not refresh.';await refreshBackups();}catch(e){$('backupState').textContent='Restore failed: '+e.message;speak('Backup restore failed.');}finally{restore.disabled=false;}});};row.append(label,restore);box.append(row);}
+  for(const item of items){const row=document.createElement('div');row.className='memory-item';const label=document.createElement('span');label.textContent=new Date(item.createdAt).toLocaleString()+' · '+item.files+' encrypted file(s)';const restore=document.createElement('button');restore.textContent='Restore';restore.onclick=()=>{restore.disabled=true;requestVoiceConfirmation('Restore the encrypted backup created '+new Date(item.createdAt).toLocaleString()+'. This can replace current memory, settings and task history.',async()=>{try{const result=await window.nextAI.restoreBackup(item.id);$('backupState').textContent='Restored '+result.restored+' encrypted file(s). Restart NEXT AI if settings do not refresh.';await refreshBackups();}catch(e){$('backupState').textContent='Restore failed: '+e.message;speak('Backup restore failed.');}finally{restore.disabled=false;}},()=>{restore.disabled=false;$('backupState').textContent='Restore cancelled.';});};row.append(label,restore);box.append(row);}
  }catch(e){$('backupState').textContent=e.message;}
 }
 $('createBackup').onclick=async()=>{const button=$('createBackup');button.disabled=true;try{const result=await window.nextAI.createBackup();$('backupState').textContent='Encrypted backup created · '+result.files+' file(s).';await refreshBackups();}catch(e){$('backupState').textContent='Backup failed: '+e.message;}finally{button.disabled=false;}};
