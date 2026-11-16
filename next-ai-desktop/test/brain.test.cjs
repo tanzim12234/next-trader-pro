@@ -99,3 +99,14 @@ test('meaning-aware search does not return unrelated memories', t => {
   x.brain.remember('Chocolate cake recipe with cocoa', 'food');
   assert.deepEqual(x.brain.list('vehicle engine repair'), []);
 });
+
+test('builds a local knowledge graph from related memories', t => {
+  const x = setup(); t.after(x.cleanup);
+  const a = x.brain.remember('NEXT AI personal brain stores encrypted memories', 'project');
+  const b = x.brain.remember('NEXT AI personal brain searches saved memories', 'project');
+  x.brain.remember('Chocolate cake recipe with cocoa', 'food');
+  const graph = x.brain.graph();
+  assert.equal(graph.nodes.length, 3);
+  assert.ok(graph.edges.some(edge => edge.source === a.id && edge.target === b.id));
+  assert.ok(graph.edges.every(edge => edge.weight > 0 && edge.topics.length > 0));
+});
