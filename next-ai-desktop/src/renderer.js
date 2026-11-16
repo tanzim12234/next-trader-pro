@@ -154,7 +154,7 @@ $('stagePatch').onclick=async()=>{
   currentPatchId=proposal.id;
   $('applyPatch').disabled=false;$('rollbackPatch').disabled=true;
   $('patchState').textContent='Review required · '+proposal.files.length+' file(s) · ID '+proposal.id.slice(0,8)+'. Apply করতে voice + native confirmation লাগবে.';
-  $('codeExplanation').textContent='PATCH DIFF\\n'+proposal.files[0].diff+'\\n\\nOriginal hash: '+proposal.files[0].beforeHash.slice(0,12)+' · Proposed hash: '+proposal.files[0].afterHash.slice(0,12);
+  $('codeExplanation').textContent='PATCH DIFF\n'+proposal.files[0].diff+'\n\nOriginal hash: '+proposal.files[0].beforeHash.slice(0,12)+' · Proposed hash: '+proposal.files[0].afterHash.slice(0,12);
  }catch(e){$('patchState').textContent='Could not stage patch: '+e.message;}
 };
 $('applyPatch').onclick=()=>requestVoiceConfirmation('Apply the reviewed source-code patch to the selected project folder. NEXT will not run the code or tests.',async()=>{
