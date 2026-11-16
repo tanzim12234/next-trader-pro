@@ -1,6 +1,7 @@
 const $=id=>document.getElementById(id);
 let recognition=null, listening=false, awaitingCommand=false, voiceProcessing=false, lastExchange=null;
 const metricsHistory=[];
+let networkSnapshot=null;
 const stage=$('jarvisStage');
 function setCoreState(state, activity){
  if(!stage)return;
@@ -269,6 +270,11 @@ async function refreshSystemStats(){
   const used=(s.totalMemoryBytes-s.freeMemoryBytes)/1073741824;
   const total=s.totalMemoryBytes/1073741824;
   $('systemMemory').textContent=s.memoryPercent+'% · '+used.toFixed(1)+' / '+total.toFixed(1)+' GB';
+  if($('systemDisk'))$('systemDisk').textContent=s.disks?.length?s.disks.map(d=>{const usedBytes=Math.max(0,d.sizeBytes-d.freeBytes);const percent=Math.round(usedBytes/d.sizeBytes*100);return d.name+' '+percent+'%';}).join(' · '):'Unavailable';
+  if($('systemDiskDetails'))$('systemDiskDetails').textContent=s.disks?.length?s.disks.slice(0,4).map(d=>{const usedBytes=Math.max(0,d.sizeBytes-d.freeBytes);return d.name+' · '+(usedBytes/1073741824).toFixed(1)+' / '+(d.sizeBytes/1073741824).toFixed(1)+' GB used';}).join(' | '):'Disk details unavailable on this system';
+  if($('systemBattery')){const b=s.batteries?.find(x=>x.percent!==null);$('systemBattery').textContent=b?b.percent+'% · '+(b.status===3?'Full':([2,6,7,8,9].includes(b.status)?'Charging':'On battery')):'No battery detected';}
+  if($('systemNetwork')){const now=Date.now();let received=0,sent=0;if(networkSnapshot&&s.networks?.length){const elapsed=Math.max(1,(now-networkSnapshot.time)/1000);for(const n of s.networks){const prev=networkSnapshot.adapters[n.name];if(prev){received+=Math.max(0,n.receivedBytes-prev.receivedBytes)/elapsed;sent+=Math.max(0,n.sentBytes-prev.sentBytes)/elapsed;}}$('systemNetwork').textContent='↓ '+(received/1024).toFixed(1)+' KB/s · ↑ '+(sent/1024).toFixed(1)+' KB/s';}else $('systemNetwork').textContent=s.detailsAvailable?'Sampling…':'Unavailable';networkSnapshot={time:now,adapters:Object.fromEntries((s.networks||[]).map(n=>[n.name,{receivedBytes:n.receivedBytes,sentBytes:n.sentBytes}]))};}
+  if($('systemNetworkDetails'))$('systemNetworkDetails').textContent=s.networks?.length?s.networks.map(n=>n.name).join(' · '):'No active adapter statistics';
   const hours=Math.floor(s.uptimeSeconds/3600),minutes=Math.floor((s.uptimeSeconds%3600)/60);
   $('systemUptime').textContent=hours+'h '+minutes+'m';
   $('systemState').textContent=s.platform+' · '+s.arch+' · '+s.cpuCores+' CPU cores · Updated '+new Date().toLocaleTimeString();
