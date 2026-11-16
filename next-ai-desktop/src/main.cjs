@@ -109,7 +109,7 @@ ipcMain.handle('files:extract-learning-file', async () => {
             .replace(/\s+/g, ' ')
             .trim();
           let pageText = selectableText;
-          if (selectableText.replace(/\s/g, '').length < 35) {
+          if (selectableText.replace(/\s/g, '').length < 80) {
             if (!worker) {
               const { createWorker } = require('tesseract.js');
               const tesseractRoot = path.dirname(require.resolve('tesseract.js'));
