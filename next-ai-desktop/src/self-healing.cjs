@@ -6,10 +6,10 @@ const os = require('node:os');
 
 function safeMessage(value, limit = 4000) {
   return String(value || 'Unknown error')
-    .replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/g, ' ')
-    .replace(/\\bAIza[0-9A-Za-z_-]{20,}\\b/g, '[REDACTED_API_KEY]')
-    .replace(/\\bgsk_[A-Za-z0-9]{20,}\\b/g, '[REDACTED_API_KEY]')
-    .replace(/(api[_-]?key|authorization|bearer)\\s*[:=]\\s*[^\\s,;]+/gi, '$1=[REDACTED]')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
+    .replace(/\bAIza[0-9A-Za-z_-]{20,}\b/g, '[REDACTED_API_KEY]')
+    .replace(/\bgsk_[A-Za-z0-9]{20,}\b/g, '[REDACTED_API_KEY]')
+    .replace(/(api[_-]?key|authorization|bearer)\s*[:=]\s*[^\s,;]+/gi, '$1=[REDACTED]')
     .slice(0, limit);
 }
 
