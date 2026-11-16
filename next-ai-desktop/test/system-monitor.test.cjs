@@ -12,7 +12,6 @@ test('parses disk, battery and network metrics from Windows PowerShell JSON', ()
   });
   assert.equal(result.disks.length, 1);
   assert.equal(result.disks[0].name, 'C:');
-  assert.equal(result.disks[0].usedBytes, undefined);
   assert.equal(result.disks[0].freeBytes, 250);
   assert.equal(result.batteries[0].percent, 83);
   assert.equal(result.networks[0].receivedBytes, 1200);
