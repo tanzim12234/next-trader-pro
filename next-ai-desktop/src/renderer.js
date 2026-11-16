@@ -225,6 +225,16 @@ $('remember').onclick=async()=>{
  try{await window.nextAI.remember({text,category:'personal'});$('memoryText').value='';$('memoryState').textContent='Saved to your encrypted Personal Brain.';await refreshMemories();}
  catch(e){$('memoryState').textContent=e.message;}
 };
+$('importLearningFile').onclick=async()=>{
+ const button=$('importLearningFile');button.disabled=true;$('documentImportState').textContent='Extracting document text locally…';
+ try{
+  const result=await window.nextAI.extractLearningFile();if(result.cancelled)return;
+  $('knowledgeText').value=result.text;
+  $('documentImportState').textContent=result.name+' · '+result.characters.toLocaleString()+' characters extracted'+(result.truncated?' · preview limited to first 50,000 characters':'')+'. Review the text, then press Teach NEXT.';
+  $('knowledgeText').focus();
+ }catch(e){$('documentImportState').textContent='Import failed: '+e.message;}
+ finally{button.disabled=false;}
+};
 $('teachKnowledge').onclick=async()=>{
  const text=$('knowledgeText').value.trim();if(!text)return;
  const button=$('teachKnowledge');button.disabled=true;$('knowledgeState').textContent='Processing lesson into searchable memory…';
