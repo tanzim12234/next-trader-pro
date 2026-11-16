@@ -15,14 +15,14 @@ function safeTarget(root, relativePath) {
   if (typeof relativePath !== 'string' || !relativePath || relativePath.length > 240) {
     throw new Error('Invalid patch path.');
   }
-  if (relativePath.includes('\\\\') || path.posix.isAbsolute(relativePath) || /^[a-zA-Z]:/.test(relativePath)) {
+  if (relativePath.includes('\') || path.posix.isAbsolute(relativePath) || /^[a-zA-Z]:/.test(relativePath)) {
     throw new Error('Absolute paths and Windows separators are not allowed.');
   }
   const parts = relativePath.split('/');
   if (parts.some(part => !part || part === '.' || part === '..')) throw new Error('Path traversal is not allowed.');
   const allowed = relativePath === 'package.json'
-    || /^src\\/[a-zA-Z0-9._-]+\\.(?:cjs|js|html|css)$/.test(relativePath)
-    || /^test\\/[a-zA-Z0-9._-]+\\.test\\.cjs$/.test(relativePath);
+    || /^src\/[a-zA-Z0-9._-]+\.(?:cjs|js|html|css)$/.test(relativePath)
+    || /^test\/[a-zA-Z0-9._-]+\.test\.cjs$/.test(relativePath);
   if (!allowed) throw new Error('Only approved src/, test/, and package.json files can be patched.');
   const base = path.resolve(root);
   const target = path.resolve(base, ...parts);
