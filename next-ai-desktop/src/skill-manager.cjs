@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const MAX_SKILL_BYTES = 32 * 1024;
 const OWNER_REPO = /^[A-Za-z0-9_.-]{1,100}\\/[A-Za-z0-9_.-]{1,100}$/;
@@ -55,7 +56,8 @@ function createSkillManager({ app, fetchImpl = globalThis.fetch }) {
     }
     const content = Buffer.from(file.content.replace(/\\s/g, ''), 'base64').toString('utf8');
     if (!content.trim() || Buffer.byteLength(content, 'utf8') > MAX_SKILL_BYTES) throw new Error('Skill must contain 1–32 KB of Markdown.');
-    const id = fullName.toLowerCase().replace(/[^a-z0-9._-]+/g, '-');
+    const slug = fullName.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').slice(0, 80);
+    const id = slug + '-' + crypto.createHash('sha256').update(fullName.toLowerCase()).digest('hex').slice(0, 12);
     const targetDir = path.join(root(), id);
     fs.mkdirSync(targetDir, { recursive: true });
     const metadata = { id, name: String(repoInfo.full_name || fullName), description: String(repoInfo.description || '').slice(0, 240), source: 'github', sourceUrl: repoInfo.html_url, filePath: skillPath, fileSha: String(file.sha || ''), installedAt: new Date().toISOString(), trust: 'untrusted-markdown', enabled: false };
