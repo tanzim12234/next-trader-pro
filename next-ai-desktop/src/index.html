@@ -111,7 +111,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <div class="row"><input id="skillSearch" maxlength="100" placeholder="Search GitHub skills (e.g. web research, python)"><button id="searchSkills">Search GitHub</button></div>
 <div id="skillSearchResults" class="memory-list" aria-live="polite"></div>
 <h3>Installed Skills</h3><button id="refreshSkills">Refresh library</button>
-<div id="installedSkills" class="memory-list"></div>
+<div id="installedSkills" class="memory-list"></div><div class="row"><span id="activeSkillState" class="hint">No skill reference selected.</span><button id="clearActiveSkill" type="button">Clear AI skill</button></div>
 <div id="skillPreview" class="chat" aria-live="polite">Select a skill to inspect its Markdown instructions. Treat downloaded content as untrusted.</div>
 </section>
 <section class="panel"><h2>Chat with NEXT</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button> <button id="saveConversation" disabled>Save conversation to Personal Brain</button><span id="conversationState" class="hint">Chat is not stored unless you choose Save.</span></section>
