@@ -73,7 +73,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <div class="row"><button id="remember">Remember this</button><button id="refreshMemory">Refresh memories</button><button id="clearMemory">Clear all</button></div>
 <div id="memoryState" class="hint"></div><div id="memoryList" class="memory-list">No saved memories.</div></section>
 <section class="panel"><h2>Teach NEXT · Knowledge Ingestion</h2>
-<p class="hint">নিজের নোট, PDF, DOCX বা ছবি থেকে শেখাও। Scanned PDF ও ছবিতে বাংলা + English OCR হবে (প্রথমবার ভাষার ডেটা download হতে পারে)। text review করে Teach NEXT চাপলে encrypted Personal Brain-এ থাকবে। সর্বোচ্চ 50,000 characters প্রতি lesson।</p>
+<p class="hint">নিজের নোট, PDF, DOCX বা ছবি থেকে শেখাও। ফাইল নির্বাচন করলেই OCR / text extraction শেষে NEXT স্বয়ংক্রিয়ভাবে encrypted Personal Brain-এ শেখা তথ্য সংরক্ষণ করবে—আলাদা Save চাপতে হবে না। প্রথমবার বাংলা + English ভাষার ডেটা download হতে পারে। সর্বোচ্চ 50,000 characters প্রতি lesson।</p>
 <div class="row"><button id="importLearningFile">Import PDF / DOCX / Image</button><span id="documentImportState" class="hint">বাংলা + English OCR চালু · text review করে Teach NEXT চাপো।</span></div>
 <textarea id="knowledgeText" rows="6" maxlength="50000" placeholder="NEXT-কে কী শেখাতে চাও? এখানে text paste করো…"></textarea>
 <div class="row"><select id="knowledgeCategory" aria-label="Knowledge category"><option value="knowledge">General knowledge</option><option value="project">Project notes</option><option value="workflow">Workflow / instructions</option><option value="preference">Preferences</option><option value="study">Study notes</option></select><button id="teachKnowledge">Teach NEXT</button></div>
