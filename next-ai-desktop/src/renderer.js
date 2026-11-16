@@ -238,7 +238,7 @@ async function autoLearnExchange(exchange){
   }
  }catch(error){$('learningState').textContent='স্বয়ংক্রিয় শেখা সাময়িকভাবে হয়নি: '+error.message;}
 }
-$('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{const answer=await window.nextAI.chat({message:q,skillId:selectedSkillId});$('chat').textContent=answer;lastExchange={question:q,answer};$('saveConversation').disabled=false;$('reviewLearning').disabled=false;$('conversationState').textContent='NEXT কথোপকথন থেকে স্থায়ী জ্ঞান শেখার চেষ্টা করছে…';setCoreState('speaking','Response ready');speak(answer);void autoLearnExchange(lastExchange);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
+$('send').onclick=()=>{const q=$('prompt').value.trim();if(!q||voiceProcessing)return;$('chat').textContent='NEXT request received…';void runVoiceCommand(q);};
 $('generateCode').onclick=async()=>{
  const goal=$('codeGoal').value.trim();if(!goal)return;
  const button=$('generateCode');button.disabled=true;$('codeLabState').textContent='NEXT is preparing a reviewable code draft…';
