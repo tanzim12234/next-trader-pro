@@ -24,8 +24,8 @@ function parseWindowsMetrics(raw) {
       freeBytes: Number(d.freeBytes) || 0
     })).filter(d => d.name && d.sizeBytes > 0),
     batteries: normalizeArray(data?.batteries).map(b => ({
-      percent: Number.isFinite(Number(b.percent)) ? Math.max(0, Math.min(100, Number(b.percent))) : null,
-      status: Number.isFinite(Number(b.status)) ? Number(b.status) : null
+      percent: b.percent !== null && b.percent !== undefined && b.percent !== '' && Number.isFinite(Number(b.percent)) ? Math.max(0, Math.min(100, Number(b.percent))) : null,
+      status: b.status !== null && b.status !== undefined && b.status !== '' && Number.isFinite(Number(b.status)) ? Number(b.status) : null
     })),
     networks: normalizeArray(data?.networks).map(n => ({
       name: String(n.name || ''),
