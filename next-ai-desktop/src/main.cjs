@@ -16,7 +16,7 @@ const { validateCode } = require('./code-lab.cjs');
 const { createPatchProposal, applyPatchProposal, rollbackPatchProposal, safeTarget } = require('./patch-manager.cjs');
 const { createSelfHealing } = require('./self-healing.cjs');
 const { buildErrorAnalysisInput, parseAnalysis, buildRepairPrompt, parseRepairProposal } = require('./repair-engine.cjs');
-const { verifyUpdateManifest, verifyInstallerBytes } = require('./update-manager.cjs');
+const { parseUpdateManifest, compareVersions, verifyUpdateManifest, verifyInstallerBytes } = require('./update-manager.cjs');
 const systemMonitor = createSystemMonitor();
 const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.enc'), safeStorage);
 const brain = createPersonalBrain({ app, safeStorage });
@@ -31,6 +31,8 @@ let browserWin = null;
 let selectedFolder = null;
 let currentFolder = null;
 let previousCpuSnapshot = null;
+let trustedUpdateManifest = null;
+let stagedVerifiedInstaller = null;
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.enc');
 const patchWorkspace = () => path.join(app.getPath('userData'), 'patch-proposals');
 
@@ -167,16 +169,84 @@ ipcMain.handle('self-heal:feature-proposal', async (_event, input) => {
   const raw = await requestConfiguredAIJson(system, JSON.stringify({ goal: input.goal, target: prompt.path, currentSource: prompt.sourceCode, diagnostic: prompt.diagnostic }));
   return parseRepairProposal(raw, prompt.path);
 });
-ipcMain.handle('self-heal:verify-update', (_event, input) => {
-  if (!input || typeof input !== 'object') throw new Error('Update manifest is required.');
-  const publicKey = process.env.NEXT_AI_UPDATE_PUBLIC_KEY || '';
-  const result = verifyUpdateManifest(input.manifest, publicKey || null, { platform: process.platform, arch: process.arch });
-  if (!result.trusted) return { ...result, installEnabled: false };
-  if (input.installerBase64) {
-    const bytes = Buffer.from(input.installerBase64, 'base64');
-    return { ...result, installer: verifyInstallerBytes(bytes, input.manifest), installEnabled: false, note: 'Integrity verified; installer execution is not automatic.' };
+function loadUpdatePublicKey() {
+  const keyPath = path.join(app.getAppPath(), 'src', 'update-public-key.pem');
+  try { return fs.readFileSync(keyPath, 'utf8'); } catch { return null; }
+}
+
+ipcMain.handle('self-heal:check-update', async () => {
+  if (process.platform !== 'win32') return { available: false, reason: 'Windows updates only.' };
+  const publicKey = loadUpdatePublicKey();
+  if (!publicKey) return { available: false, reason: 'Secure update signing key is not configured in this build.' };
+  const releaseResponse = await fetch('https://api.github.com/repos/tanzim12234/next-trader-pro/releases/latest', {
+    headers: { 'Accept': 'application/vnd.github+json', 'User-Agent': 'NEXT-AI-Desktop' },
+    signal: AbortSignal.timeout(20000)
+  });
+  if (!releaseResponse.ok) throw new Error('Could not check GitHub releases: HTTP ' + releaseResponse.status);
+  const release = await releaseResponse.json();
+  const asset = Array.isArray(release.assets) ? release.assets.find(item => item.name === 'update-manifest.json') : null;
+  if (!asset || typeof asset.browser_download_url !== 'string') return { available: false, reason: 'No signed update manifest is published yet.' };
+  const manifestResponse = await fetch(asset.browser_download_url, { headers: { 'User-Agent': 'NEXT-AI-Desktop' }, signal: AbortSignal.timeout(20000) });
+  if (!manifestResponse.ok) throw new Error('Could not download update manifest.');
+  const manifest = parseUpdateManifest(await manifestResponse.text());
+  const verification = verifyUpdateManifest(manifest, publicKey, { platform: 'win32', arch: process.arch });
+  if (!verification.trusted) throw new Error('Update signature could not be trusted.');
+  trustedUpdateManifest = manifest;
+  stagedVerifiedInstaller = null;
+  const available = compareVersions(manifest.version, app.getVersion()) > 0;
+  return { available, currentVersion: app.getVersion(), latestVersion: manifest.version, size: manifest.size, reason: available ? 'A signed update is available.' : 'NEXT AI is up to date.' };
+});
+
+ipcMain.handle('self-heal:download-update', async () => {
+  if (!trustedUpdateManifest) throw new Error('Check for a signed update before downloading.');
+  const manifest = trustedUpdateManifest;
+  const publicKey = loadUpdatePublicKey();
+  if (!publicKey) throw new Error('Secure update signing key is unavailable.');
+  verifyUpdateManifest(manifest, publicKey, { platform: 'win32', arch: process.arch });
+  const response = await fetch(manifest.url, { redirect: 'follow', signal: AbortSignal.timeout(180000) });
+  if (!response.ok) throw new Error('Installer download failed: HTTP ' + response.status);
+  const finalUrl = new URL(response.url);
+  if (finalUrl.protocol !== 'https:' || !['github.com', 'objects.githubusercontent.com', 'release-assets.githubusercontent.com'].includes(finalUrl.hostname)) {
+    throw new Error('Installer download redirected to an untrusted host.');
   }
-  return { ...result, installEnabled: false, note: 'Manifest trusted. Installer download and user-confirmed installation are not enabled yet.' };
+  const declaredSize = Number(response.headers.get('content-length') || 0);
+  if (declaredSize && declaredSize !== manifest.size) throw new Error('Installer Content-Length does not match the signed manifest.');
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const integrity = verifyInstallerBytes(bytes, manifest);
+  const directory = path.join(app.getPath('userData'), 'updates');
+  fs.mkdirSync(directory, { recursive: true });
+  const installerPath = path.join(directory, 'NEXT-AI-Setup-' + manifest.version + '.exe');
+  const temporaryPath = installerPath + '.partial';
+  fs.writeFileSync(temporaryPath, bytes, { flag: 'w', mode: 0o600 });
+  fs.renameSync(temporaryPath, installerPath);
+  stagedVerifiedInstaller = { path: installerPath, sha256: integrity.sha256, version: manifest.version };
+  return { downloaded: true, version: manifest.version, size: integrity.size };
+});
+
+ipcMain.handle('self-heal:install-update', async () => {
+  if (process.platform !== 'win32') throw new Error('Windows installer updates only.');
+  if (!stagedVerifiedInstaller) throw new Error('No verified installer is ready.');
+  const staged = stagedVerifiedInstaller;
+  const bytes = fs.readFileSync(staged.path);
+  const digest = require('node:crypto').createHash('sha256').update(bytes).digest('hex');
+  if (digest !== staged.sha256) {
+    stagedVerifiedInstaller = null;
+    throw new Error('Staged installer changed after verification. Download it again.');
+  }
+  const choice = await require('electron').dialog.showMessageBox(win, {
+    type: 'warning', buttons: ['Install update and restart', 'Cancel'], defaultId: 1, cancelId: 1,
+    message: 'Install verified NEXT AI version ' + staged.version + '?',
+    detail: 'The installer signature and SHA-256 were verified. NEXT AI will close and the normal Windows installer will open.'
+  });
+  if (choice.response !== 0) return { cancelled: true };
+  await new Promise((resolve, reject) => {
+    const child = spawn(staged.path, [], { detached: true, stdio: 'ignore', windowsHide: false });
+    child.once('error', reject);
+    child.once('spawn', () => { child.unref(); resolve(); });
+  });
+  stagedVerifiedInstaller = null;
+  app.quit();
+  return { launched: true };
 });
 ipcMain.handle('self-heal:status', () => selfHealing.getStatus());
 ipcMain.handle('self-heal:diagnostics', async () => selfHealing.runDiagnostics({ appPath: app.getAppPath(), platform: process.platform, appVersion: app.getVersion(), electronVersion: process.versions.electron, nodeVersion: process.versions.node, safeStorageAvailable: safeStorage.isEncryptionAvailable() }));
