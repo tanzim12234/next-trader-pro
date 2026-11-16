@@ -26,6 +26,9 @@ test('installs Markdown as disabled untrusted content and can retrieve/remove it
     const item = await f.manager.installFromGitHub('owner/research-skill');
     assert.equal(item.enabled, false);
     assert.equal(item.trust, 'untrusted-markdown');
+    assert.equal(f.manager.setEnabled(item.id, true).enabled, true);
+    assert.equal(f.manager.list()[0].enabled, true);
+    assert.equal(f.manager.setEnabled(item.id, false).enabled, false);
     assert.match(f.manager.getContext(item.id).content, /untrusted reference/);
     assert.equal(f.manager.remove(item.id), true);
     assert.equal(f.manager.list().length, 0);
