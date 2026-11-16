@@ -39,6 +39,7 @@ jobs:
           node --check src/self-healing.cjs
           node --check src/repair-engine.cjs
           node --check src/update-manager.cjs
+          node --check test/repair-update.test.cjs
           node --check src/command-router.cjs
           node --check test/semantic-runtime-smoke.cjs
       - name: Test Personal Brain
