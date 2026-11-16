@@ -118,6 +118,31 @@ async function autoLearnExchange(exchange){
  }catch(error){$('learningState').textContent='স্বয়ংক্রিয় শেখা সাময়িকভাবে হয়নি: '+error.message;}
 }
 $('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{const answer=await window.nextAI.chat({message:q,skillId:selectedSkillId});$('chat').textContent=answer;lastExchange={question:q,answer};$('saveConversation').disabled=false;$('reviewLearning').disabled=false;$('conversationState').textContent='NEXT কথোপকথন থেকে স্থায়ী জ্ঞান শেখার চেষ্টা করছে…';setCoreState('speaking','Response ready');speak(answer);void autoLearnExchange(lastExchange);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
+$('generateCode').onclick=async()=>{
+ const goal=$('codeGoal').value.trim();if(!goal)return;
+ const button=$('generateCode');button.disabled=true;$('codeLabState').textContent='NEXT is preparing a reviewable code draft…';
+ try{
+  const proposal=await window.nextAI.generateCodeProposal({goal,language:$('codeLanguage').value,source:$('codeSource').value});
+  $('codeProposal').value=proposal.code;
+  $('codeExplanation').textContent=proposal.explanation;
+  $('codeLabState').textContent='Draft generated. Review it, then validate syntax before saving.';
+ }catch(e){$('codeLabState').textContent='Code generation failed: '+e.message;}
+ finally{button.disabled=false;}
+};
+$('validateCode').onclick=async()=>{
+ try{
+  const result=await window.nextAI.validateCodeProposal({language:$('codeLanguage').value,code:$('codeProposal').value});
+  $('codeLabState').textContent='Validation passed: '+result.checked+'. Code was not executed.';
+ }catch(e){$('codeLabState').textContent='Validation failed: '+e.message;}
+};
+$('saveCodeProposal').onclick=()=>requestVoiceConfirmation('Save the reviewed Code Lab draft to a file using the native save dialog.',async()=>{
+ try{
+  const language=$('codeLanguage').value;
+  const ext=language==='javascript'?'js':language==='json'?'json':language==='markdown'?'md':'txt';
+  const result=await window.nextAI.saveTextFile({name:'NEXT-improvement-draft.'+ext,content:$('codeProposal').value});
+  if(!result.cancelled)$('codeLabState').textContent='Draft saved: '+result.name;
+ }catch(e){$('codeLabState').textContent='Could not save draft: '+e.message;throw e;}
+});
 $('openTextFile').onclick=async()=>{try{const file=await window.nextAI.openTextFile();if(file.cancelled)return;$('fileName').value=file.name;$('fileContent').value=file.content;$('fileState').textContent='Opened: '+file.name;}catch(e){$('fileState').textContent='Open failed: '+e.message;}};
 $('saveTextFile').onclick=()=>requestVoiceConfirmation('Save the current text as '+$('fileName').value+'. The native save dialog will let you choose its location.',async()=>{try{const result=await window.nextAI.saveTextFile({name:$('fileName').value,content:$('fileContent').value});if(!result.cancelled)$('fileState').textContent='Saved: '+result.name;}catch(e){$('fileState').textContent='Save failed: '+e.message;throw e;}});
 $('yt').onclick=()=>window.nextAI.runAction({type:'youtube-open'});
