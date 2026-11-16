@@ -47,6 +47,13 @@ jobs:
       - name: Test local semantic model and fallback on Windows
         run: node test/semantic-runtime-smoke.cjs
         timeout-minutes: 20
+      - name: Configure signed update verification key
+        if: ${{ secrets.NEXT_AI_UPDATE_PUBLIC_KEY != '' }}
+        shell: pwsh
+        env:
+          NEXT_AI_UPDATE_PUBLIC_KEY: ${{ secrets.NEXT_AI_UPDATE_PUBLIC_KEY }}
+        run: |
+          Set-Content -Path src/update-public-key.pem -Value $env:NEXT_AI_UPDATE_PUBLIC_KEY -NoNewline
       - name: Report signing configuration
         shell: pwsh
         run: |
@@ -57,11 +64,16 @@ jobs:
           }
       - name: Build Windows x64 installer
         run: npm run dist
+      - name: Create signed update manifest
+        if: ${{ secrets.NEXT_AI_UPDATE_PRIVATE_KEY != '' }}
+        env:
+          NEXT_AI_UPDATE_PRIVATE_KEY: ${{ secrets.NEXT_AI_UPDATE_PRIVATE_KEY }}
+        run: node scripts/sign-update-manifest.cjs
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: NEXT-AI-Windows-x64
-          path: next-ai-desktop/release/*.exe
+          path: |\n            next-ai-desktop/release/*.exe\n            next-ai-desktop/release/update-manifest.json
           if-no-files-found: error
           retention-days: 14
       - name: Publish public GitHub release
@@ -72,5 +84,5 @@ jobs:
           draft: false
           prerelease: false
           make_latest: true
-          files: next-ai-desktop/release/*.exe
+          files: |\n            next-ai-desktop/release/*.exe\n            next-ai-desktop/release/update-manifest.json
           fail_on_unmatched_files: true
