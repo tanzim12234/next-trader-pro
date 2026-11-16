@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);
-let recognition=null, listening=false, awaitingCommand=false, voiceProcessing=false, lastExchange=null, dictationMode=false;
+let recognition=null, listening=false, awaitingCommand=false, voiceProcessing=false, lastExchange=null, dictationMode=false, selectedSkillId=null;
 const metricsHistory=[];
 let networkSnapshot=null,systemStatsBusy=false;
 const stage=$('jarvisStage');
@@ -117,7 +117,7 @@ async function autoLearnExchange(exchange){
   }
  }catch(error){$('learningState').textContent='স্বয়ংক্রিয় শেখা সাময়িকভাবে হয়নি: '+error.message;}
 }
-$('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{const answer=await window.nextAI.chat(q);$('chat').textContent=answer;lastExchange={question:q,answer};$('saveConversation').disabled=false;$('reviewLearning').disabled=false;$('conversationState').textContent='NEXT কথোপকথন থেকে স্থায়ী জ্ঞান শেখার চেষ্টা করছে…';setCoreState('speaking','Response ready');speak(answer);void autoLearnExchange(lastExchange);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
+$('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{const answer=await window.nextAI.chat({message:q,skillId:selectedSkillId});$('chat').textContent=answer;lastExchange={question:q,answer};$('saveConversation').disabled=false;$('reviewLearning').disabled=false;$('conversationState').textContent='NEXT কথোপকথন থেকে স্থায়ী জ্ঞান শেখার চেষ্টা করছে…';setCoreState('speaking','Response ready');speak(answer);void autoLearnExchange(lastExchange);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
 $('openTextFile').onclick=async()=>{try{const file=await window.nextAI.openTextFile();if(file.cancelled)return;$('fileName').value=file.name;$('fileContent').value=file.content;$('fileState').textContent='Opened: '+file.name;}catch(e){$('fileState').textContent='Open failed: '+e.message;}};
 $('saveTextFile').onclick=()=>requestVoiceConfirmation('Save the current text as '+$('fileName').value+'. The native save dialog will let you choose its location.',async()=>{try{const result=await window.nextAI.saveTextFile({name:$('fileName').value,content:$('fileContent').value});if(!result.cancelled)$('fileState').textContent='Saved: '+result.name;}catch(e){$('fileState').textContent='Save failed: '+e.message;throw e;}});
 $('yt').onclick=()=>window.nextAI.runAction({type:'youtube-open'});
@@ -573,8 +573,28 @@ async function refreshSkillLibrary(){
    const row=document.createElement('div');row.className='memory-item';
    const info=document.createElement('div');info.style.flex='1';
    const title=document.createElement('strong');title.textContent=skill.name;
-   const desc=document.createElement('p');desc.className='hint';desc.textContent=(skill.description||'No description')+' · '+skill.trust+' · Disabled';
+   const desc=document.createElement('p');desc.className='hint';desc.textContent=(skill.description||'No description')+' · '+skill.trust+' · '+(skill.enabled?'Enabled':'Disabled');
    info.append(title,desc);
+   const use=document.createElement('button');use.textContent=selectedSkillId===skill.id?'Selected for AI':(skill.enabled?'Use in AI':'Enable & use');
+   use.disabled=selectedSkillId===skill.id;
+   use.onclick=async()=>{
+    use.disabled=true;
+    try{
+     if(!skill.enabled)await window.nextAI.setSkillEnabled({id:skill.id,enabled:true});
+     selectedSkillId=skill.id;
+     $('activeSkillState').textContent='AI reference selected: '+skill.name+' · downloaded content is untrusted and will not execute.';
+     await refreshSkillLibrary();
+    }catch(e){$('skillPreview').textContent='Could not select skill: '+e.message;use.disabled=false;}
+   };
+   const toggle=document.createElement('button');toggle.textContent=skill.enabled?'Disable':'Enable';
+   toggle.onclick=async()=>{
+    try{
+     await window.nextAI.setSkillEnabled({id:skill.id,enabled:!skill.enabled});
+     if(!skill.enabled){$('activeSkillState').textContent='Skill enabled. Select “Use in AI” to attach it to a chat.';}
+     else if(selectedSkillId===skill.id){selectedSkillId=null;$('activeSkillState').textContent='Selected skill disabled; no skill reference is active.';}
+     await refreshSkillLibrary();
+    }catch(e){$('skillPreview').textContent='Enable/disable failed: '+e.message;}
+   };
    const inspect=document.createElement('button');inspect.textContent='Inspect';inspect.onclick=async()=>{
     try{const item=await window.nextAI.readSkill(skill.id);$('skillPreview').textContent='UNTRUSTED SKILL · '+item.metadata.name+'\nSource: '+item.metadata.sourceUrl+'\n\n'+item.content;}
     catch(e){$('skillPreview').textContent='Could not read skill: '+e.message;}
@@ -584,7 +604,7 @@ async function refreshSkillLibrary(){
     try{await window.nextAI.removeSkill(skill.id);$('skillPreview').textContent='Skill removed.';await refreshSkillLibrary();}
     catch(e){$('skillPreview').textContent='Remove failed: '+e.message;}
    };
-   row.append(info,inspect,remove);box.append(row);
+   row.append(info,use,toggle,inspect,remove);box.append(row);
   }
  }catch(e){box.textContent='Skill library unavailable: '+e.message;}
 }
