@@ -82,21 +82,82 @@ ipcMain.handle('files:extract-learning-file', async () => {
     extracted = parsed.value || '';
     note = 'DOCX text extraction';
   } else if (extension === '.pdf') {
-    const pdfParse = require('pdf-parse');
-    const parsed = await pdfParse(await fs.promises.readFile(filePath), { max: 100 });
-    extracted = (parsed.text || '').trim();
-    note = 'PDF text extraction';
+    // Read each PDF page independently: mixed PDFs may contain both selectable text
+    // and scanned image pages. OCR only pages with little or no text.
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    const canvasModule = require('@napi-rs/canvas');
+    const bytes = await fs.promises.readFile(filePath);
+    const document = await pdfjs.getDocument({
+      data: new Uint8Array(bytes),
+      useSystemFonts: true,
+      isEvalSupported: false
+    }).promise;
+    let worker;
+    const pageTexts = [];
+    const pageCount = document.numPages;
+    const maxPages = Math.min(pageCount, 10);
+    let ocrPages = 0;
+    try {
+      for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
+        const page = await document.getPage(pageNumber);
+        try {
+          const content = await page.getTextContent();
+          const selectableText = content.items
+            .filter(item => typeof item.str === 'string')
+            .map(item => item.str)
+            .join(' ')
+            .replace(/\\s+/g, ' ')
+            .trim();
+          let pageText = selectableText;
+          if (selectableText.replace(/\\s/g, '').length < 35) {
+            if (!worker) {
+              const { createWorker } = require('tesseract.js');
+              const tesseractRoot = path.dirname(require.resolve('tesseract.js'));
+              const workerPath = path.join(tesseractRoot, 'worker.min.js').replace(/app\\.asar([/\\\\])/u, 'app.asar.unpacked$1');
+              worker = await createWorker('eng+ben', 1, {
+                workerPath,
+                langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+                cachePath: path.join(app.getPath('userData'), 'ocr-language-cache'),
+                gzip: true,
+                logger: () => {}
+              });
+            }
+            const baseViewport = page.getViewport({ scale: 1 });
+            const scale = Math.min(1.5, 1800 / Math.max(baseViewport.width, baseViewport.height));
+            const viewport = page.getViewport({ scale });
+            const canvas = canvasModule.createCanvas(
+              Math.max(1, Math.ceil(viewport.width)),
+              Math.max(1, Math.ceil(viewport.height))
+            );
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            const recognized = await worker.recognize(canvas.toBuffer('image/png'));
+            pageText = (recognized.data.text || '').trim();
+            ocrPages++;
+          }
+          if (pageText) pageTexts.push('[Page ' + pageNumber + ']\\n' + pageText);
+        } finally {
+          page.cleanup();
+        }
+      }
+    } finally {
+      try { await document.destroy(); } finally {
+        if (worker) await worker.terminate();
+      }
+    }
+    extracted = pageTexts.join('\\n\\n');
+    note = 'PDF page-by-page extraction · ' + maxPages + ' page(s) processed'
+      + (ocrPages ? ' · OCR on ' + ocrPages + ' scanned page(s)' : '')
+      + (maxPages < pageCount ? ' · first 10 pages only' : '');
   } else if (!imageExtensions.includes(extension)) {
     throw new Error('Unsupported document or image format.');
   }
 
-  // Use local OCR when the selected file is an image or the PDF has no usable text layer.
-  if (imageExtensions.includes(extension) || (extension === '.pdf' && extracted.replace(/\s/g, '').length < 80)) {
+  if (imageExtensions.includes(extension)) {
     const { createWorker } = require('tesseract.js');
     let worker;
     try {
       const tesseractRoot = path.dirname(require.resolve('tesseract.js'));
-      const workerPath = path.join(tesseractRoot, 'worker.min.js').replace(/app\.asar([/\\])/u, 'app.asar.unpacked$1');
+      const workerPath = path.join(tesseractRoot, 'worker.min.js').replace(/app\\.asar([/\\\\])/u, 'app.asar.unpacked$1');
       worker = await createWorker('eng+ben', 1, {
         workerPath,
         langPath: 'https://tessdata.projectnaptha.com/4.0.0',
@@ -104,39 +165,12 @@ ipcMain.handle('files:extract-learning-file', async () => {
         gzip: true,
         logger: () => {}
       });
-      if (imageExtensions.includes(extension)) {
-        const result = await worker.recognize(filePath);
-        extracted = result.data.text || '';
-      } else {
-        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-        const canvasModule = require('@napi-rs/canvas');
-        const bytes = await fs.promises.readFile(filePath);
-        const document = await pdfjs.getDocument({ data: new Uint8Array(bytes), useSystemFonts: true, isEvalSupported: false }).promise;
-        const pageTexts = [];
-        const pageCount = document.numPages;
-        const maxPages = Math.min(pageCount, 10);
-        for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
-          const page = await document.getPage(pageNumber);
-          const baseViewport = page.getViewport({ scale: 1 });
-          const scale = Math.min(1.5, 1800 / Math.max(baseViewport.width, baseViewport.height));
-          const viewport = page.getViewport({ scale });
-          const canvas = canvasModule.createCanvas(Math.max(1, Math.ceil(viewport.width)), Math.max(1, Math.ceil(viewport.height)));
-          const context = canvas.getContext('2d');
-          await page.render({ canvasContext: context, viewport }).promise;
-          const recognized = await worker.recognize(canvas.toBuffer('image/png'));
-          const pageText = (recognized.data.text || '').trim();
-          if (pageText) pageTexts.push('[Page ' + pageNumber + ']\n' + pageText);
-          page.cleanup();
-        }
-        await document.destroy();
-        const ocrText = pageTexts.join('\n\n');
-        if (ocrText.length > extracted.length) extracted = ocrText;
-        note = 'PDF local OCR · ' + maxPages + ' page(s) processed' + (maxPages < pageCount ? ' · first 10 pages only' : '');
-      }
+      const result = await worker.recognize(filePath);
+      extracted = result.data.text || '';
     } finally {
       if (worker) await worker.terminate();
     }
-    if (imageExtensions.includes(extension)) note = 'Local OCR · Bengali + English';
+    note = 'Local OCR · Bengali + English';
   }
   extracted = extracted.replace(/\r\n/g, '\n').trim();
   if (!extracted) throw new Error('এই ফাইল থেকে text পড়া যায়নি। পরিষ্কার ছবি বা PDF দিয়ে আবার চেষ্টা করো।');
