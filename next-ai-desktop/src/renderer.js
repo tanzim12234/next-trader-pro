@@ -225,6 +225,17 @@ $('remember').onclick=async()=>{
  try{await window.nextAI.remember({text,category:'personal'});$('memoryText').value='';$('memoryState').textContent='Saved to your encrypted Personal Brain.';await refreshMemories();}
  catch(e){$('memoryState').textContent=e.message;}
 };
+$('teachKnowledge').onclick=async()=>{
+ const text=$('knowledgeText').value.trim();if(!text)return;
+ const button=$('teachKnowledge');button.disabled=true;$('knowledgeState').textContent='Processing lesson into searchable memory…';
+ try{
+  const result=await window.nextAI.teachKnowledge({text,category:$('knowledgeCategory').value});
+  $('knowledgeText').value='';
+  $('knowledgeState').textContent='Lesson saved: '+result.saved+' searchable memory chunk(s).';
+  await refreshMemories();
+ }catch(e){$('knowledgeState').textContent='Could not save lesson: '+e.message;}
+ finally{button.disabled=false;}
+};
 $('refreshMemory').onclick=refreshMemories;
 $('clearMemory').onclick=async()=>{
  try{const r=await window.nextAI.clearMemories();if(r.cancelled)return;await refreshMemories();$('memoryState').textContent='All saved memories cleared.';}
