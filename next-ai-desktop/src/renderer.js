@@ -50,6 +50,28 @@ async function refreshTaskHistory(){
 async function saveTaskRun(goal,status,completed,total){
  try{await window.nextAI.saveTaskHistory({id:Date.now().toString(),goal,status,completed,total,createdAt:new Date().toISOString()});await refreshTaskHistory();}catch(e){$('taskState').textContent+=' · History save failed: '+e.message;}
 }
+async function executeVoiceTaskPlan(plan,goal){
+ let completed=0;
+ $('executeTask').disabled=true;$('planTask').disabled=true;
+ try{
+  for(const step of plan.steps){
+   $('taskState').textContent='Voice command · executing '+step.id+'/'+plan.steps.length+': '+step.title;
+   const result=await window.nextAI.executeTaskStep(step.action);
+   if(result.cancelled)throw new Error('Action was cancelled.');
+   completed++;
+  }
+  $('taskState').textContent='Voice task completed · '+completed+' safe action(s) executed without repeat prompts.';
+  await saveTaskRun(goal,'completed',completed,plan.steps.length);
+  speak('Done. I completed '+completed+' actions.');
+ }catch(e){
+  $('taskState').textContent='Voice task stopped after '+completed+' action(s): '+e.message;
+  await saveTaskRun(goal,'failed',completed,plan.steps.length);
+  speak('I stopped because an action failed.');
+ }finally{
+  $('executeTask').disabled=!pendingTaskPlan?.steps?.length;
+  $('planTask').disabled=false;
+ }
+}
 $('planTask').onclick=async()=>{
  const goal=$('taskGoal').value.trim();if(!goal)return;
  const button=$('planTask');button.disabled=true;$('executeTask').disabled=true;pendingTaskPlan=null;$('taskPlanList').textContent='';$('taskState').textContent='Creating a safe task proposal…';
@@ -123,7 +145,7 @@ async function runVoiceCommand(raw){
     if(matches.length!==1){speak(matches.length?'I found more than one matching device. Please use its exact name.':'I could not find that device in Home Assistant.');$('voiceState').textContent='Smart-home device match count: '+matches.length;return;}
     const device=matches[0];
     const result=await window.nextAI.callHomeService({domain:device.domain,entityId:device.entityId,service:routed.service,temperature:routed.temperature});
-    speak(result.cancelled?'Device action cancelled.':'Device action request completed.');$('voiceState').textContent='Smart-home action: '+device.name+' · '+routed.service;return;
+    speak(result.cancelled?'Device action cancelled.':'Done. Device command completed.');$('voiceState').textContent='Smart-home action: '+device.name+' · '+routed.service;return;
    }
    if(routed.intent==='open-app'){await window.nextAI.runAction({type:'open-app',app:routed.app});speak('Opening '+routed.app.replace('-', ' '));return;}
    if(routed.intent==='youtube-open'){await window.nextAI.runAction({type:'youtube-open'});speak('Opening YouTube');return;}
@@ -131,7 +153,7 @@ async function runVoiceCommand(raw){
    if(routed.intent==='web-search'){$('researchQuery').value=routed.query;$('runResearch').click();speak('Starting web research');return;}
    if(routed.intent==='media-toggle'){await window.nextAI.runAction({type:'media',command:'playpause'});speak('Media control requested');return;}
    if(routed.intent==='ask-ai'){$('prompt').value=routed.prompt;$('send').click();return;}
-   if(routed.intent==='type-text'){const result=await window.nextAI.runAction({type:'write-text',text:routed.text});speak(result.cancelled?'Cancelled':'Typing requested');return;}
+   if(routed.intent==='type-text'){const result=await window.nextAI.runAction({type:'write-text',text:routed.text});speak('Done. Text pasted.');return;}
   }
   const appCommands=[
    {pattern:/^(open|launch)\s+notepad$|^নোটপ্যাড\s*(খোলো|চালু করো)$/i,app:'notepad',label:'Notepad'},
@@ -156,7 +178,7 @@ async function runVoiceCommand(raw){
   }
   if(text.startsWith('write ')||text.startsWith('লিখো ')||text.startsWith('লিখে দাও ')){
    const value=raw.trim().replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').replace(/^(write|লিখো|লিখে দাও)\s*/i,'');
-   const r=await window.nextAI.runAction({type:'write-text',text:value});speak(r.cancelled?'Cancelled':'Paste requested');return;
+   const r=await window.nextAI.runAction({type:'write-text',text:value});speak('Done. Text pasted.');return;
   }
   if(text.startsWith('ask ')||text.startsWith('জিজ্ঞেস করো ')||text.startsWith('প্রশ্ন করো ')){
    const q=raw.trim().replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').replace(/^(ask|জিজ্ঞেস করো|প্রশ্ন করো)\s*/i,'');
@@ -168,9 +190,9 @@ async function runVoiceCommand(raw){
    if(proposal.steps&&proposal.steps.length){
     pendingTaskPlan=proposal;$('taskPlanList').textContent='';
     for(const step of proposal.steps){const row=document.createElement('div');row.className='memory-item';const label=document.createElement('span');label.textContent=step.id+'. '+step.title+' · '+step.action.type;row.append(label);$('taskPlanList').append(row);}
-    $('taskState').textContent=proposal.steps.length+' safe action(s) proposed from voice. Review and approve before execution.';
-    $('executeTask').disabled=false;$('taskGoal').value=raw;
-    speak('I prepared a safe action plan. Please review and approve it.');
+    $('taskGoal').value=raw;
+    $('taskState').textContent=proposal.steps.length+' allowlisted action(s) received directly from your voice command.';
+    await executeVoiceTaskPlan(proposal,raw);
     return;
    }
   }catch{}
