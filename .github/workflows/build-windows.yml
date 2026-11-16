@@ -33,6 +33,7 @@ jobs:
           node --check src/preload.cjs
           node --check src/brain.cjs
           node --check src/renderer.js
+          node --check src/skill-manager.cjs
           node --check src/system-monitor.cjs
           node --check src/command-router.cjs
           node --check test/semantic-runtime-smoke.cjs
