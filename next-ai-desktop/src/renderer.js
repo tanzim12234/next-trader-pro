@@ -127,12 +127,12 @@ $('openExplorer').onclick=()=>window.nextAI.runAction({type:'open-app',app:'file
 $('openTaskManager').onclick=()=>window.nextAI.runAction({type:'open-app',app:'task-manager'});
 $('openSnippingTool').onclick=()=>window.nextAI.runAction({type:'open-app',app:'snipping-tool'});
 $('openPaint').onclick=()=>window.nextAI.runAction({type:'open-app',app:'paint'});
-function speak(text){if(!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>setCoreState('', 'Awaiting input');u.onerror=()=>setCoreState('', 'Voice output unavailable');speechSynthesis.speak(u);}
+function speak(text,after){if(!('speechSynthesis'in window)){if(typeof after==='function')after();return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>{setCoreState('', 'Awaiting input');if(typeof after==='function')after();};u.onerror=()=>{setCoreState('', 'Voice output unavailable');if(typeof after==='function')after();};speechSynthesis.speak(u);}
 let pendingVoiceConfirmation=null;
 function requestVoiceConfirmation(question,action){
  pendingVoiceConfirmation=action;awaitingCommand=false;
  $('voiceState').textContent='Confirmation required · say “Yes sure” or “No”';
- speak(question+' Sir, are you sure? Say “Yes sure” to continue or “No” to cancel.');
+ speak(question+' Sir, are you sure? Say “Yes sure” to continue or “No” to cancel.',()=>{if(!listening)startVoice();});
 }
 async function handleVoiceConfirmation(phrase){
  if(!pendingVoiceConfirmation)return false;
@@ -141,7 +141,7 @@ async function handleVoiceConfirmation(phrase){
  const action=pendingVoiceConfirmation;pendingVoiceConfirmation=null;
  if(decision==='no'){$('voiceState').textContent='Voice action cancelled.';speak('Understood. Action cancelled.');return true;}
  $('voiceState').textContent='Voice confirmation accepted. Executing…';voiceProcessing=true;
- try{await action();$('voiceState').textContent='Confirmed action completed.';}
+ try{await action();$('voiceState').textContent='Confirmed action completed.';speak('Confirmed. The action has been completed.');}
  catch(e){$('voiceState').textContent='Confirmed action failed: '+e.message;speak('The confirmed action failed.');}
  finally{voiceProcessing=false;}
  return true;
@@ -395,7 +395,7 @@ async function refreshFolderItems(){
     const enter=document.createElement('button');enter.textContent='Open folder';enter.onclick=async()=>{try{await window.nextAI.enterFolder(item.name);await refreshFolderItems();}catch(e){$('folderState').textContent=e.message;}};row.append(enter);
    }else{
     const open=document.createElement('button');open.textContent='Open';open.onclick=async()=>{try{await window.nextAI.openFileItem(item.name);$('folderState').textContent='Open request completed.';}catch(e){$('folderState').textContent=e.message;}};
-    const copy=document.createElement('button');copy.textContent='Copy';copy.onclick=async()=>{try{const out=await window.nextAI.copyFileItem(item.name);$('folderState').textContent=out.cancelled?'Copy cancelled.':'Copied: '+out.name;}catch(e){$('folderState').textContent=e.message;}};
+    const copy=document.createElement('button');copy.textContent='Copy';copy.onclick=()=>requestVoiceConfirmation('Copy the file '+item.name+' to the destination you choose.',async()=>{try{const out=await window.nextAI.copyFileItem(item.name);$('folderState').textContent='Copied: '+out.name;}catch(e){$('folderState').textContent='Copy failed: '+e.message;speak('File copy failed.');}});
     row.append(open,copy);
    }
    box.append(row);
@@ -405,7 +405,7 @@ async function refreshFolderItems(){
 $('chooseFolder').onclick=async()=>{try{const result=await window.nextAI.chooseFolder();if(result.cancelled)return;await refreshFolderItems();}catch(e){$('folderState').textContent=e.message;}};
 $('refreshFolder').onclick=refreshFolderItems;
 $('parentFolder').onclick=async()=>{try{await window.nextAI.goParentFolder();await refreshFolderItems();}catch(e){$('folderState').textContent=e.message;}};
-$('createFolder').onclick=async()=>{const name=window.prompt('নতুন folder-এর নাম লিখো:');if(!name)return;try{const result=await window.nextAI.createFolder(name);if(result.cancelled)return;$('folderState').textContent='Folder created: '+result.name;await refreshFolderItems();}catch(e){$('folderState').textContent=e.message;}};
+$('createFolder').onclick=()=>{const name=window.prompt('নতুন folder-এর নাম লিখো:');if(!name)return;requestVoiceConfirmation('Create a new folder named '+name+'.',async()=>{try{const result=await window.nextAI.createFolder(name);$('folderState').textContent='Folder created: '+result.name;await refreshFolderItems();}catch(e){$('folderState').textContent='Folder creation failed: '+e.message;speak('Folder creation failed.');}});};
 $('browserOpen').onclick=async()=>{const button=$('browserOpen');button.disabled=true;$('browserState').textContent='Opening secure browser…';try{const result=await window.nextAI.openBrowser($('browserAddress').value);$('browserAddress').value=result.url;$('browserState').textContent='Secure Browser opened: '+result.url;}catch(e){$('browserState').textContent='Browser error: '+e.message;}finally{button.disabled=false;}};
 for(const [id,direction] of [['browserBack','back'],['browserForward','forward'],['browserReload','reload']]){
  $(id).onclick=async()=>{try{await window.nextAI.browserNavigate(direction);$('browserState').textContent='Browser '+direction+' requested.';}catch(e){$('browserState').textContent=e.message;}};
@@ -466,7 +466,7 @@ async function refreshBackups(){
  try{
   const items=await window.nextAI.listBackups();const box=$('backupList');box.textContent='';
   if(!items.length){box.textContent='No encrypted backups yet.';return;}
-  for(const item of items){const row=document.createElement('div');row.className='memory-item';const label=document.createElement('span');label.textContent=new Date(item.createdAt).toLocaleString()+' · '+item.files+' encrypted file(s)';const restore=document.createElement('button');restore.textContent='Restore';restore.onclick=async()=>{restore.disabled=true;try{const result=await window.nextAI.restoreBackup(item.id);$('backupState').textContent=result.cancelled?'Restore cancelled.':'Restored '+result.restored+' encrypted file(s). Restart NEXT AI if settings do not refresh.';await refreshBackups();}catch(e){$('backupState').textContent='Restore failed: '+e.message;}finally{restore.disabled=false;}};row.append(label,restore);box.append(row);}
+  for(const item of items){const row=document.createElement('div');row.className='memory-item';const label=document.createElement('span');label.textContent=new Date(item.createdAt).toLocaleString()+' · '+item.files+' encrypted file(s)';const restore=document.createElement('button');restore.textContent='Restore';restore.onclick=()=>{restore.disabled=true;requestVoiceConfirmation('Restore the encrypted backup created '+new Date(item.createdAt).toLocaleString()+'. This can replace current memory, settings and task history.',async()=>{try{const result=await window.nextAI.restoreBackup(item.id);$('backupState').textContent='Restored '+result.restored+' encrypted file(s). Restart NEXT AI if settings do not refresh.';await refreshBackups();}catch(e){$('backupState').textContent='Restore failed: '+e.message;speak('Backup restore failed.');}finally{restore.disabled=false;}});};row.append(label,restore);box.append(row);}
  }catch(e){$('backupState').textContent=e.message;}
 }
 $('createBackup').onclick=async()=>{const button=$('createBackup');button.disabled=true;try{const result=await window.nextAI.createBackup();$('backupState').textContent='Encrypted backup created · '+result.files+' file(s).';await refreshBackups();}catch(e){$('backupState').textContent='Backup failed: '+e.message;}finally{button.disabled=false;}};
