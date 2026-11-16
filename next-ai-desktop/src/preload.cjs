@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('nextAI', Object.freeze({
   openBrowser: url => ipcRenderer.invoke('browser:open', url),
   browserNavigate: direction => ipcRenderer.invoke('browser:navigate', direction),
   listMemories: query => ipcRenderer.invoke('brain:list', query || ''),
+  getBrainGraph: () => ipcRenderer.invoke('brain:graph'),
   remember: input => ipcRenderer.invoke('brain:remember', input),
   teachKnowledge: input => ipcRenderer.invoke('brain:ingest', input),
   forgetMemory: id => ipcRenderer.invoke('brain:forget', id),
