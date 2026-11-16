@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);
-let recognition=null, listening=false, awaitingCommand=false, voiceProcessing=false, lastExchange=null, dictationMode=false, selectedSkillId=null;
+let recognition=null, listening=false, awaitingCommand=false, voiceProcessing=false, lastExchange=null, dictationMode=false, selectedSkillId=null,currentPatchId=null;
 const metricsHistory=[];
 let networkSnapshot=null,systemStatsBusy=false;
 const stage=$('jarvisStage');
@@ -142,6 +142,38 @@ $('saveCodeProposal').onclick=()=>requestVoiceConfirmation('Save the reviewed Co
   const result=await window.nextAI.saveTextFile({name:'NEXT-improvement-draft.'+ext,content:$('codeProposal').value});
   if(!result.cancelled)$('codeLabState').textContent='Draft saved: '+result.name;
  }catch(e){$('codeLabState').textContent='Could not save draft: '+e.message;throw e;}
+});
+$('stagePatch').onclick=async()=>{
+ try{
+  if($('codeLanguage').value!=='javascript')throw new Error('Patch staging currently accepts JavaScript source only.');
+  const target=$('patchTargetPath').value.trim();
+  const code=$('codeProposal').value;
+  if(!target||!code)throw new Error('Target path and generated code are required.');
+  await window.nextAI.validateCodeProposal({language:'javascript',code});
+  const proposal=await window.nextAI.createPatchProposal({path:target,content:code});
+  currentPatchId=proposal.id;
+  $('applyPatch').disabled=false;$('rollbackPatch').disabled=true;
+  $('patchState').textContent='Review required · '+proposal.files.length+' file(s) · ID '+proposal.id.slice(0,8)+'. Apply করতে voice + native confirmation লাগবে.';
+  $('codeExplanation').textContent='Patch staged for '+proposal.files[0].path+'. Original file hash: '+proposal.files[0].beforeHash.slice(0,12)+'. New hash: '+proposal.files[0].afterHash.slice(0,12)+'.';
+ }catch(e){$('patchState').textContent='Could not stage patch: '+e.message;}
+};
+$('applyPatch').onclick=()=>requestVoiceConfirmation('Apply the reviewed source-code patch to the selected project folder. NEXT will not run the code or tests.',async()=>{
+ try{
+  if(!currentPatchId)throw new Error('No staged patch is selected.');
+  const result=await window.nextAI.applyPatchProposal(currentPatchId);
+  if(result.cancelled){$('patchState').textContent='Patch application cancelled.';return;}
+  $('patchState').textContent='Patch applied to '+result.files.join(', ')+'. Tests were NOT run. Run project tests/CI before using it.';
+  $('applyPatch').disabled=true;$('rollbackPatch').disabled=false;
+ }catch(e){$('patchState').textContent='Patch was not applied: '+e.message;throw e;}
+});
+$('rollbackPatch').onclick=()=>requestVoiceConfirmation('Rollback the last applied source-code patch. Restore the original file contents.',async()=>{
+ try{
+  if(!currentPatchId)throw new Error('No applied patch is selected.');
+  const result=await window.nextAI.rollbackPatchProposal(currentPatchId);
+  if(result.cancelled){$('patchState').textContent='Rollback cancelled.';return;}
+  $('patchState').textContent='Rolled back: '+result.files.join(', ');
+  $('rollbackPatch').disabled=true;
+ }catch(e){$('patchState').textContent='Rollback failed: '+e.message;throw e;}
 });
 $('openTextFile').onclick=async()=>{try{const file=await window.nextAI.openTextFile();if(file.cancelled)return;$('fileName').value=file.name;$('fileContent').value=file.content;$('fileState').textContent='Opened: '+file.name;}catch(e){$('fileState').textContent='Open failed: '+e.message;}};
 $('saveTextFile').onclick=()=>requestVoiceConfirmation('Save the current text as '+$('fileName').value+'. The native save dialog will let you choose its location.',async()=>{try{const result=await window.nextAI.saveTextFile({name:$('fileName').value,content:$('fileContent').value});if(!result.cancelled)$('fileState').textContent='Saved: '+result.name;}catch(e){$('fileState').textContent='Save failed: '+e.message;throw e;}});
