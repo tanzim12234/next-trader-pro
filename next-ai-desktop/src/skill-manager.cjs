@@ -5,7 +5,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 const MAX_SKILL_BYTES = 32 * 1024;
-const OWNER_REPO = /^[A-Za-z0-9_.-]{1,100}\\/[A-Za-z0-9_.-]{1,100}$/;
+const OWNER_REPO = /^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/;
 const SAFE_ID = /^[a-z0-9][a-z0-9._-]{0,100}$/i;
 
 function createSkillManager({ app, fetchImpl = globalThis.fetch }) {
@@ -37,7 +37,7 @@ function createSkillManager({ app, fetchImpl = globalThis.fetch }) {
   }
   async function installFromGitHub(fullName, skillPath = 'SKILL.md') {
     if (typeof fullName !== 'string' || !OWNER_REPO.test(fullName)) throw new Error('Use a GitHub repository in owner/repo format.');
-    if (typeof skillPath !== 'string' || skillPath.length > 180 || skillPath.startsWith('/') || skillPath.split('/').some(part => !part || part === '.' || part === '..') || !/\\.md$/i.test(skillPath)) {
+    if (typeof skillPath !== 'string' || skillPath.length > 180 || skillPath.startsWith('/') || skillPath.split('/').some(part => !part || part === '.' || part === '..') || !/\.md$/i.test(skillPath)) {
       throw new Error('Only a Markdown skill file with a safe repository path can be installed.');
     }
     const api = 'https://api.github.com/repos/' + fullName;
@@ -51,10 +51,10 @@ function createSkillManager({ app, fetchImpl = globalThis.fetch }) {
     const fileResponse = await fetchImpl(fileUrl, { headers, signal: AbortSignal.timeout(15000) });
     if (!fileResponse.ok) throw new Error('Skill Markdown file was not found (' + fileResponse.status + ').');
     const file = await fileResponse.json();
-    if (file.type !== 'file' || file.encoding !== 'base64' || typeof file.content !== 'string' || !/\\.md$/i.test(file.name || '')) {
+    if (file.type !== 'file' || file.encoding !== 'base64' || typeof file.content !== 'string' || !/\.md$/i.test(file.name || '')) {
       throw new Error('GitHub did not return a Markdown file.');
     }
-    const content = Buffer.from(file.content.replace(/\\s/g, ''), 'base64').toString('utf8');
+    const content = Buffer.from(file.content.replace(/\s/g, ''), 'base64').toString('utf8');
     if (!content.trim() || Buffer.byteLength(content, 'utf8') > MAX_SKILL_BYTES) throw new Error('Skill must contain 1–32 KB of Markdown.');
     const slug = fullName.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').slice(0, 80);
     const id = slug + '-' + crypto.createHash('sha256').update(fullName.toLowerCase()).digest('hex').slice(0, 12);
