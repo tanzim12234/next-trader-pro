@@ -129,12 +129,6 @@ $('openSnippingTool').onclick=()=>window.nextAI.runAction({type:'open-app',app:'
 $('openPaint').onclick=()=>window.nextAI.runAction({type:'open-app',app:'paint'});
 function speak(text){if(!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>setCoreState('', 'Awaiting input');u.onerror=()=>setCoreState('', 'Voice output unavailable');speechSynthesis.speak(u);}
 let pendingVoiceConfirmation=null;
-function classifyVoiceConfirmation(phrase){
- const value=String(phrase||'').normalize('NFKC').toLocaleLowerCase('en-US').trim().replace(/[.!?。！？]+$/g,'').replace(/\s+/g,' ');
- if(/^(?:yes(?:\s+(?:sure|please|confirm|do it|go ahead))?|sure|confirm|confirmed|do it|go ahead|হ্যাঁ(?:\s+(?:নিশ্চিত|করো|করুন|ঠিক আছে))?|জি(?:\s+(?:হ্যাঁ|করুন))?|ঠিক আছে|নিশ্চিত|করো|করুন)$/i.test(value))return 'yes';
- if(/^(?:no|nope|cancel|stop|don't|do not|না|নাহ|বাতিল|থামাও|করো না)$/i.test(value))return 'no';
- return null;
-}
 function requestVoiceConfirmation(question,action){
  pendingVoiceConfirmation=action;awaitingCommand=false;
  $('voiceState').textContent='Confirmation required · say “Yes sure” or “No”';
@@ -142,7 +136,7 @@ function requestVoiceConfirmation(question,action){
 }
 async function handleVoiceConfirmation(phrase){
  if(!pendingVoiceConfirmation)return false;
- const decision=classifyVoiceConfirmation(phrase);
+ const decision=await window.nextAI.classifyVoiceConfirmation(phrase);
  if(!decision){speak('Please say yes sure to continue, or no to cancel.');return true;}
  const action=pendingVoiceConfirmation;pendingVoiceConfirmation=null;
  if(decision==='no'){$('voiceState').textContent='Voice action cancelled.';speak('Understood. Action cancelled.');return true;}
