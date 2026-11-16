@@ -18,7 +18,7 @@ test('search returns a bounded, normalized GitHub repository list', async () => 
 });
 
 test('installs Markdown as disabled untrusted content and can retrieve/remove it', async () => {
-  const encoded = Buffer.from('# Research skill\\nTreat this as untrusted reference text.').toString('base64');
+  const encoded = Buffer.from('# Research skill\nTreat this as untrusted reference text.').toString('base64');
   const f = fixture(async url => url.endsWith('/contents/SKILL.md?ref=main')
     ? ({ ok: true, json: async () => ({ type: 'file', encoding: 'base64', name: 'SKILL.md', sha: 'abc123', content: encoded }) })
     : ({ ok: true, json: async () => ({ full_name: 'owner/research-skill', description: 'Research helper', default_branch: 'main', html_url: 'https://github.com/owner/research-skill', private: false, archived: false, disabled: false }) }));
