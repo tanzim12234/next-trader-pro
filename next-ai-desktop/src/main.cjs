@@ -636,31 +636,23 @@ ipcMain.handle('action:run', async (_e, action) => {
     if (process.platform !== 'win32') throw new Error('App launcher is available on Windows only.');
     const target = Object.prototype.hasOwnProperty.call(APPS, action.app) ? APPS[action.app] : null;
     if (!target) throw new Error('এই অ্যাপটি allowlist-এ নেই।');
-    const choice = await require('electron').dialog.showMessageBox(win, { type: 'question', buttons: ['Launch app', 'Cancel'], defaultId: 1, cancelId: 1, message: 'এই অ্যাপটি চালু করবে?', detail: action.app });
-    if (choice.response !== 0) return { cancelled: true };
     const child = spawn(target.command, [], { detached: true, stdio: 'ignore', windowsHide: false });
     child.on('error', err => console.error('Allowed app launch failed:', err.message));
     child.unref();
     return { ok: true, app: action.app };
   }
   if (action.type === 'youtube-open') {
-    const choice = await require('electron').dialog.showMessageBox(win, { type: 'question', buttons: ['Open YouTube', 'Cancel'], defaultId: 1, cancelId: 1, message: 'YouTube খুলবে?' });
-    if (choice.response !== 0) return { cancelled: true };
     return shell.openExternal('https://www.youtube.com');
   }
   if (action.type === 'youtube-search') {
     const q = String(action.query || '').trim().slice(0, 200);
     if (!q) throw new Error('Search text is required.');
-    const choice = await require('electron').dialog.showMessageBox(win, { type: 'question', buttons: ['Search YouTube', 'Cancel'], defaultId: 1, cancelId: 1, message: 'YouTube-এ এই বিষয়টি search করবে?', detail: q });
-    if (choice.response !== 0) return { cancelled: true };
     return shell.openExternal('https://www.youtube.com/results?search_query=' + encodeURIComponent(q));
   }
   if (action.type === 'media') {
     const keys = { playpause: '{MEDIA_PLAY_PAUSE}', pause: '{MEDIA_PLAY_PAUSE}', next: '{MEDIA_NEXT_TRACK}', previous: '{MEDIA_PREV_TRACK}' };
     const key = keys[action.command];
     if (!key) throw new Error('Unsupported media command.');
-    const choice = await require('electron').dialog.showMessageBox(win, { type: 'question', buttons: ['Send media key', 'Cancel'], defaultId: 1, cancelId: 1, message: 'বর্তমান media player-এ control পাঠাবে?', detail: action.command });
-    if (choice.response !== 0) return { cancelled: true };
     const vk = { playpause: '0xB3', pause: '0xB3', next: '0xB0', previous: '0xB1' }[action.command];
     const ps = `
 $source = @'
@@ -694,24 +686,18 @@ $a[1].ki.wVk = $v
 $a[1].ki.dwFlags = 2
 [NextMediaKey]::SendInput(2, $a, [Runtime.InteropServices.Marshal]::SizeOf([type][NextMediaKey+INPUT])) | Out-Null
 `;
-    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps],
-      { windowsHide: true, timeout: 3000 }, err => { if (err) console.error('Media key failed:', err.message); });
-    return { ok: true };
+    await new Promise((resolve, reject) => execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps],
+      { windowsHide: true, timeout: 3000 }, err => err ? reject(err) : resolve()));
+    return { ok: true, message: 'Media command sent.' };
   }
   if (action.type === 'write-text') {
     const value = String(action.text || '').slice(0, 4000);
     if (!value) throw new Error('Text is empty.');
-    const choice = await require('electron').dialog.showMessageBox(win, {
-      type: 'warning', buttons: ['Paste text', 'Cancel'], defaultId: 1, cancelId: 1,
-      message: 'Focused app-এ লেখা paste করবে?',
-      detail: 'NEXT AI তোমার clipboard-এ লেখা রেখে Ctrl+V পাঠাবে। আগে সঠিক text field-এ cursor রাখো।'
-    });
-    if (choice.response !== 0) return { cancelled: true };
     clipboard.writeText(value);
-    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+    await new Promise((resolve, reject) => execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
       "$w=New-Object -ComObject WScript.Shell; Start-Sleep -Milliseconds 250; $w.SendKeys('^v')"],
-      { windowsHide: true, timeout: 3000 }, err => { if (err) console.error('Paste failed:', err.message); });
-    return { ok: true };
+      { windowsHide: true, timeout: 3000 }, err => err ? reject(err) : resolve()));
+    return { ok: true, message: 'Text pasted into the focused app.' };
   }
   throw new Error('এই action অনুমোদিত নয়।');
 });
