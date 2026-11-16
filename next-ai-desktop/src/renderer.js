@@ -3,17 +3,22 @@ let recognition=null, listening=false, awaitingCommand=false, voiceProcessing=fa
 const metricsHistory=[];
 let networkSnapshot=null,systemStatsBusy=false;
 const stage=$('jarvisStage');
+function setHudActivity(activity){
+ const act=$('hudActivity');
+ if(act&&activity)act.textContent=String(activity).toUpperCase().replace(/\s+/g,' ').slice(0,30);
+}
 function setCoreState(state, activity){
  if(!stage)return;
  stage.classList.remove('listening','thinking','speaking');
  if(state)stage.classList.add(state);
+ stage.dataset.state=state||'standby';
  const labels={listening:'VOICE LISTENING',thinking:'PROCESSING REQUEST',speaking:'VOICE RESPONSE'};
  const voice=$('hudVoice'),act=$('hudActivity');
  if(voice)voice.textContent=labels[state]||'VOICE STANDBY';
- if(act&&activity)act.textContent=activity.toUpperCase().slice(0,30);
+ if(act&&activity)act.textContent=activity.toUpperCase().replace(/\s+/g,' ').slice(0,30);
 }
 
-async function refresh(){const s=await window.nextAI.status();$('state').textContent='Secure storage: '+(s.secureStorage?'ON':'UNAVAILABLE')+' · Gemini: '+(s.gemini?'SET':'NOT SET')+' · Groq: '+(s.groq?'SET':'NOT SET');if($('aiProvider'))$('aiProvider').value=s.provider||'auto';if($('hudSystem'))$('hudSystem').textContent=s.secureStorage?'SECURE CORE ONLINE':'SECURE STORAGE OFF';if($('hudEngine'))$('hudEngine').textContent=s.provider==='groq'&&s.groq?'GROQ ENGINE READY':s.gemini?'GEMINI ENGINE READY':s.groq?'GROQ ENGINE READY':'API KEY REQUIRED';}
+async function refresh(){const s=await window.nextAI.status();$('state').textContent='Secure storage: '+(s.secureStorage?'ON':'UNAVAILABLE')+' · Gemini: '+(s.gemini?'SET':'NOT SET')+' · Groq: '+(s.groq?'SET':'NOT SET');if($('aiProvider'))$('aiProvider').value=s.provider||'auto';if($('hudSystem'))$('hudSystem').textContent=s.secureStorage?'SECURE CORE ONLINE':'SECURE STORAGE OFF';if($('hudEngine'))$('hudEngine').textContent=s.provider==='groq'&&s.groq?'GROQ ENGINE READY':s.gemini?'GEMINI ENGINE READY':s.groq?'GROQ ENGINE READY':'API KEY REQUIRED';if($('hudEnvironment'))$('hudEnvironment').textContent=(navigator.platform||'DESKTOP').toUpperCase().slice(0,24);if($('hudMemory'))$('hudMemory').textContent='MEMORY MODULE READY';}
 $('save').onclick=async()=>{try{await window.nextAI.saveKeys({geminiKey:$('gemini').value,groqKey:$('groq').value,provider:$('aiProvider').value});$('gemini').value='';$('groq').value='';$('saveState').textContent='Saved securely.';await refresh();}catch(e){$('saveState').textContent=e.message;}};
 $('testConnection').onclick=async()=>{const b=$('testConnection');b.disabled=true;$('saveState').textContent='Testing API connection…';try{const r=await window.nextAI.testConnection();$('saveState').textContent=r.provider+' connection successful · '+r.model;}catch(e){$('saveState').textContent='Connection failed: '+e.message;}finally{b.disabled=false;}};
 
@@ -111,6 +116,8 @@ async function autoLearnExchange(exchange){
   const result=await window.nextAI.suggestLearning(exchange);
   if(result && result.saved){
    $('learningState').textContent='NEXT নিজে '+result.saved+'টি স্থায়ী তথ্য Personal Brain-এ শিখেছে।';
+   if($('hudMemory'))$('hudMemory').textContent='+'+result.saved+' NEW MEMORY';
+   setHudActivity('PERSONAL BRAIN LEARNED');
    await refreshMemories();
   }else if(result){
    $('learningState').textContent='এই কথোপকথনে নতুন স্থায়ী তথ্য পাওয়া যায়নি।';
@@ -214,6 +221,7 @@ function setDictationMode(enabled){
  if(!dictationMode)speak('Voice typing stopped.');
 }
 async function runVoiceCommand(raw){
+ setCoreState('thinking','Interpreting voice command');
  let text=raw.trim().toLowerCase();
  text=text.replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').trim();
  if(!text){awaitingCommand=true;$('voiceState').textContent='Wake word heard — say a command';speak('Yes?');return;}
@@ -322,14 +330,14 @@ function startVoice(){
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  if(!SR){if(pendingVoiceConfirmation){pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}}dictationMode=false;const button=$('voiceTyping');if(button){button.textContent='Start voice typing';button.setAttribute('aria-pressed','false');}$('voiceState').textContent='Speech recognition is not available in this Electron build. Sensitive action cancelled; use a supported microphone.';return;}
  recognition=new SR();recognition.lang=$('voiceLanguage')?.value||'bn-BD';recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=1;
- recognition.onstart=()=>{$('voiceState').textContent='Listening for “Hey NEXT”…';setCoreState('listening','Wake word detection active');};
+ recognition.onstart=()=>{$('voiceState').textContent='Listening for “Hey NEXT”…';setCoreState('listening',dictationMode?'Voice typing active':'Wake word detection active');};
  recognition.onresult=async ev=>{
   if(voiceProcessing)return;
   for(let i=ev.resultIndex;i<ev.results.length;i++){
    const result=ev.results[i],phrase=result[0].transcript.trim();
-   if(!result.isFinal){if(phrase)$('voiceState').textContent='Hearing: '+phrase;continue;}
+   if(!result.isFinal){if(phrase){$('voiceState').textContent='Hearing: '+phrase;setHudActivity('HEARING: '+phrase);}continue;}
    if(!phrase)continue;
-   $('voiceState').textContent='Heard: '+phrase;
+   $('voiceState').textContent='Heard: '+phrase;setHudActivity('VOICE INPUT RECEIVED');
     if(pendingVoiceConfirmation){await handleVoiceConfirmation(phrase);break;}
    const dictationText=phrase.replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').trim();
    if(dictationMode&&/^(?:stop|end|disable) voice typing|^voice typing stop|^ভয়েস টাইপিং (?:বন্ধ|থামাও) করো|^কথা লেখা বন্ধ করো$/i.test(dictationText)){
@@ -366,10 +374,10 @@ async function refreshSystemStats(){
  if(systemStatsBusy)return;systemStatsBusy=true;
  try{
   const s=await window.nextAI.getSystemStats();
-  $('systemCpu').textContent=s.cpuPercent===null?'Sampling…':s.cpuPercent+'%';
+  $('systemCpu').textContent=s.cpuPercent===null?'Sampling…':s.cpuPercent+'%';if($('hudSystem'))$('hudSystem').textContent='CPU '+(s.cpuPercent===null?'--':s.cpuPercent+'%')+' · RAM '+s.memoryPercent+'%';
   const used=(s.totalMemoryBytes-s.freeMemoryBytes)/1073741824;
   const total=s.totalMemoryBytes/1073741824;
-  $('systemMemory').textContent=s.memoryPercent+'% · '+used.toFixed(1)+' / '+total.toFixed(1)+' GB';
+  $('systemMemory').textContent=s.memoryPercent+'% · '+used.toFixed(1)+' / '+total.toFixed(1)+' GB';if($('hudActivity')&&(!stage.classList.contains('listening')&&!stage.classList.contains('thinking')&&!stage.classList.contains('speaking')))setHudActivity('SYSTEM TELEMETRY LIVE');
   if($('systemDisk'))$('systemDisk').textContent=s.disks?.length?s.disks.map(d=>{const usedBytes=Math.max(0,d.sizeBytes-d.freeBytes);const percent=Math.round(usedBytes/d.sizeBytes*100);return d.name+' '+percent+'%';}).join(' · '):'Unavailable';
   if($('systemDiskDetails'))$('systemDiskDetails').textContent=s.disks?.length?s.disks.slice(0,4).map(d=>{const usedBytes=Math.max(0,d.sizeBytes-d.freeBytes);return d.name+' · '+(usedBytes/1073741824).toFixed(1)+' / '+(d.sizeBytes/1073741824).toFixed(1)+' GB used';}).join(' | '):'Disk details unavailable on this system';
   if($('systemBattery')){const b=s.batteries?.find(x=>x.percent!==null);$('systemBattery').textContent=b?b.percent+'% · '+(b.status===3?'Full':([2,6,7,8,9].includes(b.status)?'Charging':'On battery')):'No battery detected';}
