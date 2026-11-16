@@ -14,7 +14,9 @@ test('understands laptop power, lock and voice typing commands', () => {
   assert.equal(classifyVoiceCommand('Hey NEXT, start voice typing').intent, 'voice-typing-start');
   assert.equal(classifyVoiceCommand('stop voice typing').intent, 'voice-typing-stop');
   assert.equal(classifyVoiceCommand('ল্যাপটপ লক করো').intent, 'lock-laptop');
+  assert.equal(classifyVoiceCommand('ল্যাপটপ লক করে দাও').intent, 'lock-laptop');
   assert.equal(classifyVoiceCommand('shutdown laptop').intent, 'shutdown-laptop');
+  assert.equal(classifyVoiceCommand('ল্যাপটপ বন্ধ করে দাও').intent, 'shutdown-laptop');
   assert.equal(classifyVoiceCommand('unlock my laptop').intent, 'unlock-laptop-guidance');
   assert.equal(classifyVoiceCommand('power on laptop').intent, 'power-on-guidance');
 });
