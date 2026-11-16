@@ -679,6 +679,18 @@ $a[1].ki.dwFlags = 2
       { windowsHide: true, timeout: 3000 }, err => err ? reject(err) : resolve()));
     return { ok: true, message: 'Media command sent.' };
   }
+  if (action.type === 'lock-workstation') {
+    if (process.platform !== 'win32') throw new Error('Workstation lock is available on Windows only.');
+    await new Promise((resolve, reject) => execFile('rundll32.exe', ['user32.dll,LockWorkStation'],
+      { windowsHide: true, timeout: 5000 }, error => error ? reject(error) : resolve()));
+    return { ok: true, message: 'Windows workstation locked.' };
+  }
+  if (action.type === 'shutdown-workstation') {
+    if (process.platform !== 'win32') throw new Error('Shutdown is available on Windows only.');
+    await new Promise((resolve, reject) => execFile('shutdown.exe', ['/s', '/t', '0'],
+      { windowsHide: true, timeout: 5000 }, error => error ? reject(error) : resolve()));
+    return { ok: true, message: 'Windows shutdown requested.' };
+  }
   if (action.type === 'write-text') {
     const value = String(action.text || '').slice(0, 4000);
     if (!value) throw new Error('Text is empty.');
