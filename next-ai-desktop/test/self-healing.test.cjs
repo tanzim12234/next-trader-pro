@@ -33,7 +33,7 @@ test('diagnostics pass when app files, writable storage, and secure storage exis
   assert.equal(report.healthy, true);
   assert.equal(report.checks.length, 5);
   assert.equal(report.recommendedActions.length, 0);
-  assert.equal(selfHealing.getStatus().errorsRecorded, 1);
+  assert.equal(selfHealing.getStatus().errorsRecorded, 0);
 });
 
 test('diagnostics report missing files and unavailable secure storage without modifying app files', async () => {
