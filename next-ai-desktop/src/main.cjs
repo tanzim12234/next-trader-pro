@@ -367,14 +367,16 @@ ipcMain.handle('home:connect', async (_e, input) => {
 ipcMain.handle('home:entities', async () => configuredHomeAssistant().listEntities());
 ipcMain.handle('home:call', async (_e, input) => {
   const action = validateServiceCall(input);
-  const labels = { turn_on: 'turn on', turn_off: 'turn off', toggle: 'toggle', set_temperature: 'set temperature', media_play_pause: 'toggle media playback', volume_set: 'change media volume', lock: 'lock', unlock: 'unlock' };
-  const choice = await require('electron').dialog.showMessageBox(win, {
-    type: action.domain === 'lock' ? 'warning' : 'question',
-    buttons: ['Allow action', 'Cancel'], defaultId: 1, cancelId: 1,
-    message: 'Allow NEXT AI to ' + labels[action.service] + '?',
-    detail: input.entityId + (action.data.temperature ? ' · ' + action.data.temperature + '°C' : '')
-  });
-  if (choice.response !== 0) return { cancelled: true };
+  // A direct voice command authorizes routine home controls. Keep a second check for physical security actions.
+  if (action.service === 'lock' || action.service === 'unlock') {
+    const labels = { lock: 'lock', unlock: 'unlock' };
+    const choice = await require('electron').dialog.showMessageBox(win, {
+      type: 'warning', buttons: ['Allow action', 'Cancel'], defaultId: 1, cancelId: 1,
+      message: 'Allow NEXT AI to ' + labels[action.service] + '?',
+      detail: input.entityId
+    });
+    if (choice.response !== 0) return { cancelled: true };
+  }
   await configuredHomeAssistant().call(input);
   return { ok: true };
 });
@@ -588,12 +590,6 @@ ipcMain.handle('task:execute-step', async (_e, input) => {
     return { ok: true, message: target.label + ' opened.' };
   }
   if (action.type === 'open-url') {
-    const choice = await require('electron').dialog.showMessageBox(win, {
-      type: 'question', buttons: ['Open website', 'Cancel'], defaultId: 1, cancelId: 1,
-      message: 'এই ওয়েবসাইটটি খুলবে?',
-      detail: action.url
-    });
-    if (choice.response !== 0) return { cancelled: true };
     await shell.openExternal(action.url);
     return { ok: true, message: 'Website opened.' };
   }
