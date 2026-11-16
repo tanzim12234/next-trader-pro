@@ -29,7 +29,7 @@ test('limits user-provided command payloads and rejects unknown commands', () =>
 });
 
 test('recognizes spoken yes/no confirmations in English and Bangla', () => {
-  for (const phrase of ['yes', 'yes sure', 'sure', 'go ahead', 'হ্যাঁ', 'হ্যাঁ নিশ্চিত', 'জি করুন']) assert.equal(classifyVoiceConfirmation(phrase), 'yes', phrase);
+  for (const phrase of ['yes', 'yes sure', 'Yes, sure.', 'sure', 'go ahead', 'হ্যাঁ', 'হ্যাঁ নিশ্চিত', 'জি করুন']) assert.equal(classifyVoiceConfirmation(phrase), 'yes', phrase);
   for (const phrase of ['no', 'nope', 'cancel', 'না', 'বাতিল', 'করো না']) assert.equal(classifyVoiceConfirmation(phrase), 'no', phrase);
   assert.equal(classifyVoiceConfirmation('maybe later'), null);
 });
