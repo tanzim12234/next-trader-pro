@@ -634,12 +634,7 @@ ipcMain.handle('action:run', async (_e, action) => {
   if (!action || typeof action.type !== 'string') throw new Error('Invalid action.');
   if (action.type === 'open-app') {
     if (process.platform !== 'win32') throw new Error('App launcher is available on Windows only.');
-    const allowedApps = {
-      notepad: { command: 'notepad.exe', args: [] },
-      calculator: { command: 'calc.exe', args: [] },
-      'file-explorer': { command: 'explorer.exe', args: [] }
-    };
-    const target = allowedApps[action.app];
+    const target = Object.prototype.hasOwnProperty.call(APPS, action.app) ? APPS[action.app] : null;
     if (!target) throw new Error('এই অ্যাপটি allowlist-এ নেই।');
     const choice = await require('electron').dialog.showMessageBox(win, { type: 'question', buttons: ['Launch app', 'Cancel'], defaultId: 1, cancelId: 1, message: 'এই অ্যাপটি চালু করবে?', detail: action.app });
     if (choice.response !== 0) return { cancelled: true };
