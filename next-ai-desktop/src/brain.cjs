@@ -142,15 +142,57 @@ function createPersonalBrain({ app, safeStorage }) {
       .sort((a, b) => b.score - a.score || b.matched - a.matched || b.index - a.index)
       .map(item => item.memory);
   }
+  function conceptIds(value) {
+    const ids = new Set();
+    for (const term of tokens(value)) {
+      const group = conceptMap.get(term);
+      if (group) ids.add(group[0]);
+    }
+    return ids;
+  }
+  function buildKnowledgeGraph(memories) {
+    const nodes = memories.map(memory => ({
+      id: memory.id,
+      label: String(memory.text || '').slice(0, 140),
+      category: memory.category || 'general'
+    }));
+    const edges = [];
+    const indexed = memories.map(memory => ({
+      id: memory.id,
+      terms: new Set(tokens(memory.text)),
+      concepts: conceptIds(memory.text)
+    }));
+    for (let i = 0; i < indexed.length; i++) {
+      for (let j = i + 1; j < indexed.length; j++) {
+        const sharedTerms = [...indexed[i].terms].filter(term => indexed[j].terms.has(term));
+        const sharedConcepts = [...indexed[i].concepts].filter(term => indexed[j].concepts.has(term));
+        if (sharedTerms.length < 2 && !(sharedTerms.length >= 1 && sharedConcepts.length >= 1)) continue;
+        edges.push({
+          source: indexed[i].id,
+          target: indexed[j].id,
+          weight: sharedTerms.length + sharedConcepts.length * 1.5,
+          topics: [...sharedConcepts, ...sharedTerms].slice(0, 8)
+        });
+        if (edges.length >= 2000) return { nodes, edges };
+      }
+    }
+    return { nodes, edges };
+  }
   function relatedTo(seedMemories, allMemories, excludedIds) {
-    const seedTerms = new Set(seedMemories.flatMap(m => tokens(m.text)));
-    const related = allMemories.map((memory, index) => {
-      if (excludedIds.has(memory.id)) return null;
-      const shared = tokens(memory.text).filter(term => seedTerms.has(term)).length;
-      return { memory, shared, index };
-    }).filter(item => item && item.shared >= 2)
-      .sort((a, b) => b.shared - a.shared || b.index - a.index);
-    return related.map(item => item.memory);
+    const graph = buildKnowledgeGraph(allMemories);
+    const weights = new Map();
+    for (const edge of graph.edges) {
+      if (excludedIds.has(edge.source) && !excludedIds.has(edge.target)) {
+        weights.set(edge.target, (weights.get(edge.target) || 0) + edge.weight);
+      } else if (excludedIds.has(edge.target) && !excludedIds.has(edge.source)) {
+        weights.set(edge.source, (weights.get(edge.source) || 0) + edge.weight);
+      }
+    }
+    const byId = new Map(allMemories.map(memory => [memory.id, memory]));
+    return [...weights.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => byId.get(id))
+      .filter(Boolean);
   }
   function list(query = '') {
     const memories = load().memories;
@@ -214,6 +256,7 @@ function createPersonalBrain({ app, safeStorage }) {
     }
     return lines.join('\n').slice(0, 6000);
   }
-  return { remember, ingest, list, forget, clear, context };
+  function graph() { return buildKnowledgeGraph(load().memories); }
+  return { remember, ingest, list, forget, clear, context, graph };
 }
 module.exports = { createPersonalBrain };
