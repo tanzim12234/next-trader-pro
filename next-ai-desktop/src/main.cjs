@@ -703,12 +703,7 @@ ipcMain.handle('brain:forget', (_e, id) => {
   return brain.forget(id);
 });
 ipcMain.handle('brain:clear', async () => {
-  const choice = await require('electron').dialog.showMessageBox(win, {
-    type: 'warning', buttons: ['Delete all memories', 'Cancel'], defaultId: 1, cancelId: 1,
-    message: 'সব Personal Brain memory মুছে ফেলবে?',
-    detail: 'এই কাজটি ফিরিয়ে আনা যাবে না।'
-  });
-  if (choice.response !== 0) return { cancelled: true };
+  // Renderer must obtain spoken yes/no confirmation before invoking this destructive action.
   return brain.clear();
 });
 
