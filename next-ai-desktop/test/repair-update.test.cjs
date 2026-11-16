@@ -7,7 +7,7 @@ const {
   buildErrorAnalysisInput, parseAnalysis, buildRepairPrompt, parseRepairProposal
 } = require('../src/repair-engine.cjs');
 const {
-  canonicalManifest, verifyUpdateManifest, verifyInstallerBytes
+  canonicalManifest, parseUpdateManifest, compareVersions, verifyUpdateManifest, verifyInstallerBytes
 } = require('../src/update-manager.cjs');
 
 test('diagnostic input redacts common API key formats', () => {
@@ -49,6 +49,20 @@ test('signed update manifest and installer hash are verified', () => {
   assert.throws(() => verifyInstallerBytes(Buffer.from('tampered'), manifest), /size verification/);
   const forged = { ...manifest, version: '9.9.9' };
   assert.throws(() => verifyUpdateManifest(forged, publicKey), /signature verification/);
+});
+
+test('update manifest parsing is size-bounded and version comparison is numeric', () => {
+  const manifest = {
+    version: '1.10.0', platform: 'win32', arch: 'x64',
+    url: 'https://github.com/example/repo/releases/download/v1.10.0/setup.exe',
+    sha256: 'b'.repeat(64), size: 100, publishedAt: '2026-11-16T10:00:00.000Z',
+    signature: Buffer.from('dummy').toString('base64')
+  };
+  assert.equal(parseUpdateManifest(JSON.stringify(manifest)).version, '1.10.0');
+  assert.throws(() => parseUpdateManifest('x'.repeat(33 * 1024)), /too large/);
+  assert.equal(compareVersions('1.10.0', '1.9.9'), 1);
+  assert.equal(compareVersions('1.0.0', '1.0.1'), -1);
+  assert.equal(compareVersions('1.0.0', '1.0.0'), 0);
 });
 
 test('updates remain disabled when no trusted public key is configured', () => {
