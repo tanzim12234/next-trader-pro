@@ -1,7 +1,7 @@
 const $=id=>document.getElementById(id);
 let recognition=null, listening=false, awaitingCommand=false, voiceProcessing=false, lastExchange=null;
 const metricsHistory=[];
-let networkSnapshot=null;
+let networkSnapshot=null,systemStatsBusy=false;
 const stage=$('jarvisStage');
 function setCoreState(state, activity){
  if(!stage)return;
@@ -274,6 +274,7 @@ $('voice').onclick=()=>listening?stopVoice():startVoice();
 refresh();
 
 async function refreshSystemStats(){
+ if(systemStatsBusy)return;systemStatsBusy=true;
  try{
   const s=await window.nextAI.getSystemStats();
   $('systemCpu').textContent=s.cpuPercent===null?'Sampling…':s.cpuPercent+'%';
@@ -297,6 +298,7 @@ async function refreshSystemStats(){
   const warnings=[];if(s.memoryPercent>=90)warnings.push('High memory use now');if(s.cpuPercent>=95)warnings.push('High CPU use now');if(memForecast>=95)warnings.push('Memory may reach critical level within ~5 min');
   $('systemPrediction').textContent=(memForecast===null?'Collecting trend samples…':'5-min estimate · RAM '+memForecast.toFixed(1)+'%'+(cpuForecast===null?'':' · CPU '+cpuForecast.toFixed(1)+'%'))+(warnings.length?' · ALERT: '+warnings.join('; '):' · No critical threshold detected');
  }catch(e){$('systemState').textContent='Monitoring unavailable: '+e.message;}
+ finally{systemStatsBusy=false;}
 }
 refreshSystemStats();
 setInterval(refreshSystemStats,5000);
