@@ -10,6 +10,14 @@ test('understands English and Bangla system monitoring voice commands', () => {
   assert.equal(classifyVoiceCommand('Hey NEXT, system status').intent, 'system-status');
   assert.equal(classifyVoiceCommand('সিস্টেমের অবস্থা বলো').intent, 'system-status');
 });
+test('understands laptop power, lock and voice typing commands', () => {
+  assert.equal(classifyVoiceCommand('Hey NEXT, start voice typing').intent, 'voice-typing-start');
+  assert.equal(classifyVoiceCommand('stop voice typing').intent, 'voice-typing-stop');
+  assert.equal(classifyVoiceCommand('ল্যাপটপ লক করো').intent, 'lock-laptop');
+  assert.equal(classifyVoiceCommand('shutdown laptop').intent, 'shutdown-laptop');
+  assert.equal(classifyVoiceCommand('unlock my laptop').intent, 'unlock-laptop-guidance');
+  assert.equal(classifyVoiceCommand('power on laptop').intent, 'power-on-guidance');
+});
 test('understands English and Bangla app launch commands', () => {
   assert.equal(classifyVoiceCommand('Hey NEXT, open calculator please').app, 'calculator');
   assert.equal(classifyVoiceCommand('নোটপ্যাড খুলে দাও').app, 'notepad');
