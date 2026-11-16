@@ -128,6 +128,30 @@ $('openTaskManager').onclick=()=>window.nextAI.runAction({type:'open-app',app:'t
 $('openSnippingTool').onclick=()=>window.nextAI.runAction({type:'open-app',app:'snipping-tool'});
 $('openPaint').onclick=()=>window.nextAI.runAction({type:'open-app',app:'paint'});
 function speak(text){if(!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>setCoreState('', 'Awaiting input');u.onerror=()=>setCoreState('', 'Voice output unavailable');speechSynthesis.speak(u);}
+let pendingVoiceConfirmation=null;
+function classifyVoiceConfirmation(phrase){
+ const value=String(phrase||'').normalize('NFKC').toLocaleLowerCase('en-US').trim().replace(/[.!?。！？]+$/g,'').replace(/\s+/g,' ');
+ if(/^(?:yes(?:\s+(?:sure|please|confirm|do it|go ahead))?|sure|confirm|confirmed|do it|go ahead|হ্যাঁ(?:\s+(?:নিশ্চিত|করো|করুন|ঠিক আছে))?|জি(?:\s+(?:হ্যাঁ|করুন))?|ঠিক আছে|নিশ্চিত|করো|করুন)$/i.test(value))return 'yes';
+ if(/^(?:no|nope|cancel|stop|don't|do not|না|নাহ|বাতিল|থামাও|করো না)$/i.test(value))return 'no';
+ return null;
+}
+function requestVoiceConfirmation(question,action){
+ pendingVoiceConfirmation=action;awaitingCommand=false;
+ $('voiceState').textContent='Confirmation required · say “Yes sure” or “No”';
+ speak(question+' Sir, are you sure? Say “Yes sure” to continue or “No” to cancel.');
+}
+async function handleVoiceConfirmation(phrase){
+ if(!pendingVoiceConfirmation)return false;
+ const decision=classifyVoiceConfirmation(phrase);
+ if(!decision){speak('Please say yes sure to continue, or no to cancel.');return true;}
+ const action=pendingVoiceConfirmation;pendingVoiceConfirmation=null;
+ if(decision==='no'){$('voiceState').textContent='Voice action cancelled.';speak('Understood. Action cancelled.');return true;}
+ $('voiceState').textContent='Voice confirmation accepted. Executing…';voiceProcessing=true;
+ try{await action();$('voiceState').textContent='Confirmed action completed.';}
+ catch(e){$('voiceState').textContent='Confirmed action failed: '+e.message;speak('The confirmed action failed.');}
+ finally{voiceProcessing=false;}
+ return true;
+}
 async function runVoiceCommand(raw){
  let text=raw.trim().toLowerCase();
  text=text.replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').trim();
@@ -144,8 +168,15 @@ async function runVoiceCommand(raw){
     const matches=entities.filter(item=>item.name.toLocaleLowerCase('en-US')===wanted||item.entityId.toLocaleLowerCase('en-US')===wanted||item.name.toLocaleLowerCase('en-US').includes(wanted));
     if(matches.length!==1){speak(matches.length?'I found more than one matching device. Please use its exact name.':'I could not find that device in Home Assistant.');$('voiceState').textContent='Smart-home device match count: '+matches.length;return;}
     const device=matches[0];
-    const result=await window.nextAI.callHomeService({domain:device.domain,entityId:device.entityId,service:routed.service,temperature:routed.temperature});
-    speak(result.cancelled?'Device action cancelled.':'Done. Device command completed.');$('voiceState').textContent='Smart-home action: '+device.name+' · '+routed.service;return;
+    const callDevice=async()=>{
+     const result=await window.nextAI.callHomeService({domain:device.domain,entityId:device.entityId,service:routed.service,temperature:routed.temperature});
+     if(result.cancelled)throw new Error('Device action was cancelled.');
+     speak('Done. Device command completed.');$('voiceState').textContent='Smart-home action: '+device.name+' · '+routed.service;
+    };
+    if(routed.service==='lock'||routed.service==='unlock'){
+     requestVoiceConfirmation('I am about to '+routed.service+' '+device.name+'.',callDevice);return;
+    }
+    await callDevice();return;
    }
    if(routed.intent==='open-app'){await window.nextAI.runAction({type:'open-app',app:routed.app});speak('Opening '+routed.app.replace('-', ' '));return;}
    if(routed.intent==='youtube-open'){await window.nextAI.runAction({type:'youtube-open'});speak('Opening YouTube');return;}
@@ -216,6 +247,7 @@ function startVoice(){
    if(!result.isFinal){if(phrase)$('voiceState').textContent='Hearing: '+phrase;continue;}
    if(!phrase)continue;
    $('voiceState').textContent='Heard: '+phrase;
+    if(pendingVoiceConfirmation){await handleVoiceConfirmation(phrase);break;}
    if(/(?:\bhey\s+next\b|হেই\s+নেক্সট|হে\s+নেক্সট)/i.test(phrase)){await runVoiceCommand(phrase);break;}
    if(awaitingCommand){await runVoiceCommand(phrase);break;}
   }
@@ -230,7 +262,7 @@ function startVoice(){
  try{recognition.start();$('voice').textContent='Stop voice listening';}
  catch(e){listening=false;$('voice').textContent='Start voice listening';$('voiceState').textContent='Could not start microphone: '+e.message;}
 }
-function stopVoice(){listening=false;awaitingCommand=false;if(recognition)recognition.stop();if('speechSynthesis'in window)speechSynthesis.cancel();$('voice').textContent='Start voice listening';}
+function stopVoice(){listening=false;awaitingCommand=false;pendingVoiceConfirmation=null;if(recognition)recognition.stop();if('speechSynthesis'in window)speechSynthesis.cancel();$('voice').textContent='Start voice listening';}
 $('voice').onclick=()=>listening?stopVoice():startVoice();
 refresh();
 
