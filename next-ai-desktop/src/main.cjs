@@ -6,7 +6,7 @@ const { execFile, spawn } = require('node:child_process');
 const { createPersonalBrain } = require('./brain.cjs');
 const { APPS, normalizeTaskPlan, validateTaskStep } = require('./task-engine.cjs');
 const { createTaskStore } = require('./task-store.cjs');
-const { classifyVoiceCommand } = require('./command-router.cjs');
+const { classifyVoiceCommand, classifyVoiceConfirmation } = require('./command-router.cjs');
 const { createHomeAssistantClient, validateServiceCall } = require('./home-assistant.cjs');
 const { analyzeData } = require('./data-analysis.cjs');
 const { createBackupManager } = require('./backup-manager.cjs');
@@ -47,6 +47,10 @@ app.whenReady().then(createWindow);
 ipcMain.handle('voice:classify', (_e, phrase) => {
   if (typeof phrase !== 'string' || phrase.length > 2000) throw new Error('Voice command is too long.');
   return classifyVoiceCommand(phrase);
+});
+ipcMain.handle('voice:classify-confirmation', (_e, phrase) => {
+  if (typeof phrase !== 'string' || phrase.length > 200) return null;
+  return classifyVoiceConfirmation(phrase);
 });
 app.on('window-all-closed', () => { globalShortcut.unregisterAll(); if (process.platform !== 'darwin') app.quit(); });
 
