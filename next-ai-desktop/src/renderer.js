@@ -266,7 +266,13 @@ $('clearMemory').onclick=async()=>{
  try{const r=await window.nextAI.clearMemories();if(r.cancelled)return;await refreshMemories();$('memoryState').textContent='All saved memories cleared.';}
  catch(e){$('memoryState').textContent=e.message;}
 };
-$('memorySearch').addEventListener('input',()=>refreshMemories($('memorySearch').value));
+let memorySearchTimer = null;
+$('memorySearch').addEventListener('input',()=>{
+ clearTimeout(memorySearchTimer);
+ const query=$('memorySearch').value;
+ $('memoryState').textContent=query?'Searching saved memories locally…':'';
+ memorySearchTimer=setTimeout(()=>refreshMemories(query),350);
+});
 $('refreshBrainGraph').onclick=refreshBrainGraph;
 async function refreshBrainGraph(){
  try{
