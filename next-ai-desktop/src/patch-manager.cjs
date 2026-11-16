@@ -73,6 +73,7 @@ function createPatchProposal({ root, workspace, changes }) {
   const id = crypto.randomUUID();
   const record = {
     id,
+    root: projectRoot,
     status: 'review-required',
     createdAt: new Date().toISOString(),
     files
@@ -112,6 +113,7 @@ function applyPatchProposal({ root, workspace, id, approved }) {
   if (approved !== true) throw new Error('Explicit approval is required before applying a patch.');
   const projectRoot = fs.realpathSync(root);
   const { file: recordFile, record } = readProposal(workspace, id);
+  if (record.root !== projectRoot) throw new Error('This proposal belongs to a different selected project folder.');
   if (record.status !== 'review-required') throw new Error('Only a reviewed, unapplied proposal can be applied.');
   const targets = record.files.map(item => {
     const target = safeTarget(projectRoot, item.path);
@@ -140,6 +142,7 @@ function applyPatchProposal({ root, workspace, id, approved }) {
 function rollbackPatchProposal({ root, workspace, id }) {
   const projectRoot = fs.realpathSync(root);
   const { file: recordFile, record } = readProposal(workspace, id);
+  if (record.root !== projectRoot) throw new Error('This proposal belongs to a different selected project folder.');
   if (record.status !== 'applied') throw new Error('Only an applied proposal can be rolled back.');
   const targets = record.files.map(item => {
     const target = safeTarget(projectRoot, item.path);
