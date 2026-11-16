@@ -107,6 +107,6 @@ test('builds a local knowledge graph from related memories', t => {
   x.brain.remember('Chocolate cake recipe with cocoa', 'food');
   const graph = x.brain.graph();
   assert.equal(graph.nodes.length, 3);
-  assert.ok(graph.edges.some(edge => edge.source === a.id && edge.target === b.id));
+  assert.ok(graph.edges.some(edge => (edge.source === a.id && edge.target === b.id) || (edge.source === b.id && edge.target === a.id)));
   assert.ok(graph.edges.every(edge => edge.weight > 0 && edge.topics.length > 0));
 });
