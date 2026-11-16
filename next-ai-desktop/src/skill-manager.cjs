@@ -76,6 +76,19 @@ function createSkillManager({ app, fetchImpl = globalThis.fetch }) {
     const content = fs.readFileSync(path.join(root(), id, 'SKILL.md'), 'utf8');
     return { metadata, content };
   }
+  function setEnabled(id, enabled) {
+    if (typeof id !== 'string' || !SAFE_ID.test(id)) throw new Error('Invalid skill id.');
+    if (typeof enabled !== 'boolean') throw new Error('Skill enabled state must be boolean.');
+    const metadata = readInstalled().find(item => item.id === id);
+    if (!metadata) throw new Error('Skill is not installed.');
+    metadata.enabled = enabled;
+    const dir = path.join(root(), id);
+    const file = path.join(dir, 'skill.json');
+    const temp = file + '.tmp';
+    fs.writeFileSync(temp, JSON.stringify(metadata, null, 2), { encoding: 'utf8', mode: 0o600 });
+    fs.renameSync(temp, file);
+    return metadata;
+  }
   function remove(id) {
     if (typeof id !== 'string' || !SAFE_ID.test(id)) throw new Error('Invalid skill id.');
     const metadata = readInstalled().find(item => item.id === id);
@@ -83,7 +96,7 @@ function createSkillManager({ app, fetchImpl = globalThis.fetch }) {
     fs.rmSync(path.join(root(), id), { recursive: true, force: false });
     return true;
   }
-  return Object.freeze({ searchGitHub, installFromGitHub, list, getContext, remove });
+  return Object.freeze({ searchGitHub, installFromGitHub, list, getContext, setEnabled, remove });
 }
 
 module.exports = { createSkillManager, MAX_SKILL_BYTES };
