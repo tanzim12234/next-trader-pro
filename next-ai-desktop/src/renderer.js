@@ -118,7 +118,7 @@ async function autoLearnExchange(exchange){
 }
 $('send').onclick=async()=>{const q=$('prompt').value.trim();if(!q)return;$('chat').textContent='NEXT is thinking…';setCoreState('thinking','Analyzing: '+q);try{const answer=await window.nextAI.chat(q);$('chat').textContent=answer;lastExchange={question:q,answer};$('saveConversation').disabled=false;$('reviewLearning').disabled=false;$('conversationState').textContent='NEXT কথোপকথন থেকে স্থায়ী জ্ঞান শেখার চেষ্টা করছে…';setCoreState('speaking','Response ready');speak(answer);void autoLearnExchange(lastExchange);}catch(e){$('chat').textContent='Error: '+e.message;setCoreState('', 'Request failed');}finally{setTimeout(()=>setCoreState('', 'Awaiting input'),2200);}};
 $('openTextFile').onclick=async()=>{try{const file=await window.nextAI.openTextFile();if(file.cancelled)return;$('fileName').value=file.name;$('fileContent').value=file.content;$('fileState').textContent='Opened: '+file.name;}catch(e){$('fileState').textContent='Open failed: '+e.message;}};
-$('saveTextFile').onclick=async()=>{try{const result=await window.nextAI.saveTextFile({name:$('fileName').value,content:$('fileContent').value});if(!result.cancelled)$('fileState').textContent='Saved: '+result.name;}catch(e){$('fileState').textContent='Save failed: '+e.message;}};
+$('saveTextFile').onclick=()=>requestVoiceConfirmation('Save the current text as '+$('fileName').value+'. The native save dialog will let you choose its location.',async()=>{try{const result=await window.nextAI.saveTextFile({name:$('fileName').value,content:$('fileContent').value});if(!result.cancelled)$('fileState').textContent='Saved: '+result.name;}catch(e){$('fileState').textContent='Save failed: '+e.message;speak('File save failed.');}});
 $('yt').onclick=()=>window.nextAI.runAction({type:'youtube-open'});
 $('play').onclick=()=>window.nextAI.runAction({type:'media',command:'playpause'});
 $('openNotepad').onclick=()=>window.nextAI.runAction({type:'open-app',app:'notepad'});
@@ -291,7 +291,7 @@ async function refreshMemories(query=''){
   for(const item of items){
    const row=document.createElement('div');row.className='memory-item';
    const text=document.createElement('span');text.textContent=item.text;
-   const del=document.createElement('button');del.textContent='Forget';del.onclick=async()=>{await window.nextAI.forgetMemory(item.id);await refreshMemories();};
+   const del=document.createElement('button');del.textContent='Forget';del.onclick=()=>requestVoiceConfirmation('Forget this saved memory: '+String(item.text||'').slice(0,140)+'.',async()=>{await window.nextAI.forgetMemory(item.id);await refreshMemories();$('memoryState').textContent='Memory forgotten.';});
    row.append(text,del);$('memoryList').append(row);
   }
   $('memoryState').textContent=(query?items.length+' matching':' '+allItems.length+' saved')+' memory item(s). Stored encrypted on this PC.';
@@ -327,10 +327,10 @@ $('teachKnowledge').onclick=async()=>{
  finally{button.disabled=false;}
 };
 $('refreshMemory').onclick=refreshMemories;
-$('clearMemory').onclick=async()=>{
- try{const r=await window.nextAI.clearMemories();if(r.cancelled)return;await refreshMemories();$('memoryState').textContent='All saved memories cleared.';}
- catch(e){$('memoryState').textContent=e.message;}
-};
+$('clearMemory').onclick=()=>requestVoiceConfirmation('Delete all Personal Brain memories. This cannot be undone.',async()=>{
+ try{await window.nextAI.clearMemories();await refreshMemories();$('memoryState').textContent='All saved memories cleared.';}
+ catch(e){$('memoryState').textContent='Memory clear failed: '+e.message;speak('Memory clear failed.');}
+});
 let memorySearchTimer = null;
 $('memorySearch').addEventListener('input',()=>{
  clearTimeout(memorySearchTimer);
@@ -422,7 +422,7 @@ async function refreshHomeEntities(){
    const row=document.createElement('div');row.className='memory-item';
    const label=document.createElement('span');label.textContent=entity.name+' · '+entity.entityId+' · '+entity.state;
    row.append(label);
-   const addAction=(service,title,extra={})=>{const button=document.createElement('button');button.textContent=title;button.onclick=async()=>{button.disabled=true;try{const result=await window.nextAI.callHomeService({domain:entity.domain,entityId:entity.entityId,service,...extra});$('homeState').textContent=result.cancelled?'Action cancelled.':'Device action completed.';await refreshHomeEntities();}catch(e){$('homeState').textContent='Device action failed: '+e.message;}finally{button.disabled=false;}};row.append(button);};
+   const addAction=(service,title,extra={})=>{const button=document.createElement('button');button.textContent=title;const perform=async()=>{button.disabled=true;try{await window.nextAI.callHomeService({domain:entity.domain,entityId:entity.entityId,service,...extra});$('homeState').textContent='Device action completed.';await refreshHomeEntities();}catch(e){$('homeState').textContent='Device action failed: '+e.message;speak('Device action failed.');}finally{button.disabled=false;}};button.onclick=()=>['lock','unlock'].includes(service)?requestVoiceConfirmation(service.toUpperCase()+' '+entity.name+'.',perform):perform();row.append(button);};
    if(['light','switch'].includes(entity.domain)){addAction('turn_on','On');addAction('turn_off','Off');}
    else if(entity.domain==='climate'){
     const temp=document.createElement('input');temp.type='number';temp.min='5';temp.max='35';temp.step='0.5';temp.placeholder='°C';temp.style.maxWidth='85px';row.append(temp);
