@@ -28,7 +28,8 @@ test('persists Bengali memory across instances and finds it', t => {
 });
 
 test('ranks relevant memories and excludes unrelated context', async t => {
-  const x = setup(); t.after(x.cleanup);
+  const semanticEmbedder = async texts => texts.map(value => /encrypted|memories|memory/u.test(value.toLowerCase()) ? [1, 0] : [0, 1]);
+  const x = setup({ semanticEmbedder }); t.after(x.cleanup);
   x.brain.remember('NEXT AI personal brain stores encrypted memories', 'project');
   x.brain.remember('NEXT AI personal brain learns from saved knowledge', 'project');
   x.brain.remember('Chocolate cake recipe with cocoa', 'food');
