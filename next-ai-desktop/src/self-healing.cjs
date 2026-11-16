@@ -44,10 +44,12 @@ function createSelfHealing(options = {}) {
         try { return JSON.parse(line); } catch { return null; }
       }).filter(Boolean);
     } catch {}
+    const actualErrors = entries.filter(entry => entry.source !== 'diagnostics' && entry.code !== 'DIAGNOSTICS_OK');
     return {
       enabled: true,
-      errorsRecorded: entries.length,
-      lastError: entries.length ? entries[entries.length - 1] : null,
+      errorsRecorded: actualErrors.length,
+      lastError: actualErrors.length ? actualErrors[actualErrors.length - 1] : null,
+      recentErrors: actualErrors.slice(-20),
       logPath
     };
   }
