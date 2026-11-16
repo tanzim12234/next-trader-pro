@@ -287,7 +287,7 @@ async function refreshSystemStats(){
   if($('systemNetworkDetails'))$('systemNetworkDetails').textContent=s.networks?.length?s.networks.map(n=>n.name).join(' · '):'No active adapter statistics';
   const hours=Math.floor(s.uptimeSeconds/3600),minutes=Math.floor((s.uptimeSeconds%3600)/60);
   $('systemUptime').textContent=hours+'h '+minutes+'m';
-  $('systemState').textContent=s.platform+' · '+s.arch+' · '+s.cpuCores+' CPU cores · Updated '+new Date().toLocaleTimeString();
+  $('systemState').textContent=s.platform+' · '+s.arch+' · '+s.cpuCores+' CPU cores'+(s.detailsAvailable?' · Extended telemetry active':' · Extended telemetry unavailable')+' · Updated '+new Date().toLocaleTimeString();
   metricsHistory.push({time:Date.now(),cpu:s.cpuPercent,memory:s.memoryPercent});if(metricsHistory.length>60)metricsHistory.shift();
   const valid=metricsHistory.filter(x=>x.cpu!==null);
   const trend=(key)=>{if(valid.length<6)return null;const first=valid[0],last=valid[valid.length-1],seconds=(last.time-first.time)/1000;if(seconds<20)return null;return (last[key]-first[key])/seconds;};
