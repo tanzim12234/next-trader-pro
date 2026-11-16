@@ -433,7 +433,7 @@ async function refreshHomeEntities(){
    else if(entity.domain==='lock'){addAction('lock','Lock');addAction('unlock','Unlock');}
    box.append(row);
   }
-  $('homeState').textContent=entities.length+' supported device(s) loaded. Each action requires confirmation.';
+  $('homeState').textContent=entities.length+' supported device(s) loaded. Routine controls are direct; lock/unlock require spoken confirmation.';
  }catch(e){$('homeState').textContent='Device list unavailable: '+e.message;}
 }
 $('homeConnect').onclick=async()=>{
