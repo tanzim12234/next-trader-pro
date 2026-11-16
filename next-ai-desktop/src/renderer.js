@@ -560,3 +560,57 @@ $('runBatchResearch').onclick=async()=>{
  }catch(e){$('batchResearchResults').textContent='Parallel research failed: '+e.message;}
  finally{button.disabled=false;}
 };
+
+
+// GitHub Skill Library: downloaded Markdown remains inert and untrusted.
+async function refreshSkillLibrary(){
+ const box=$('installedSkills'); if(!box)return;
+ box.textContent='Loading installed skills…';
+ try{
+  const skills=await window.nextAI.listSkills();box.textContent='';
+  if(!skills.length){box.textContent='No skills installed yet.';return;}
+  for(const skill of skills){
+   const row=document.createElement('div');row.className='memory-item';
+   const info=document.createElement('div');info.style.flex='1';
+   const title=document.createElement('strong');title.textContent=skill.name;
+   const desc=document.createElement('p');desc.className='hint';desc.textContent=(skill.description||'No description')+' · '+skill.trust+' · Disabled';
+   info.append(title,desc);
+   const inspect=document.createElement('button');inspect.textContent='Inspect';inspect.onclick=async()=>{
+    try{const item=await window.nextAI.readSkill(skill.id);$('skillPreview').textContent='UNTRUSTED SKILL · '+item.metadata.name+'\nSource: '+item.metadata.sourceUrl+'\n\n'+item.content;}
+    catch(e){$('skillPreview').textContent='Could not read skill: '+e.message;}
+   };
+   const remove=document.createElement('button');remove.textContent='Remove';remove.onclick=async()=>{
+    if(!confirm('Remove this locally installed Markdown skill?'))return;
+    try{await window.nextAI.removeSkill(skill.id);$('skillPreview').textContent='Skill removed.';await refreshSkillLibrary();}
+    catch(e){$('skillPreview').textContent='Remove failed: '+e.message;}
+   };
+   row.append(info,inspect,remove);box.append(row);
+  }
+ }catch(e){box.textContent='Skill library unavailable: '+e.message;}
+}
+$('searchSkills').onclick=async()=>{
+ const query=$('skillSearch').value.trim();if(!query)return;
+ const button=$('searchSkills'),box=$('skillSearchResults');button.disabled=true;box.textContent='Searching GitHub…';
+ try{
+  const results=await window.nextAI.searchSkills(query);box.textContent='';
+  if(!results.length){box.textContent='No matching public repositories found.';return;}
+  for(const item of results){
+   const row=document.createElement('div');row.className='memory-item';
+   const info=document.createElement('div');info.style.flex='1';
+   const title=document.createElement('strong');title.textContent=item.fullName;
+   const desc=document.createElement('p');desc.className='hint';desc.textContent=(item.description||'No description')+' · ★ '+item.stars;
+   const link=document.createElement('a');link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='View repository';link.style.color='#75eaff';
+   info.append(title,desc,link);
+   const install=document.createElement('button');install.textContent='Install SKILL.md';install.onclick=async()=>{
+    install.disabled=true;
+    try{const installed=await window.nextAI.installSkill({repo:item.fullName,path:'SKILL.md'});$('skillPreview').textContent='Installed as disabled, untrusted Markdown: '+installed.name+'\nReview it before use.';await refreshSkillLibrary();}
+    catch(e){$('skillPreview').textContent='Install failed: '+e.message;}
+    finally{install.disabled=false;}
+   };
+   row.append(info,install);box.append(row);
+  }
+ }catch(e){box.textContent='GitHub search failed: '+e.message;}
+ finally{button.disabled=false;}
+};
+$('refreshSkills').onclick=refreshSkillLibrary;
+refreshSkillLibrary();
