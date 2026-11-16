@@ -428,7 +428,7 @@ async function runVoiceCommand(raw){
     for(const step of proposal.steps){const row=document.createElement('div');row.className='memory-item';const label=document.createElement('span');label.textContent=step.id+'. '+step.title+' · '+step.action.type;row.append(label);$('taskPlanList').append(row);}
     $('taskGoal').value=raw;
     $('taskState').textContent=proposal.steps.length+' allowlisted action(s) received directly from your voice command.';
-    await executeVoiceTaskPlan(proposal,raw);
+    requestVoiceConfirmation('I prepared '+proposal.steps.length+' safe action(s) for this task. Sir, are you sure you want me to execute them?',async()=>{await executeVoiceTaskPlan(proposal,raw);});
     return;
    }
   }catch{}
