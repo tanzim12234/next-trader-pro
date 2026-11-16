@@ -192,7 +192,7 @@ $('openExplorer').onclick=()=>window.nextAI.runAction({type:'open-app',app:'file
 $('openTaskManager').onclick=()=>window.nextAI.runAction({type:'open-app',app:'task-manager'});
 $('openSnippingTool').onclick=()=>window.nextAI.runAction({type:'open-app',app:'snipping-tool'});
 $('openPaint').onclick=()=>window.nextAI.runAction({type:'open-app',app:'paint'});
-function speak(text,after){if(!('speechSynthesis'in window)){if(typeof after==='function')after();return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>{setCoreState('', 'Awaiting input');if(typeof after==='function')after();};u.onerror=()=>{setCoreState('', 'Voice output unavailable');if(typeof after==='function')after();};speechSynthesis.speak(u);}
+function speak(text,after){if(!('speechSynthesis'in window)){if(typeof after==='function')after();return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>{setCoreState(listening?'listening':'',listening?'Wake word detection active':'Awaiting input');if(typeof after==='function')after();};u.onerror=()=>{setCoreState(listening?'listening':'',listening?'Wake word detection active':'Voice output unavailable');if(typeof after==='function')after();};speechSynthesis.speak(u);}
 let pendingVoiceConfirmation=null,pendingVoiceCancel=null;
 function requestVoiceConfirmation(question,action,onCancel){
  if(listening){listening=false;if(recognition)recognition.stop();$('voice').textContent='Start voice listening';}
@@ -377,7 +377,7 @@ async function refreshSystemStats(){
   $('systemCpu').textContent=s.cpuPercent===null?'Sampling…':s.cpuPercent+'%';if($('hudSystem'))$('hudSystem').textContent='CPU '+(s.cpuPercent===null?'--':s.cpuPercent+'%')+' · RAM '+s.memoryPercent+'%';
   const used=(s.totalMemoryBytes-s.freeMemoryBytes)/1073741824;
   const total=s.totalMemoryBytes/1073741824;
-  $('systemMemory').textContent=s.memoryPercent+'% · '+used.toFixed(1)+' / '+total.toFixed(1)+' GB';if($('hudActivity')&&(!stage.classList.contains('listening')&&!stage.classList.contains('thinking')&&!stage.classList.contains('speaking')))setHudActivity('SYSTEM TELEMETRY LIVE');
+  $('systemMemory').textContent=s.memoryPercent+'% · '+used.toFixed(1)+' / '+total.toFixed(1)+' GB';if($('hudActivity')&&(!stage||(!stage.classList.contains('listening')&&!stage.classList.contains('thinking')&&!stage.classList.contains('speaking'))))setHudActivity('SYSTEM TELEMETRY LIVE');
   if($('systemDisk'))$('systemDisk').textContent=s.disks?.length?s.disks.map(d=>{const usedBytes=Math.max(0,d.sizeBytes-d.freeBytes);const percent=Math.round(usedBytes/d.sizeBytes*100);return d.name+' '+percent+'%';}).join(' · '):'Unavailable';
   if($('systemDiskDetails'))$('systemDiskDetails').textContent=s.disks?.length?s.disks.slice(0,4).map(d=>{const usedBytes=Math.max(0,d.sizeBytes-d.freeBytes);return d.name+' · '+(usedBytes/1073741824).toFixed(1)+' / '+(d.sizeBytes/1073741824).toFixed(1)+' GB used';}).join(' | '):'Disk details unavailable on this system';
   if($('systemBattery')){const b=s.batteries?.find(x=>x.percent!==null);$('systemBattery').textContent=b?b.percent+'% · '+(b.status===3?'Full':([2,6,7,8,9].includes(b.status)?'Charging':'On battery')):'No battery detected';}
