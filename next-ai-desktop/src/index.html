@@ -62,6 +62,23 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 .hud-label{letter-spacing:.24em}
 .hud-value{font-size:13px;text-shadow:0 0 14px #4bdcf499}
 .stage-footer{color:#67c9dc}
+/* Additional cinematic depth: floating glass panels and volumetric core */
+.jarvis-stage{perspective:1100px;isolation:isolate;background-image:radial-gradient(circle at 50% 50%,rgba(40,210,255,.10),transparent 34%),radial-gradient(ellipse at 50% 48%,rgba(8,91,116,.48),rgba(2,17,29,.96) 54%,#01070d 100%)}
+.jarvis-stage:after{z-index:0}
+.hud-column:first-of-type .hud-card{animation:hudFloatLeft 6s ease-in-out infinite}
+.hud-column:last-of-type .hud-card{animation:hudFloatRight 6.5s ease-in-out infinite}
+.hud-column .hud-card:nth-child(2){animation-delay:-2s}
+.hud-column .hud-card:nth-child(3){animation-delay:-4s}
+.core-wrap{transform-style:preserve-3d}
+.core-latitude{filter:drop-shadow(0 0 8px rgba(56,225,255,.32))}
+.core-latitude.two{border-color:#a1f7ff55}
+.core-grid{filter:drop-shadow(0 0 10px rgba(49,215,255,.24))}
+.core-center{position:relative;z-index:2}
+.core-center:after{content:"";position:absolute;inset:-18%;border:1px solid #a6faff55;border-radius:50%;box-shadow:0 0 25px #20dfff33;animation:corePulse 2.8s ease-in-out infinite}
+.hud-value{transition:color .25s,text-shadow .25s}
+.jarvis-stage.listening .hud-card:nth-child(3),.jarvis-stage.thinking .hud-card:nth-child(1),.jarvis-stage.speaking .hud-card:nth-child(3){border-color:#8bf8ff;box-shadow:0 0 24px #18dfff30,inset 0 0 24px #00c9ef20}
+@keyframes hudFloatLeft{0%,100%{transform:translate3d(0,0,0) rotateY(2deg)}50%{transform:translate3d(-3px,-5px,8px) rotateY(0deg)}}
+@keyframes hudFloatRight{0%,100%{transform:translate3d(0,0,0) rotateY(-2deg)}50%{transform:translate3d(3px,-6px,8px) rotateY(0deg)}}
 @keyframes orbitSpin3d{from{transform:rotateX(67deg) rotateZ(0deg)}to{transform:rotateX(67deg) rotateZ(360deg)}}
 @media(max-width:760px){.jarvis-stage{min-height:760px;grid-template-columns:1fr;gap:18px;padding:54px 16px 48px}.core-wrap{grid-row:1;width:min(68vw,290px)}.hud-column{grid-template-columns:1fr 1fr}.hud-topline{left:24px;right:24px;top:22px}.hud-reticle{inset:10px}}
 
