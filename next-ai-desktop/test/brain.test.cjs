@@ -83,3 +83,19 @@ test('splits long lessons into bounded chunks and rejects oversized input', t =>
   assert.ok(result.memories.every(item => item.text.length <= 1000));
   assert.throws(() => x.brain.ingest('x'.repeat(50001)), /50,000/);
 });
+
+test('retrieves related Bengali and English wording across inflections', t => {
+  const x = setup(); t.after(x.cleanup);
+  x.brain.remember('আমি বাংলায় উত্তর পছন্দ করি', 'preference');
+  x.brain.remember('NEXT AI personal brain stores encrypted memories', 'project');
+  assert.equal(x.brain.list('বাংলায় কথা বলো')[0].text, 'আমি বাংলায় উত্তর পছন্দ করি');
+  assert.equal(x.brain.list('my language preference')[0].text, 'আমি বাংলায় উত্তর পছন্দ করি');
+  assert.equal(x.brain.list('remembered knowledge')[0].text, 'NEXT AI personal brain stores encrypted memories');
+});
+
+test('meaning-aware search does not return unrelated memories', t => {
+  const x = setup(); t.after(x.cleanup);
+  x.brain.remember('আমি বাংলায় উত্তর পছন্দ করি', 'preference');
+  x.brain.remember('Chocolate cake recipe with cocoa', 'food');
+  assert.deepEqual(x.brain.list('vehicle engine repair'), []);
+});
