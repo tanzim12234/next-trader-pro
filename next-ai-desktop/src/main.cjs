@@ -246,8 +246,7 @@ ipcMain.handle('files:create-folder', async (_e, input) => {
   const name = typeof input?.name === 'string' ? input.name.trim() : '';
   if (!name || name.length > 80 || /[\\/\\\\:*?"<>|]/.test(name) || name === '.' || name === '..') throw new Error('Folder name invalid.');
   const target = safeChildPath(selectedFolder, path.join(currentFolder, name));
-  const choice = await require('electron').dialog.showMessageBox(win, { type: 'question', buttons: ['Create folder', 'Cancel'], defaultId: 1, cancelId: 1, message: 'এই folder তৈরি করবে?', detail: target });
-  if (choice.response !== 0) return { cancelled: true };
+  // Renderer obtains spoken confirmation before this folder-creation IPC call.
   await fs.promises.mkdir(target);
   return { ok: true, name };
 });
@@ -269,8 +268,7 @@ ipcMain.handle('files:copy-item', async (_e, input) => {
   if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 20 * 1024 * 1024) throw new Error('Only regular files up to 20 MB can be copied.');
   const result = await require('electron').dialog.showSaveDialog(win, { title: 'Copy file to…', defaultPath: input.name });
   if (result.canceled || !result.filePath) return { cancelled: true };
-  const choice = await require('electron').dialog.showMessageBox(win, { type: 'warning', buttons: ['Copy file', 'Cancel'], defaultId: 1, cancelId: 1, message: 'নির্বাচিত স্থানে ফাইলের একটি copy তৈরি করবে?', detail: result.filePath });
-  if (choice.response !== 0) return { cancelled: true };
+  // Renderer obtains spoken confirmation before copying; COPYFILE_EXCL prevents overwrite.
   await fs.promises.copyFile(source, result.filePath, fs.constants.COPYFILE_EXCL);
   return { ok: true, name: path.basename(result.filePath) };
 });
@@ -314,13 +312,9 @@ ipcMain.handle('browser:navigate', async (_e, direction) => {
 ipcMain.handle('backup:create', () => backupManager.create());
 ipcMain.handle('backup:list', () => backupManager.list());
 ipcMain.handle('backup:restore', async (_e, id) => {
-  const choice = await require('electron').dialog.showMessageBox(win, {
-    type: 'warning', buttons: ['Restore backup', 'Cancel'], defaultId: 1, cancelId: 1,
-    message: 'এই backup restore করলে বর্তমান Personal Brain, settings ও task history প্রতিস্থাপিত হতে পারে।',
-    detail: 'NEXT AI restore-এর আগে বর্তমান encrypted data-র একটি rollback backup তৈরি করবে।'
-  });
-  if (choice.response !== 0) return { cancelled: true };
-  try { backupManager.create(); } catch {}
+  if (typeof id !== 'string' || !backupManager.list().some(item => item.id === id)) throw new Error('Selected backup was not found.');
+  // Renderer obtains spoken yes/no confirmation before invoking this handler.
+  backupManager.create();
   return backupManager.restore(id);
 });
 
