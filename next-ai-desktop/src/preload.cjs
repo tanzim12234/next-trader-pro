@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld('nextAI', Object.freeze({
   saveKeys: keys => ipcRenderer.invoke('settings:save', keys),
   chat: input => ipcRenderer.invoke('ai:chat', input),
   suggestLearning: exchange => ipcRenderer.invoke('ai:learning-suggestions', exchange),
+  generateCodeProposal: input => ipcRenderer.invoke('ai:code-assist', input),
+  validateCodeProposal: input => ipcRenderer.invoke('code:validate', input),
   runAction: action => ipcRenderer.invoke('action:run', action),
   openTextFile: () => ipcRenderer.invoke('files:open-text'),
   extractLearningFile: () => ipcRenderer.invoke('files:extract-learning-file'),
