@@ -1,5 +1,6 @@
 const $=id=>document.getElementById(id);
 let recognition=null, listening=false, awaitingCommand=false, voiceProcessing=false, lastExchange=null, dictationMode=false, selectedSkillId=null,currentPatchId=null;
+let voiceSessionId=0,voiceRestartTimer=null,voiceRetryCount=0,voiceStartPending=false,voiceStartedAt=0,voiceLastError=null;
 const metricsHistory=[];
 let networkSnapshot=null,systemStatsBusy=false;
 const stage=$('jarvisStage');
@@ -9,10 +10,10 @@ function setHudActivity(activity){
 }
 function setCoreState(state, activity){
  if(!stage)return;
- stage.classList.remove('listening','thinking','speaking');
+ stage.classList.remove('listening','thinking','speaking','reconnecting');
  if(state)stage.classList.add(state);
  stage.dataset.state=state||'standby';
- const labels={listening:'VOICE LISTENING',thinking:'PROCESSING REQUEST',speaking:'VOICE RESPONSE'};
+ const labels={listening:'VOICE LISTENING',thinking:'PROCESSING REQUEST',speaking:'VOICE RESPONSE',reconnecting:'VOICE RECONNECTING'};
  const voice=$('hudVoice'),act=$('hudActivity');
  if(voice)voice.textContent=labels[state]||'VOICE STANDBY';
  if(act&&activity)act.textContent=activity.toUpperCase().replace(/\s+/g,' ').slice(0,30);
@@ -309,7 +310,7 @@ $('openPaint').onclick=()=>window.nextAI.runAction({type:'open-app',app:'paint'}
 function speak(text,after){if(!('speechSynthesis'in window)){if(typeof after==='function')after();return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>{setCoreState(listening?'listening':'',listening?'Wake word detection active':'Awaiting input');if(typeof after==='function')after();};u.onerror=()=>{setCoreState(listening?'listening':'',listening?'Wake word detection active':'Voice output unavailable');if(typeof after==='function')after();};speechSynthesis.speak(u);}
 let pendingVoiceConfirmation=null,pendingVoiceCancel=null;
 function requestVoiceConfirmation(question,action,onCancel){
- if(listening){listening=false;if(recognition)recognition.stop();$('voice').textContent='Start voice listening';}
+ if(listening){pauseVoiceListening();$('voice').textContent='Start voice listening';}
  pendingVoiceConfirmation=action;pendingVoiceCancel=typeof onCancel==='function'?onCancel:null;awaitingCommand=false;
  $('voiceState').textContent='Confirmation required · say “Yes sure” or “No”';
  speak(question+' Sir, are you sure? Say “Yes sure” to continue or “No” to cancel.',()=>{if(!listening)startVoice();});
@@ -440,19 +441,77 @@ async function runVoiceCommand(raw){
  }catch(e){$('voiceState').textContent=e.message;speak('The action failed');}
  finally{voiceProcessing=false;}
 }
-function startVoice(){
+function clearVoiceRestartTimer(){
+ if(voiceRestartTimer!==null){clearTimeout(voiceRestartTimer);voiceRestartTimer=null;}
+}
+function cancelPendingVoiceAction(){
+ pendingVoiceConfirmation=null;
+ const cancel=pendingVoiceCancel;pendingVoiceCancel=null;
+ if(cancel)cancel();
+}
+function pauseVoiceListening(){
+ listening=false;
+ voiceSessionId++;
+ clearVoiceRestartTimer();
+ voiceStartPending=false;
+ const active=recognition;recognition=null;
+ if(active){try{active.stop();}catch{}}
+}
+function setVoiceUnavailable(message){
+ pauseVoiceListening();
+ dictationMode=false;
+ const button=$('voiceTyping');
+ if(button){button.textContent='Start voice typing';button.setAttribute('aria-pressed','false');}
+ cancelPendingVoiceAction();
+ $('voice').textContent='Start voice listening';
+ $('voiceState').textContent=message;
+ setCoreState('', 'Voice unavailable');
+}
+function scheduleVoiceRestart(session,errorCode){
+ if(!listening||session!==voiceSessionId||voiceRestartTimer!==null)return;
+ const delay=window.NextVoiceRecovery.retryDelay(++voiceRetryCount,errorCode);
+ $('voiceState').textContent='Reconnecting voice recognition… Retrying in '+(delay/1000).toFixed(1)+'s';
+ setCoreState('reconnecting','Voice service reconnecting');
+ const hudVoice=$('hudVoice');if(hudVoice)hudVoice.textContent='VOICE RECONNECTING';
+ setHudActivity('VOICE RECONNECTING');
+ voiceRestartTimer=setTimeout(()=>{
+  voiceRestartTimer=null;
+  if(listening&&session===voiceSessionId)startVoiceRecognition(session);
+ },delay);
+}
+function startVoiceRecognition(session){
+ if(!listening||session!==voiceSessionId||voiceStartPending||recognition)return;
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(!SR){if(pendingVoiceConfirmation){pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}}dictationMode=false;const button=$('voiceTyping');if(button){button.textContent='Start voice typing';button.setAttribute('aria-pressed','false');}$('voiceState').textContent='Speech recognition is not available in this Electron build. Sensitive action cancelled; use a supported microphone.';return;}
- recognition=new SR();recognition.lang=$('voiceLanguage')?.value||'bn-BD';recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=1;
- recognition.onstart=()=>{$('voiceState').textContent='Listening for “Hey NEXT”…';setCoreState('listening',dictationMode?'Voice typing active':'Wake word detection active');};
- recognition.onresult=async ev=>{
-  if(voiceProcessing)return;
+ if(!SR){setVoiceUnavailable('Speech recognition is not available in this Electron build. Sensitive action cancelled; use a supported microphone.');return;}
+ if(!window.NextVoiceRecovery){setVoiceUnavailable('Voice recovery module could not be loaded. Restart NEXT AI after updating.');return;}
+ let instance;
+ try{instance=new SR();}
+ catch(error){voiceLastError='start-failed';scheduleVoiceRestart(session,voiceLastError);return;}
+ recognition=instance;
+ voiceStartPending=true;
+ const isCurrent=()=>session===voiceSessionId&&recognition===instance;
+ instance.lang=$('voiceLanguage')?.value||'bn-BD';
+ instance.continuous=true;
+ instance.interimResults=true;
+ instance.maxAlternatives=1;
+ instance.onstart=()=>{
+  if(!isCurrent())return;
+  voiceStartPending=false;
+  voiceStartedAt=Date.now();
+  voiceLastError=null;
+  $('voiceState').textContent='Listening for “Hey NEXT”…';
+  $('voice').textContent='Stop voice listening';
+  setCoreState('listening',dictationMode?'Voice typing active':'Wake word detection active');
+ };
+ instance.onresult=async ev=>{
+  if(!isCurrent()||voiceProcessing)return;
   for(let i=ev.resultIndex;i<ev.results.length;i++){
+   if(!isCurrent())return;
    const result=ev.results[i],phrase=result[0].transcript.trim();
    if(!result.isFinal){if(phrase){$('voiceState').textContent='Hearing: '+phrase;setHudActivity('HEARING: '+phrase);}continue;}
    if(!phrase)continue;
    $('voiceState').textContent='Heard: '+phrase;setHudActivity('VOICE INPUT RECEIVED');
-    if(pendingVoiceConfirmation){await handleVoiceConfirmation(phrase);break;}
+   if(pendingVoiceConfirmation){await handleVoiceConfirmation(phrase);break;}
    const dictationText=phrase.replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').trim();
    if(dictationMode&&/^(?:stop|end|disable) voice typing|^voice typing stop|^ভয়েস টাইপিং (?:বন্ধ|থামাও) করো|^কথা লেখা বন্ধ করো$/i.test(dictationText)){
     setDictationMode(false);break;
@@ -468,18 +527,68 @@ function startVoice(){
    if(awaitingCommand){await runVoiceCommand(phrase);break;}
   }
  };
- recognition.onerror=ev=>{
-  const messages={ 'not-allowed':'Microphone permission denied. Allow microphone access in Windows settings.', 'service-not-allowed':'Speech recognition service is blocked in this environment.', 'audio-capture':'No working microphone was found.', 'network':'Speech recognition needs an internet connection.' };
-  if(pendingVoiceConfirmation&&['not-allowed','service-not-allowed','audio-capture'].includes(ev.error)){pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}}
-  $('voiceState').textContent=messages[ev.error]||('Voice error: '+ev.error);
-  if(['not-allowed','service-not-allowed','audio-capture'].includes(ev.error)){listening=false;dictationMode=false;const button=$('voiceTyping');if(button){button.textContent='Start voice typing';button.setAttribute('aria-pressed','false');}$('voice').textContent='Start voice listening';setCoreState('', 'Voice unavailable');}
+ instance.onerror=ev=>{
+  if(!isCurrent())return;
+  const errorCode=String(ev.error||'unknown');
+  voiceLastError=errorCode;
+  const message=window.NextVoiceRecovery.getErrorMessage(errorCode);
+  if(window.NextVoiceRecovery.isTerminalError(errorCode)){
+   setVoiceUnavailable(message+' Sensitive action cancelled.');
+   return;
+  }
+  $('voiceState').textContent=message;
+  setHudActivity('VOICE SERVICE RECOVERING');
  };
- recognition.onend=()=>{if(listening){$('voiceState').textContent='Reconnecting voice recognition…';setTimeout(()=>{if(!listening||!recognition)return;try{recognition.start();}catch(e){$('voiceState').textContent='Voice restart failed: '+e.message;}},450);}else {$('voiceState').textContent='Voice stopped';setCoreState('', 'Voice standby');}};
- listening=true;
- try{recognition.start();$('voice').textContent='Stop voice listening';}
- catch(e){listening=false;dictationMode=false;const button=$('voiceTyping');if(button){button.textContent='Start voice typing';button.setAttribute('aria-pressed','false');}if(pendingVoiceConfirmation){pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}}$('voice').textContent='Start voice listening';$('voiceState').textContent='Could not start microphone: '+e.message+' Sensitive action cancelled.';}
+ instance.onend=()=>{
+  if(!isCurrent())return;
+  if(voiceStartedAt&&Date.now()-voiceStartedAt>=10000)voiceRetryCount=0;
+  voiceStartedAt=0;
+  voiceStartPending=false;
+  recognition=null;
+  if(listening)scheduleVoiceRestart(session,voiceLastError);
+  else { $('voiceState').textContent='Voice stopped';setCoreState('', 'Voice standby'); }
+ };
+ try{
+  instance.start();
+  $('voice').textContent='Stop voice listening';
+ }catch(error){
+  if(!isCurrent())return;
+  voiceStartPending=false;
+  recognition=null;
+  if(['NotAllowedError','SecurityError'].includes(error.name)){
+   setVoiceUnavailable('Microphone permission denied. Allow NEXT AI microphone access in Windows settings. Sensitive action cancelled.');
+   return;
+  }
+  voiceLastError='start-failed';
+  scheduleVoiceRestart(session,voiceLastError);
+ }
 }
-function stopVoice(){listening=false;awaitingCommand=false;dictationMode=false;const dictationButton=$('voiceTyping');if(dictationButton){dictationButton.textContent='Start voice typing';dictationButton.setAttribute('aria-pressed','false');}pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}if(recognition)recognition.stop();if('speechSynthesis'in window)speechSynthesis.cancel();$('voice').textContent='Start voice listening';}
+function startVoice(){
+ if(listening){
+  if(!recognition&&!voiceStartPending&&voiceRestartTimer===null)startVoiceRecognition(voiceSessionId);
+  return;
+ }
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){setVoiceUnavailable('Speech recognition is not available in this Electron build. Sensitive action cancelled; use a supported microphone.');return;}
+ clearVoiceRestartTimer();
+ listening=true;
+ voiceRetryCount=0;
+ voiceLastError=null;
+ const session=++voiceSessionId;
+ startVoiceRecognition(session);
+}
+function stopVoice(){
+ pauseVoiceListening();
+ awaitingCommand=false;
+ dictationMode=false;
+ const dictationButton=$('voiceTyping');
+ if(dictationButton){dictationButton.textContent='Start voice typing';dictationButton.setAttribute('aria-pressed','false');}
+ cancelPendingVoiceAction();
+ if('speechSynthesis'in window)speechSynthesis.cancel();
+ $('voice').textContent='Start voice listening';
+ $('voiceState').textContent='Voice stopped';
+ setCoreState('', 'Voice standby');
+}
 $('voice').onclick=()=>listening?stopVoice():startVoice();
 $('voiceTyping').onclick=()=>setDictationMode(!dictationMode);
 refresh();

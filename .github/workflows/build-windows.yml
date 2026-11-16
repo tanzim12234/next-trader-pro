@@ -40,6 +40,7 @@ jobs:
           node --check src/preload.cjs
           node --check src/brain.cjs
           node --check src/renderer.js
+          node --check src/voice-recovery.js
           node --check src/skill-manager.cjs
           node --check src/code-lab.cjs
           node --check src/system-monitor.cjs
@@ -48,6 +49,7 @@ jobs:
           node --check src/update-manager.cjs
           node --check scripts/sign-update-manifest.cjs
           node --check test/repair-update.test.cjs
+          node --check test/voice-recovery.test.cjs
           node --check src/command-router.cjs
           node --check test/semantic-runtime-smoke.cjs
       - name: Test Personal Brain
