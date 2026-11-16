@@ -65,3 +65,21 @@ test('does not silently treat corrupted data as an empty brain', t => {
   fs.writeFileSync(path.join(x.userData, 'personal-brain.enc'), 'not-json');
   assert.throws(() => x.brain.list(), SyntaxError);
 });
+
+
+test('ingests a lesson into searchable encrypted chunks', t => {
+  const x = setup(); t.after(x.cleanup);
+  const result = x.brain.ingest('Alpha knowledge is useful.\r\n\r\nBeta knowledge is searchable.', 'study');
+  assert.equal(result.saved, 2);
+  assert.equal(x.brain.list('alpha').length, 1);
+  assert.equal(x.brain.list('beta').length, 1);
+  assert.equal(x.brain.list()[0].category, 'study');
+});
+
+test('splits long lessons into bounded chunks and rejects oversized input', t => {
+  const x = setup(); t.after(x.cleanup);
+  const result = x.brain.ingest('A'.repeat(50000), 'study');
+  assert.ok(result.saved > 1);
+  assert.ok(result.memories.every(item => item.text.length <= 1000));
+  assert.throws(() => x.brain.ingest('x'.repeat(50001)), /50,000/);
+});
