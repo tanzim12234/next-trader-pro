@@ -34,6 +34,7 @@ jobs:
           node --check src/brain.cjs
           node --check src/renderer.js
           node --check src/system-monitor.cjs
+          node --check src/command-router.cjs
           node --check test/semantic-runtime-smoke.cjs
       - name: Test Personal Brain
         run: npm test
