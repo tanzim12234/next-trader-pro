@@ -44,6 +44,16 @@ test('diagnostics report missing files and unavailable secure storage without mo
   assert.equal(report.recommendedActions.length, 4);
 });
 
+test('AI diagnosis is visible without inflating the runtime error counter', () => {
+  const { selfHealing } = fixture();
+  selfHealing.recordError({ source: 'renderer', message: 'Renderer failed', code: 'WINDOW_ERROR' });
+  selfHealing.recordError({ source: 'ai-analysis', message: 'Automatic diagnosis: missing DOM element', code: 'AUTO_ANALYSIS_COMPLETE' });
+  const status = selfHealing.getStatus();
+  assert.equal(status.errorsRecorded, 1);
+  assert.equal(status.latestAnalysis.code, 'AUTO_ANALYSIS_COMPLETE');
+  assert.equal(status.lastError.message, 'Renderer failed');
+});
+
 test('diagnostic logs redact common provider API key formats and analysis events are not treated as new failures', () => {
   const { selfHealing } = fixture();
   selfHealing.recordError({ source: 'renderer', message: 'token AIza123456789012345678901234567890 gsk_abcdefghijklmnopqrstuvwxyz123456', code: 'WINDOW_ERROR' });
