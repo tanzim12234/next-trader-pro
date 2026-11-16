@@ -106,6 +106,14 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <input id="homeToken" type="password" autocomplete="off" maxlength="4096" placeholder="Home Assistant long-lived access token">
 <div class="row"><button id="homeConnect">Connect securely</button><button id="homeRefresh">Refresh devices</button></div>
 <div id="homeState" class="hint">Not connected.</div><div id="homeEntities" class="memory-list"></div></section>
+<section class="panel"><h2>GitHub Skill Library · Self-Improvement</h2>
+<p class="hint">GitHub-এ Skill repository খুঁজে Markdown Skill পর্যালোচনা করে লোকালি ইনস্টল করো। ইনস্টল করা Skill ডিফল্টভাবে নিষ্ক্রিয় থাকবে; কোনো downloaded script বা executable স্বয়ংক্রিয়ভাবে চলবে না।</p>
+<div class="row"><input id="skillSearch" maxlength="100" placeholder="Search GitHub skills (e.g. web research, python)"><button id="searchSkills">Search GitHub</button></div>
+<div id="skillSearchResults" class="memory-list" aria-live="polite"></div>
+<h3>Installed Skills</h3><button id="refreshSkills">Refresh library</button>
+<div id="installedSkills" class="memory-list"></div>
+<div id="skillPreview" class="chat" aria-live="polite">Select a skill to inspect its Markdown instructions. Treat downloaded content as untrusted.</div>
+</section>
 <section class="panel"><h2>Chat with NEXT</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button> <button id="saveConversation" disabled>Save conversation to Personal Brain</button><span id="conversationState" class="hint">Chat is not stored unless you choose Save.</span></section>
 <section class="panel"><h2>Automatic Learning · Personal Brain</h2>
 <p class="hint">NEXT কথোপকথন থেকে ব্যবহারকারীর স্পষ্টভাবে বলা স্থায়ী, non-sensitive তথ্য স্বয়ংক্রিয়ভাবে encrypted Personal Brain-এ শেখে। একবারের প্রশ্ন, অস্থায়ী তথ্য, secret ও sensitive তথ্য সংরক্ষণ করা হয় না। চাইলে শেষ কথোপকথন আবার পরীক্ষা করতে পারো।</p>
