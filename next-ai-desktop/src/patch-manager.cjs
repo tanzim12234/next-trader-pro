@@ -97,8 +97,8 @@ function readProposal(workspace, id) {
 }
 
 function createLineDiff(before, after, relativePath) {
-  const oldLines = before.split('\\n');
-  const newLines = after.split('\\n');
+  const oldLines = before.split('\n');
+  const newLines = after.split('\n');
   let prefix = 0;
   while (prefix < oldLines.length && prefix < newLines.length && oldLines[prefix] === newLines[prefix]) prefix++;
   let suffix = 0;
@@ -112,11 +112,11 @@ function createLineDiff(before, after, relativePath) {
   for (let i = contextStart; i < prefix; i++) lines.push(' ' + oldLines[i]);
   const removed = oldLines.slice(prefix, oldLines.length - suffix);
   const added = newLines.slice(prefix, newLines.length - suffix);
-  if (removed.length + added.length > 400) return lines.concat(['[large change: ' + removed.length + ' lines removed, ' + added.length + ' lines added; inspect the full draft]']).join('\\n');
+  if (removed.length + added.length > 400) return lines.concat(['[large change: ' + removed.length + ' lines removed, ' + added.length + ' lines added; inspect the full draft]']).join('\n');
   for (const line of removed) lines.push('-' + line);
   for (const line of added) lines.push('+' + line);
   for (let i = 0; i < suffix && i < 3; i++) lines.push(' ' + oldLines[oldLines.length - suffix + i]);
-  return lines.join('\\n');
+  return lines.join('\n');
 }
 
 function summarize(record) {
@@ -129,7 +129,8 @@ function summarize(record) {
       afterHash: file.afterHash,
       changed: file.before !== file.after,
       before: file.before,
-      after: file.after
+      after: file.after,
+      diff: createLineDiff(file.before, file.after, file.path)
     }))
   };
 }
