@@ -226,11 +226,10 @@ function createPersonalBrain({ app, safeStorage, semanticEmbedder }) {
     if (typeof semanticEmbedder === 'function') return semanticEmbedder(texts);
     if (!extractorPromise) {
       extractorPromise = (async () => {
-        const { pipeline, env, LogLevel } = await import('@huggingface/transformers');
+        const { pipeline, env } = await import('@huggingface/transformers');
         env.cacheDir = path.join(app.getPath('userData'), 'semantic-model-cache');
         env.useFSCache = true;
         env.allowRemoteModels = true;
-        env.logLevel = LogLevel.ERROR;
         return pipeline('feature-extraction', embeddingModel, { dtype: 'q8' });
       })().catch(error => {
         extractorPromise = null;
