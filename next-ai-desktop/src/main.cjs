@@ -211,14 +211,34 @@ ipcMain.handle('self-heal:download-update', async () => {
   }
   const declaredSize = Number(response.headers.get('content-length') || 0);
   if (declaredSize && declaredSize !== manifest.size) throw new Error('Installer Content-Length does not match the signed manifest.');
-  const bytes = Buffer.from(await response.arrayBuffer());
+  const chunks = [];
+  let totalBytes = 0;
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('Installer response has no readable body.');
+  try {
+    while (true) {
+      const part = await reader.read();
+      if (part.done) break;
+      totalBytes += part.value.byteLength;
+      if (totalBytes > 500 * 1024 * 1024 || totalBytes > manifest.size) {
+        await reader.cancel();
+        throw new Error('Installer download exceeded the signed size limit.');
+      }
+      chunks.push(Buffer.from(part.value));
+    }
+  } finally {
+    try { reader.releaseLock(); } catch {}
+  }
+  const bytes = Buffer.concat(chunks, totalBytes);
   const integrity = verifyInstallerBytes(bytes, manifest);
   const directory = path.join(app.getPath('userData'), 'updates');
   fs.mkdirSync(directory, { recursive: true });
-  const installerPath = path.join(directory, 'NEXT-AI-Setup-' + manifest.version + '.exe');
-  const temporaryPath = installerPath + '.partial';
-  fs.writeFileSync(temporaryPath, bytes, { flag: 'w', mode: 0o600 });
-  fs.renameSync(temporaryPath, installerPath);
+  const installerPath = path.join(directory, 'NEXT-AI-Setup-' + manifest.version + '-' + integrity.sha256.slice(0, 12) + '.exe');
+  if (!fs.existsSync(installerPath)) {
+    const temporaryPath = installerPath + '.' + process.pid + '.partial';
+    fs.writeFileSync(temporaryPath, bytes, { flag: 'wx', mode: 0o600 });
+    fs.renameSync(temporaryPath, installerPath);
+  }
   stagedVerifiedInstaller = { path: installerPath, sha256: integrity.sha256, version: manifest.version };
   return { downloaded: true, version: manifest.version, size: integrity.size };
 });
