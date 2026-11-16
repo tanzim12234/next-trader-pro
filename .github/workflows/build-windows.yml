@@ -26,6 +26,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Read desktop version
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          "APP_VERSION=$version" >> $env:GITHUB_ENV
       - name: Install dependencies
         run: npm install
       - name: Check JavaScript syntax
@@ -80,8 +85,8 @@ jobs:
       - name: Publish public GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: next-ai-desktop-v0.1.0
-          name: NEXT AI Desktop v0.1.0
+          tag_name: next-ai-desktop-v${{ env.APP_VERSION }}
+          name: NEXT AI Desktop v${{ env.APP_VERSION }}
           draft: false
           prerelease: false
           make_latest: true
