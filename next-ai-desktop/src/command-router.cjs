@@ -17,13 +17,13 @@ function classifyVoiceCommand(value) {
     return { intent: 'voice-typing-start', confidence: 0.99 };
   if (/^(?:stop|end|disable) voice typing|^voice typing stop|^ভয়েস টাইপিং (?:বন্ধ|থামাও) করো|^কথা লেখা বন্ধ করো$/i.test(text))
     return { intent: 'voice-typing-stop', confidence: 0.99 };
-  if (/^(?:lock|lock my|lock the) (?:laptop|computer|pc|screen)|^(?:ল্যাপটপ|কম্পিউটার) লক করো$/i.test(text))
+  if (/^(?:lock|lock my|lock the) (?:laptop|computer|pc|screen)$|^(?:ল্যাপটপ|কম্পিউটার) লক (?:করো|করে দাও)$/i.test(text))
     return { intent: 'lock-laptop', confidence: 0.99 };
-  if (/^(?:shut ?down|power off|turn off) (?:my )?(?:laptop|computer|pc)|^(?:ল্যাপটপ|কম্পিউটার) বন্ধ করো$/i.test(text))
+  if (/^(?:shut ?down|power off|turn off) (?:my )?(?:laptop|computer|pc)$|^(?:ল্যাপটপ|কম্পিউটার) (?:বন্ধ করো|বন্ধ করে দাও|শাটডাউন করো)$/i.test(text))
     return { intent: 'shutdown-laptop', confidence: 0.99 };
-  if (/^(?:unlock|unlock my) (?:laptop|computer|pc)|^(?:ল্যাপটপ|কম্পিউটার) আনলক করো$/i.test(text))
+  if (/^(?:unlock|unlock my) (?:laptop|computer|pc)$|^(?:ল্যাপটপ|কম্পিউটার) আনলক (?:করো|করে দাও)$/i.test(text))
     return { intent: 'unlock-laptop-guidance', confidence: 0.99 };
-  if (/^(?:power on|turn on|wake) (?:my )?(?:laptop|computer|pc)|^(?:ল্যাপটপ|কম্পিউটার) চালু করো$/i.test(text))
+  if (/^(?:power on|turn on|wake) (?:my )?(?:laptop|computer|pc)$|^(?:ল্যাপটপ|কম্পিউটার) (?:চালু করো|চালু করে দাও)$/i.test(text))
     return { intent: 'power-on-guidance', confidence: 0.99 };
 
   const appPatterns = [
