@@ -633,4 +633,5 @@ $('searchSkills').onclick=async()=>{
  finally{button.disabled=false;}
 };
 $('refreshSkills').onclick=refreshSkillLibrary;
+$('clearActiveSkill').onclick=()=>{selectedSkillId=null;$('activeSkillState').textContent='No skill reference selected.';void refreshSkillLibrary();};
 refreshSkillLibrary();
