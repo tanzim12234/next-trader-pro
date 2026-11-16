@@ -77,6 +77,9 @@ app.whenReady().then(async () => {
   catch (error) { selfHealing.recordError({ source: 'startup-diagnostics', message: error.message, stack: error.stack }); }
   createWindow();
 });
+process.on('uncaughtExceptionMonitor', (error, origin) => {
+  selfHealing.recordError({ source: 'main-uncaught-exception', message: error?.message || String(error), code: origin || 'uncaughtException', stack: error?.stack || '' });
+});
 process.on('unhandledRejection', reason => {
   const error = reason instanceof Error ? reason : new Error(String(reason));
   selfHealing.recordError({ source: 'main-unhandled-rejection', message: error.message, stack: error.stack });
