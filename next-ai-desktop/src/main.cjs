@@ -62,6 +62,40 @@ ipcMain.handle('files:open-text', async () => {
   if (!stat.isFile() || stat.size > 1024 * 1024) throw new Error('Only text files up to 1 MB can be opened.');
   return { name: path.basename(filePath), content: fs.readFileSync(filePath, 'utf8') };
 });
+ipcMain.handle('files:extract-learning-file', async () => {
+  const result = await require('electron').dialog.showOpenDialog(win, {
+    title: 'Choose a PDF or Word document to teach NEXT',
+    properties: ['openFile'],
+    filters: [{ name: 'Learning documents', extensions: ['pdf', 'docx'] }]
+  });
+  if (result.canceled || !result.filePaths[0]) return { cancelled: true };
+  const filePath = result.filePaths[0];
+  const stat = await fs.promises.stat(filePath);
+  if (!stat.isFile() || stat.size > 15 * 1024 * 1024) throw new Error('শুধু 15 MB পর্যন্ত PDF বা DOCX নেওয়া যাবে।');
+  const extension = path.extname(filePath).toLowerCase();
+  let extracted = '';
+  if (extension === '.pdf') {
+    const pdfParse = require('pdf-parse');
+    const parsed = await pdfParse(await fs.promises.readFile(filePath), { max: 100 });
+    extracted = parsed.text || '';
+  } else if (extension === '.docx') {
+    const mammoth = require('mammoth');
+    const parsed = await mammoth.extractRawText({ path: filePath });
+    extracted = parsed.value || '';
+  } else {
+    throw new Error('Unsupported document format.');
+  }
+  extracted = extracted.replace(/\r\n/g, '\n').trim();
+  if (!extracted) throw new Error('এই ফাইলে পড়ার মতো text পাওয়া যায়নি। Scanned PDF হলে OCR প্রয়োজন হতে পারে।');
+  const limit = 50000;
+  return {
+    name: path.basename(filePath),
+    text: extracted.slice(0, limit),
+    characters: extracted.length,
+    truncated: extracted.length > limit,
+    note: extension === '.pdf' ? 'PDF text extraction' : 'DOCX text extraction'
+  };
+});
 ipcMain.handle('files:save-text', async (_e, input) => {
   if (!input || typeof input.content !== 'string' || input.content.length > 1024 * 1024) throw new Error('Text must be under 1 MB.');
   const result = await require('electron').dialog.showSaveDialog(win, {
