@@ -16,7 +16,7 @@ function fixture() {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'next-patches-'));
   fs.mkdirSync(path.join(root, 'src'));
   fs.mkdirSync(path.join(root, 'test'));
-  fs.writeFileSync(path.join(root, 'src', 'app.cjs'), "'use strict';\\nmodule.exports = 1;\\n");
+  fs.writeFileSync(path.join(root, 'src', 'app.cjs'), "'use strict';\nmodule.exports = 1;\n");
   return { root, workspace };
 }
 
@@ -24,7 +24,7 @@ test('creates review-only patch and requires explicit approval to apply', () => 
   const { root, workspace } = fixture();
   const proposal = createPatchProposal({
     root, workspace,
-    changes: [{ path: 'src/app.cjs', content: "'use strict';\\nmodule.exports = 2;\\n" }]
+    changes: [{ path: 'src/app.cjs', content: "'use strict';\nmodule.exports = 2;\n" }]
   });
   assert.equal(proposal.status, 'review-required');
   assert.match(proposal.files[0].diff, /^--- a\/src\/app\.cjs/m);
@@ -41,7 +41,7 @@ test('rolls back only when applied files have not changed again', () => {
   const { root, workspace } = fixture();
   const proposal = createPatchProposal({
     root, workspace,
-    changes: [{ path: 'src/app.cjs', content: 'module.exports = 2;\\n' }]
+    changes: [{ path: 'src/app.cjs', content: 'module.exports = 2;\n' }]
   });
   applyPatchProposal({ root, workspace, id: proposal.id, approved: true });
   rollbackPatchProposal({ root, workspace, id: proposal.id });
