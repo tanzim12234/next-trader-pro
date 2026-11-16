@@ -18,8 +18,42 @@ function setCoreState(state, activity){
  if(act&&activity)act.textContent=activity.toUpperCase().replace(/\s+/g,' ').slice(0,30);
 }
 
+async function refreshSelfHealing(){
+ const state=$('selfHealState'),count=$('selfHealCount'),details=$('selfHealDetails');
+ if(!state||!count||!details)return;
+ try{
+  const status=await window.nextAI.getSelfHealingStatus();
+  count.textContent=String(status.errorsRecorded||0);
+  state.textContent=status.errorsRecorded?'MONITORING · '+status.errorsRecorded+' EVENT(S)':'SELF-HEALING ONLINE';
+  details.textContent=status.lastError
+   ? 'Last event: '+status.lastError.source+' · '+status.lastError.message+' · Log: '+status.logPath
+   : 'No runtime errors recorded. Automatic diagnostics are active.';
+ }catch(error){state.textContent='DIAGNOSTICS UNAVAILABLE';details.textContent=error.message;}
+}
+async function runSelfHealingDiagnostics(){
+ const button=$('runSelfHeal'),state=$('selfHealState'),details=$('selfHealDetails');
+ if(button)button.disabled=true;
+ if(state)state.textContent='SCANNING SYSTEM…';
+ try{
+  const report=await window.nextAI.runSelfHealingDiagnostics();
+  if(state)state.textContent=report.healthy?'ALL CHECKS PASSED':'ISSUES DETECTED · '+report.checks.filter(x=>!x.ok).length;
+  if(details)details.textContent=report.checks.map(x=>(x.ok?'✓ ':'✕ ')+x.label+': '+x.detail).join(' · ')+(report.recommendedActions.length?' · Recommended: '+report.recommendedActions.map(x=>x.action).join(' '):'');
+  await refreshSelfHealing();
+ }catch(error){if(state)state.textContent='SCAN FAILED';if(details)details.textContent=error.message;}
+ finally{if(button)button.disabled=false;}
+}
+if($('runSelfHeal'))$('runSelfHeal').onclick=runSelfHealingDiagnostics;
+window.addEventListener('error',event=>{
+ const error=event.error||new Error(event.message||'Renderer error');
+ void window.nextAI.reportRuntimeError({message:error.message||event.message||'Renderer error',stack:error.stack||'',code:'WINDOW_ERROR'}).catch(()=>{});
+});
+window.addEventListener('unhandledrejection',event=>{
+ const error=event.reason instanceof Error?event.reason:new Error(String(event.reason||'Unhandled promise rejection'));
+ void window.nextAI.reportRuntimeError({message:error.message,stack:error.stack||'',code:'UNHANDLED_REJECTION'}).catch(()=>{});
+});
 async function refresh(){const s=await window.nextAI.status();$('state').textContent='Secure storage: '+(s.secureStorage?'ON':'UNAVAILABLE')+' · Gemini: '+(s.gemini?'SET':'NOT SET')+' · Groq: '+(s.groq?'SET':'NOT SET');if($('aiProvider'))$('aiProvider').value=s.provider||'auto';if($('hudSystem'))$('hudSystem').textContent=s.secureStorage?'SECURE CORE ONLINE':'SECURE STORAGE OFF';if($('hudEngine'))$('hudEngine').textContent=s.provider==='groq'&&s.groq?'GROQ ENGINE READY':s.gemini?'GEMINI ENGINE READY':s.groq?'GROQ ENGINE READY':'API KEY REQUIRED';if($('hudEnvironment'))$('hudEnvironment').textContent=(navigator.platform||'DESKTOP').toUpperCase().slice(0,24);if($('hudMemory'))$('hudMemory').textContent='MEMORY MODULE READY';}
-$('save').onclick=async()=>{try{await window.nextAI.saveKeys({geminiKey:$('gemini').value,groqKey:$('groq').value,provider:$('aiProvider').value});$('gemini').value='';$('groq').value='';$('saveState').textContent='Saved securely.';await refresh();}catch(e){$('saveState').textContent=e.message;}};
+$('save').onclick=async()=>{try{await window.nextAI.saveKeys({geminiKey:$('gemini').value,groqKey:$('groq').value,provider:$('aiProvider').value});$('gemini').value='';$('groq').value='';$('saveState').textContent='Saved securely.';await refresh();
+void refreshSelfHealing();}catch(e){$('saveState').textContent=e.message;}};
 $('testConnection').onclick=async()=>{const b=$('testConnection');b.disabled=true;$('saveState').textContent='Testing API connection…';try{const r=await window.nextAI.testConnection();$('saveState').textContent=r.provider+' connection successful · '+r.model;}catch(e){$('saveState').textContent='Connection failed: '+e.message;}finally{b.disabled=false;}};
 
 let pendingTaskPlan=null;
