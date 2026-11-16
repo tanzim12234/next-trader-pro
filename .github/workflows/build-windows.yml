@@ -33,8 +33,12 @@ jobs:
           node --check src/preload.cjs
           node --check src/brain.cjs
           node --check src/renderer.js
+          node --check test/semantic-runtime-smoke.cjs
       - name: Test Personal Brain
         run: npm test
+      - name: Test real local semantic model on Windows
+        run: node test/semantic-runtime-smoke.cjs
+        timeout-minutes: 20
       - name: Report signing configuration
         shell: pwsh
         run: |
