@@ -638,7 +638,7 @@ ipcMain.handle('action:run', async (_e, action) => {
     if (!target) throw new Error('এই অ্যাপটি allowlist-এ নেই।');
     const choice = await require('electron').dialog.showMessageBox(win, { type: 'question', buttons: ['Launch app', 'Cancel'], defaultId: 1, cancelId: 1, message: 'এই অ্যাপটি চালু করবে?', detail: action.app });
     if (choice.response !== 0) return { cancelled: true };
-    const child = spawn(target.command, target.args, { detached: true, stdio: 'ignore', windowsHide: false });
+    const child = spawn(target.command, [], { detached: true, stdio: 'ignore', windowsHide: false });
     child.on('error', err => console.error('Allowed app launch failed:', err.message));
     child.unref();
     return { ok: true, app: action.app };
