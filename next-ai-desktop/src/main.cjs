@@ -136,7 +136,7 @@ function createWindow() {
       rendererRecoveryCount++;
       setTimeout(() => {
         if (win && !win.isDestroyed()) win.destroy();
-        if (!app.isQuitting) createWindow();
+        if (!appQuitting) createWindow();
       }, 1200);
     } else {
       require('electron').dialog.showErrorBox('NEXT AI recovery needed', 'NEXT AI detected repeated interface crashes. The error has been saved to its diagnostics log. Restart the app and share the self-healing report if the problem continues.');
