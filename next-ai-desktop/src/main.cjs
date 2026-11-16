@@ -106,14 +106,14 @@ ipcMain.handle('files:extract-learning-file', async () => {
             .filter(item => typeof item.str === 'string')
             .map(item => item.str)
             .join(' ')
-            .replace(/\\s+/g, ' ')
+            .replace(/\s+/g, ' ')
             .trim();
           let pageText = selectableText;
-          if (selectableText.replace(/\\s/g, '').length < 35) {
+          if (selectableText.replace(/\s/g, '').length < 35) {
             if (!worker) {
               const { createWorker } = require('tesseract.js');
               const tesseractRoot = path.dirname(require.resolve('tesseract.js'));
-              const workerPath = path.join(tesseractRoot, 'worker.min.js').replace(/app\\.asar([/\\\\])/u, 'app.asar.unpacked$1');
+              const workerPath = path.join(tesseractRoot, 'worker.min.js').replace(/app\.asar([/\\])/u, 'app.asar.unpacked$1');
               worker = await createWorker('eng+ben', 1, {
                 workerPath,
                 langPath: 'https://tessdata.projectnaptha.com/4.0.0',
@@ -157,7 +157,7 @@ ipcMain.handle('files:extract-learning-file', async () => {
     let worker;
     try {
       const tesseractRoot = path.dirname(require.resolve('tesseract.js'));
-      const workerPath = path.join(tesseractRoot, 'worker.min.js').replace(/app\\.asar([/\\\\])/u, 'app.asar.unpacked$1');
+      const workerPath = path.join(tesseractRoot, 'worker.min.js').replace(/app\.asar([/\\])/u, 'app.asar.unpacked$1');
       worker = await createWorker('eng+ben', 1, {
         workerPath,
         langPath: 'https://tessdata.projectnaptha.com/4.0.0',
