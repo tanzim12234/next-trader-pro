@@ -18,6 +18,31 @@ function setCoreState(state, activity){
  if(act&&activity)act.textContent=activity.toUpperCase().replace(/\s+/g,' ').slice(0,30);
 }
 
+if($('analyzeLatestError'))$('analyzeLatestError').onclick=async()=>{
+ const button=$('analyzeLatestError'),box=$('aiErrorAnalysis');
+ button.disabled=true;box.textContent='NEXT AI is analyzing the latest recorded error…';
+ try{
+  const report=await window.nextAI.analyzeLatestError();
+  box.textContent='SUMMARY: '+report.summary+'\n\nROOT CAUSE: '+report.rootCause+'\n\nCONFIDENCE: '+report.confidence+'\n\nSAFE NEXT STEPS:\n'+report.steps.map((x,i)=>(i+1)+'. '+x).join('\n')+'\n\nRISKS:\n'+report.risks.map((x,i)=>(i+1)+'. '+x).join('\n')+'\n\nHuman approval required. No code was executed.';
+ }catch(error){box.textContent='AI analysis unavailable: '+error.message;}
+ finally{button.disabled=false;}
+};
+if($('generateFeatureProposal'))$('generateFeatureProposal').onclick=async()=>{
+ const button=$('generateFeatureProposal');
+ button.disabled=true;$('codeLabState').textContent='NEXT AI is designing a reviewable feature proposal…';
+ try{
+  const proposal=await window.nextAI.createFeatureProposal({
+   goal:$('codeGoal').value.trim(),
+   path:$('patchTargetPath').value.trim(),
+   source:$('codeSource').value
+  });
+  $('codeLanguage').value='javascript';
+  $('codeProposal').value=proposal.content;
+  $('codeExplanation').textContent='FEATURE PROPOSAL · '+proposal.path+'\n'+proposal.explanation+'\n\nNot applied. Review, validate, stage and approve separately.';
+  $('codeLabState').textContent='Feature proposal generated · review required · no code executed.';
+ }catch(error){$('codeLabState').textContent='Feature proposal failed: '+error.message;}
+ finally{button.disabled=false;}
+};
 async function refreshSelfHealing(){
  const state=$('selfHealState'),count=$('selfHealCount'),details=$('selfHealDetails');
  if(!state||!count||!details)return;
