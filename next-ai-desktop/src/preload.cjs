@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('nextAI', Object.freeze({
   getSecurityStatus: () => ipcRenderer.invoke('security:status'),
   getSelfHealingStatus: () => ipcRenderer.invoke('self-heal:status'),
   analyzeLatestError: () => ipcRenderer.invoke('self-heal:analyze'),
+  createRepairProposal: input => ipcRenderer.invoke('self-heal:repair-proposal', input),
   createFeatureProposal: input => ipcRenderer.invoke('self-heal:feature-proposal', input),
   verifyUpdateManifest: input => ipcRenderer.invoke('self-heal:verify-update', input),
   runSelfHealingDiagnostics: () => ipcRenderer.invoke('self-heal:diagnostics'),
