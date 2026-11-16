@@ -5,14 +5,14 @@ const os = require('node:os');
 const path = require('node:path');
 const { createPersonalBrain } = require('../src/brain.cjs');
 
-function setup() {
+function setup(options = {}) {
   const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'next-ai-brain-'));
   const safeStorage = {
     isEncryptionAvailable: () => true,
     encryptString: value => Buffer.from(value, 'utf8'),
     decryptString: value => Buffer.from(value).toString('utf8')
   };
-  const brain = createPersonalBrain({ app: { getPath: () => userData }, safeStorage });
+  const brain = createPersonalBrain({ app: { getPath: () => userData }, safeStorage, ...options });
   return { brain, userData, cleanup: () => fs.rmSync(userData, { recursive: true, force: true }) };
 }
 
@@ -27,13 +27,13 @@ test('persists Bengali memory across instances and finds it', t => {
   assert.equal(again.list('বাংলা')[0].text, 'আমার পছন্দের ভাষা বাংলা');
 });
 
-test('ranks relevant memories and excludes unrelated context', t => {
+test('ranks relevant memories and excludes unrelated context', async t => {
   const x = setup(); t.after(x.cleanup);
   x.brain.remember('NEXT AI personal brain stores encrypted memories', 'project');
   x.brain.remember('NEXT AI personal brain learns from saved knowledge', 'project');
   x.brain.remember('Chocolate cake recipe with cocoa', 'food');
   assert.equal(x.brain.list('personal brain').length, 2);
-  const context = x.brain.context('encrypted memories');
+  const context = await x.brain.context('encrypted memories');
   assert.match(context, /encrypted memories/);
   assert.doesNotMatch(context, /Chocolate cake/);
 });
@@ -109,4 +109,22 @@ test('builds a local knowledge graph from related memories', t => {
   assert.equal(graph.nodes.length, 3);
   assert.ok(graph.edges.some(edge => (edge.source === a.id && edge.target === b.id) || (edge.source === b.id && edge.target === a.id)));
   assert.ok(graph.edges.every(edge => edge.weight > 0 && edge.topics.length > 0));
+});
+
+
+test('semantic search retrieves related wording with local embeddings', async t => {
+  const semanticEmbedder = async texts => texts.map(value => {
+    const text = value.toLocaleLowerCase();
+    if (/vehicle|transport|গাড়ি|গাড়ি|যানবাহন/u.test(text)) return [1, 0, 0];
+    if (/cake|chocolate|কেক|চকলেট/u.test(text)) return [0, 1, 0];
+    return [0, 0, 1];
+  });
+  const x = setup({ semanticEmbedder }); t.after(x.cleanup);
+  const vehicle = x.brain.remember('আমি গাড়ি চালাতে ভালোবাসি', 'preference');
+  x.brain.remember('Chocolate cake recipe with cocoa', 'food');
+  const found = await x.brain.search('vehicle transport');
+  assert.equal(found[0].id, vehicle.id);
+  assert.equal(found.length, 1);
+  const context = await x.brain.context('transportation');
+  assert.match(context, /গাড়ি চালাতে/);
 });
