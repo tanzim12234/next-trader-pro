@@ -14,7 +14,7 @@ function fixture(fetchImpl) {
 
 test('search returns a bounded, normalized GitHub repository list', async () => {
   const f = fixture(async () => ({ ok: true, json: async () => ({ items: [{ full_name: 'owner/skill', description: 'A skill', stargazers_count: 12, html_url: 'https://github.com/owner/skill', default_branch: 'main' }] }) }));
-  try { assert.equal((await f.manager.searchGitHub('research')).[0].fullName, 'owner/skill'); } finally { f.cleanup(); }
+  try { assert.equal((await f.manager.searchGitHub('research'))[0].fullName, 'owner/skill'); } finally { f.cleanup(); }
 });
 
 test('installs Markdown as disabled untrusted content and can retrieve/remove it', async () => {
