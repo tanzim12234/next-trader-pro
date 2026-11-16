@@ -186,7 +186,11 @@ ipcMain.handle('self-heal:check-update', async () => {
   const release = await releaseResponse.json();
   const asset = Array.isArray(release.assets) ? release.assets.find(item => item.name === 'update-manifest.json') : null;
   if (!asset || typeof asset.browser_download_url !== 'string') return { available: false, reason: 'No signed update manifest is published yet.' };
-  const manifestResponse = await fetch(asset.browser_download_url, { headers: { 'User-Agent': 'NEXT-AI-Desktop' }, signal: AbortSignal.timeout(20000) });
+  const manifestUrl = new URL(asset.browser_download_url);
+  if (manifestUrl.protocol !== 'https:' || manifestUrl.hostname !== 'github.com' || manifestUrl.username || manifestUrl.password) {
+    throw new Error('Update manifest URL is not a trusted GitHub HTTPS address.');
+  }
+  const manifestResponse = await fetch(manifestUrl, { headers: { 'User-Agent': 'NEXT-AI-Desktop' }, signal: AbortSignal.timeout(20000) });
   if (!manifestResponse.ok) throw new Error('Could not download update manifest.');
   const manifest = parseUpdateManifest(await manifestResponse.text());
   const verification = verifyUpdateManifest(manifest, publicKey, { platform: 'win32', arch: process.arch });
