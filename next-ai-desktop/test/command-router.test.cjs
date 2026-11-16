@@ -11,6 +11,11 @@ test('understands English and Bangla app launch commands', () => {
   assert.equal(classifyVoiceCommand('নোটপ্যাড খুলে দাও').app, 'notepad');
   assert.equal(classifyVoiceCommand('ফাইল ম্যানেজার চালু করো').app, 'file-explorer');
 });
+test('understands new English and Bangla desktop utility commands', () => {
+  assert.equal(classifyVoiceCommand('Hey NEXT, open Task Manager').app, 'task-manager');
+  assert.equal(classifyVoiceCommand('স্নিপিং টুল খুলে দাও').app, 'snipping-tool');
+  assert.equal(classifyVoiceCommand('পেইন্ট চালু করো').app, 'paint');
+});
 test('understands YouTube, web search, media and assistant questions', () => {
   assert.equal(classifyVoiceCommand('ইউটিউবে বাংলা গান খোঁজো').query, 'বাংলা গান');
   assert.equal(classifyVoiceCommand('Google latest AI news').intent, 'web-search');
