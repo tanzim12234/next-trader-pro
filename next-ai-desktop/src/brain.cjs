@@ -3,8 +3,8 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 /**
- * Encrypted, user-controlled long-term memory.
- * No chat is silently stored: memories are added only by an explicit remember action.
+ * Encrypted local long-term memory. Stable, non-sensitive facts may be learned automatically;
+ * secrets and sensitive personal data are filtered before automatic ingestion.
  */
 function createPersonalBrain({ app, safeStorage }) {
   const file = () => path.join(app.getPath('userData'), 'personal-brain.enc');
@@ -98,46 +98,50 @@ function createPersonalBrain({ app, safeStorage }) {
     }
     return [...expanded];
   }
-  function scoreMemory(queryTerms, phrase, memory, corpus) {
-    const docTerms = tokens(memory.text);
-    const frequencies = new Map();
-    for (const term of docTerms) frequencies.set(term, (frequencies.get(term) || 0) + 1);
-    const categoryTerms = new Set(tokens(memory.category));
-    const averageLength = corpus.length
-      ? corpus.reduce((sum, item) => sum + tokens(item.text).length, 0) / corpus.length
-      : 1;
-    const docLength = docTerms.length || 1;
-    let score = 0;
-    let matched = 0;
-    for (const term of queryTerms) {
-      const tf = frequencies.get(term) || 0;
-      if (tf) {
-        matched += 1;
-        const df = corpus.reduce((count, item) => count + (tokens(item.text).includes(term) ? 1 : 0), 0);
-        const idf = Math.log(1 + (corpus.length - df + 0.5) / (df + 0.5));
-        const saturation = (tf * 2.2) / (tf + 1.2 * (0.25 + 0.75 * docLength / averageLength));
-        score += idf * saturation;
-      }
-      if (categoryTerms.has(term)) score += 0.35;
-    }
-    const normalizedPhrase = tokens(phrase).join(' ');
-    const normalizedText = docTerms.join(' ');
-    if (normalizedPhrase.length > 3 && normalizedText.includes(normalizedPhrase)) score += 2.5;
-    // Exact unstemmed phrase and freshness are tie-breakers, never independent matches.
-    if (phrase.length > 3 && String(memory.text || '').toLocaleLowerCase().includes(phrase)) score += 1.5;
-    const updated = Date.parse(memory.updatedAt || memory.createdAt || 0);
-    const ageDays = Number.isFinite(updated) ? Math.max(0, (Date.now() - updated) / 86400000) : 365;
-    score += Math.max(0, 0.15 - ageDays / 36500);
-    return { score, matched };
-  }
   function rank(query, memories) {
     const rawTerms = tokens(query);
     if (!rawTerms.length) return [];
     const queryTerms = expandTerms(rawTerms);
     const phrase = String(query).trim().toLocaleLowerCase();
-    return memories.map((memory, index) => {
-      const result = scoreMemory(queryTerms, phrase, memory, memories);
-      return { memory, score: result.score, matched: result.matched, index };
+    const normalizedPhrase = tokens(phrase).join(' ');
+    const indexed = memories.map((memory, index) => {
+      const terms = tokens(memory.text);
+      const frequencies = new Map();
+      for (const term of terms) frequencies.set(term, (frequencies.get(term) || 0) + 1);
+      return {
+        memory, index, terms, frequencies,
+        categoryTerms: new Set(tokens(memory.category)),
+        normalizedText: terms.join(' '),
+        updated: Date.parse(memory.updatedAt || memory.createdAt || 0)
+      };
+    });
+    const documentFrequency = new Map();
+    for (const item of indexed) {
+      for (const term of item.frequencies.keys()) documentFrequency.set(term, (documentFrequency.get(term) || 0) + 1);
+    }
+    const averageLength = indexed.length
+      ? indexed.reduce((sum, item) => sum + item.terms.length, 0) / indexed.length
+      : 1;
+    return indexed.map(item => {
+      let score = 0;
+      let matched = 0;
+      const docLength = item.terms.length || 1;
+      for (const term of queryTerms) {
+        const tf = item.frequencies.get(term) || 0;
+        if (tf) {
+          matched += 1;
+          const df = documentFrequency.get(term) || 0;
+          const idf = Math.log(1 + (indexed.length - df + 0.5) / (df + 0.5));
+          const saturation = (tf * 2.2) / (tf + 1.2 * (0.25 + 0.75 * docLength / Math.max(averageLength, 1)));
+          score += idf * saturation;
+        }
+        if (item.categoryTerms.has(term)) score += 0.35;
+      }
+      if (normalizedPhrase.length > 3 && item.normalizedText.includes(normalizedPhrase)) score += 2.5;
+      if (phrase.length > 3 && String(item.memory.text || '').toLocaleLowerCase().includes(phrase)) score += 1.5;
+      const ageDays = Number.isFinite(item.updated) ? Math.max(0, (Date.now() - item.updated) / 86400000) : 365;
+      score += Math.max(0, 0.15 - ageDays / 36500);
+      return { memory: item.memory, score, matched, index: item.index };
     }).filter(item => item.matched > 0)
       .sort((a, b) => b.score - a.score || b.matched - a.matched || b.index - a.index)
       .map(item => item.memory);
