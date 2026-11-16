@@ -16,7 +16,7 @@
   const count=Number.isFinite(Number(attempt))?Math.max(1,Math.floor(Number(attempt))):1;
   const code=normalize(error);
   const base=code==='network'?1200:code==='no-speech'?600:900;
-  return Math.min(15000,base*Math.pow(2,Math.min(4,count-1)));
+  return Math.min(15000,base*Math.pow(2,Math.min(5,count-1)));
  }
  function getErrorMessage(error){
   const code=normalize(error);
