@@ -32,6 +32,24 @@ function validateManifestShape(manifest) {
   return true;
 }
 
+function parseUpdateManifest(raw) {
+  if (typeof raw !== 'string' || Buffer.byteLength(raw, 'utf8') > MAX_MANIFEST_BYTES) throw new Error('Update manifest is missing or too large.');
+  let manifest;
+  try { manifest = JSON.parse(raw); } catch { throw new Error('Update manifest JSON is invalid.'); }
+  validateManifestShape(manifest);
+  return manifest;
+}
+
+function compareVersions(left, right) {
+  const parse = value => String(value).split('-')[0].split('.').map(part => Number(part));
+  const a = parse(left), b = parse(right);
+  for (let i = 0; i < 3; i++) {
+    const diff = (a[i] || 0) - (b[i] || 0);
+    if (diff) return Math.sign(diff);
+  }
+  return 0;
+}
+
 function verifyUpdateManifest(manifest, publicKey, expected = {}) {
   validateManifestShape(manifest);
   if (!publicKey) return { trusted: false, reason: 'UPDATE_PUBLIC_KEY_NOT_CONFIGURED' };
@@ -51,4 +69,4 @@ function verifyInstallerBytes(bytes, manifest) {
   return { verified: true, sha256: digest, size: bytes.length };
 }
 
-module.exports = { canonicalManifest, validateManifestShape, verifyUpdateManifest, verifyInstallerBytes };
+module.exports = { canonicalManifest, validateManifestShape, parseUpdateManifest, compareVersions, verifyUpdateManifest, verifyInstallerBytes };
