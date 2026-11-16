@@ -110,7 +110,8 @@ ipcMain.handle('files:extract-learning-file', async () => {
         const bytes = await fs.promises.readFile(filePath);
         const document = await pdfjs.getDocument({ data: new Uint8Array(bytes), useSystemFonts: true, isEvalSupported: false }).promise;
         const pageTexts = [];
-        const maxPages = Math.min(document.numPages, 10);
+        const pageCount = document.numPages;
+        const maxPages = Math.min(pageCount, 10);
         for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
           const page = await document.getPage(pageNumber);
           const baseViewport = page.getViewport({ scale: 1 });
@@ -127,7 +128,7 @@ ipcMain.handle('files:extract-learning-file', async () => {
         await document.destroy();
         const ocrText = pageTexts.join('\n\n');
         if (ocrText.length > extracted.length) extracted = ocrText;
-        note = 'PDF local OCR · ' + maxPages + ' page(s) processed' + (maxPages < document.numPages ? ' · first 10 pages only' : '');
+        note = 'PDF local OCR · ' + maxPages + ' page(s) processed' + (maxPages < pageCount ? ' · first 10 pages only' : '');
       }
     } finally {
       if (worker) await worker.terminate();
