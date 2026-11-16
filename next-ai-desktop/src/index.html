@@ -93,6 +93,30 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 @media(max-width:760px){.jarvis-stage{grid-template-columns:1fr;gap:20px;padding:24px 16px 48px}.core-wrap{grid-row:1;width:min(65vw,250px)}.hud-column{grid-template-columns:1fr 1fr}.stage-footer{font-size:8px}}
 @media(prefers-reduced-motion:reduce){.jarvis-stage:before,.jarvis-stage:after,.core-ring,.core-orbit,.core-center,.waveform i{animation:none!important}}
 
+
+/* Unified JARVIS-style command surface: all capabilities remain behind one assistant */
+main{max-width:1120px;margin:18px auto;padding:18px}
+main>.top{display:none}
+main>.panel{display:none!important}
+main>#coreCommandPanel{display:block!important;margin:16px auto 40px;max-width:920px;min-height:310px;padding:24px 28px;border:1px solid #258ba0;border-radius:22px;background:linear-gradient(145deg,rgba(5,29,43,.96),rgba(2,12,21,.97));box-shadow:0 0 55px #00c9ef18,inset 0 0 35px #00c9ef0b}
+.assistant-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}
+.assistant-heading h2{font-size:27px;letter-spacing:.16em;margin:5px 0;color:#bafaff;text-shadow:0 0 20px #28dfff66}
+.assistant-kicker{font:10px ui-monospace,monospace;letter-spacing:.24em;color:#54d8ee}
+.assistant-subtitle{color:#9fc6d2;font-size:13px}
+.assistant-live{font:10px ui-monospace,monospace;letter-spacing:.12em;color:#8bffdc;white-space:nowrap}
+.assistant-live span{display:inline-block;width:7px;height:7px;border-radius:50%;background:#54ffc5;box-shadow:0 0 12px #54ffc5;margin-right:7px}
+.assistant-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0 8px}
+.assistant-controls select{width:auto;min-width:125px;margin:0}
+.assistant-controls button{min-width:145px;border-color:#268da4;background:linear-gradient(120deg,#0c4354,#092432);font-weight:650}
+.assistant-controls button#voice{background:linear-gradient(120deg,#0b6578,#10394b);box-shadow:0 0 20px #00dfff22}
+.assistant-status{min-height:25px;color:#78ddeb;font:12px ui-monospace,monospace;padding:7px 2px}
+.conversation-label{font:10px ui-monospace,monospace;letter-spacing:.2em;color:#58cce0;margin:18px 0 8px}
+#coreCommandPanel .chat{min-height:170px;max-height:42vh;overflow:auto;border:1px solid #174c5d;background:rgba(1,10,17,.8);font-size:14px}
+#coreCommandPanel textarea{min-height:76px;resize:vertical;border-color:#216779;background:#04121c}
+#coreCommandPanel>#send{min-width:110px;padding:12px 24px;background:#0b5265;border-color:#35cce7}
+#coreCommandPanel #saveConversation,#coreCommandPanel #conversationState{display:none}
+.jarvis-stage{margin-top:12px;min-height:450px}
+@media(max-width:760px){main{padding:10px}.jarvis-stage{min-height:610px}main>#coreCommandPanel{padding:18px}.assistant-heading{align-items:flex-start}.assistant-live{font-size:8px}.assistant-controls select,.assistant-controls button{flex:1;min-width:110px}}
 </style></head><body><main><section class="jarvis-stage" id="jarvisStage" aria-label="NEXT AI holographic system visualizer">
 <div class="hud-reticle" aria-hidden="true"></div><div class="hud-topline"><b>NEXT AI // J.A.R.V.I.S. MODE</b><span>HOLOGRAPHIC SYSTEM <span style="color:#8bffdc">● ONLINE</span></span></div>
 <div class="hud-column">
@@ -179,7 +203,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <div id="installedSkills" class="memory-list"></div><div class="row"><span id="activeSkillState" class="hint">No skill reference selected.</span><button id="clearActiveSkill" type="button">Clear AI skill</button></div>
 <div id="skillPreview" class="chat" aria-live="polite">Select a skill to inspect its Markdown instructions. Treat downloaded content as untrusted.</div>
 </section>
-<section class="panel"><h2>Chat with NEXT</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button> <button id="saveConversation" disabled>Save conversation to Personal Brain</button><span id="conversationState" class="hint">Chat is not stored unless you choose Save.</span></section>
+<section class="panel" id="coreCommandPanel"><div class="assistant-heading"><div><div class="assistant-kicker">PERSONAL AI · UNIFIED CONTROL</div><h2>NEXT AI</h2><div class="assistant-subtitle">তোমার কথা শুনছি। বলো, কী করতে হবে?</div></div><div class="assistant-live"><span></span> CORE ONLINE</div></div><div class="assistant-controls" id="assistantControls"><select id="voiceLanguage" aria-label="Voice recognition language"><option value="bn-BD">বাংলা</option><option value="en-US">English</option></select><button id="voice" type="button">সরাসরি কথা বলো</button><button id="voiceTyping" type="button" aria-pressed="false">Voice typing</button></div><div id="voiceState" class="assistant-status" aria-live="polite">NEXT প্রস্তুত · Voice চালু হচ্ছে…</div><h2 class="conversation-label">CONVERSATION</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button> <button id="saveConversation" disabled>Save conversation to Personal Brain</button><span id="conversationState" class="hint">Chat is not stored unless you choose Save.</span></section>
 <section class="panel"><h2>AI Code Lab · Self-Improvement</h2>
 <p class="hint">NEXT-কে কোড উন্নত করার নির্দেশ দাও। এটি আলাদা draft তৈরি করবে; অ্যাপের আসল ফাইল নিজে থেকে বদলাবে না এবং generated code কখনো স্বয়ংক্রিয়ভাবে execute হবে না। JavaScript/JSON syntax check করা যাবে।</p>
 <textarea id="codeGoal" rows="2" maxlength="2000" placeholder="কী code feature বা improvement তৈরি করতে হবে?"></textarea>
