@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);
-let recognition=null, listening=false, awaitingCommand=false, voiceProcessing=false, lastExchange=null;
+let recognition=null, listening=false, awaitingCommand=false, voiceProcessing=false, lastExchange=null, dictationMode=false;
 const metricsHistory=[];
 let networkSnapshot=null,systemStatsBusy=false;
 const stage=$('jarvisStage');
@@ -148,6 +148,14 @@ async function handleVoiceConfirmation(phrase){
  finally{voiceProcessing=false;}
  return true;
 }
+function setDictationMode(enabled){
+ dictationMode=!!enabled;
+ const button=$('voiceTyping');
+ if(button){button.textContent=dictationMode?'Stop voice typing':'Start voice typing';button.setAttribute('aria-pressed',String(dictationMode));}
+ $('voiceState').textContent=dictationMode?'Voice typing active · speak to type in the focused app':'Voice typing stopped.';
+ if(dictationMode&&!listening)startVoice();
+ if(!dictationMode)speak('Voice typing stopped.');
+}
 async function runVoiceCommand(raw){
  let text=raw.trim().toLowerCase();
  text=text.replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').trim();
@@ -158,6 +166,18 @@ async function runVoiceCommand(raw){
  try{
   const routed=await window.nextAI.classifyVoice(raw);
   if(routed){
+   if(routed.intent==='voice-typing-start'){setDictationMode(true);speak('Voice typing is on. Speak naturally. Say stop voice typing when finished.');return;}
+   if(routed.intent==='voice-typing-stop'){setDictationMode(false);return;}
+   if(routed.intent==='lock-laptop'){
+    requestVoiceConfirmation('Lock this Windows laptop now?',async()=>{await window.nextAI.runAction({type:'lock-workstation'});});
+    return;
+   }
+   if(routed.intent==='shutdown-laptop'){
+    requestVoiceConfirmation('Shut down this Windows laptop immediately? Unsaved work may be lost.',async()=>{await window.nextAI.runAction({type:'shutdown-workstation'});});
+    return;
+   }
+   if(routed.intent==='unlock-laptop-guidance'){speak('Windows sign-in protection cannot be bypassed by voice. Use your PIN, password, or Windows Hello on the laptop.');$('voiceState').textContent='Unlock with Windows Hello, PIN or password.';return;}
+   if(routed.intent==='power-on-guidance'){speak('A fully powered-off laptop cannot turn itself on using its own voice assistant. Use the power button, or configure supported BIOS automatic power on or Wake on LAN from another device.');$('voiceState').textContent='Power on by voice is not available while this laptop is fully off.';return;}
    if(routed.intent==='system-status'){
     const s=await window.nextAI.getSystemStats();
     const parts=['CPU '+(s.cpuPercent===null?'sampling':s.cpuPercent+' percent'),'memory '+s.memoryPercent+' percent'];
@@ -254,6 +274,17 @@ function startVoice(){
    if(!phrase)continue;
    $('voiceState').textContent='Heard: '+phrase;
     if(pendingVoiceConfirmation){await handleVoiceConfirmation(phrase);break;}
+   const dictationText=phrase.replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i,'').trim();
+   if(dictationMode&&/^(?:stop|end|disable) voice typing|^voice typing stop|^ভয়েস টাইপিং (?:বন্ধ|থামাও) করো|^কথা লেখা বন্ধ করো$/i.test(dictationText)){
+    setDictationMode(false);break;
+   }
+   if(dictationMode){
+    voiceProcessing=true;
+    try{await window.nextAI.runAction({type:'write-text',text:phrase});$('voiceState').textContent='Typed: '+phrase.slice(0,90);}
+    catch(e){$('voiceState').textContent='Voice typing failed: '+e.message;}
+    finally{voiceProcessing=false;}
+    continue;
+   }
    if(/(?:\bhey\s+next\b|হেই\s+নেক্সট|হে\s+নেক্সট)/i.test(phrase)){await runVoiceCommand(phrase);break;}
    if(awaitingCommand){await runVoiceCommand(phrase);break;}
   }
@@ -271,6 +302,7 @@ function startVoice(){
 }
 function stopVoice(){listening=false;awaitingCommand=false;pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}if(recognition)recognition.stop();if('speechSynthesis'in window)speechSynthesis.cancel();$('voice').textContent='Start voice listening';}
 $('voice').onclick=()=>listening?stopVoice():startVoice();
+$('voiceTyping').onclick=()=>setDictationMode(!dictationMode);
 refresh();
 
 async function refreshSystemStats(){
