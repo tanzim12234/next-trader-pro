@@ -17,11 +17,12 @@ function classifyVoiceCommand(value) {
     { re: /^(?:open|launch|start)\s+(?:task manager|টাস্ক ম্যানেজার)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'task-manager' },
     { re: /^(?:open|launch|start)\s+(?:snipping tool|snippingtool|স্নিপিং টুল)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'snipping-tool' },
     { re: /^(?:open|launch|start)\s+(?:paint|পেইন্ট)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'paint' },
-    { re: /^(?:(?:নোটপ্যাড|ক্যালকুলেটর|ফাইল এক্সপ্লোরার|ফাইল ম্যানেজার)\s*(?:খুলে দাও|খোলো|চালু করো))$/i, app: null }
+    { re: /^(?:(?:নোটপ্যাড|ক্যালকুলেটর|ফাইল এক্সপ্লোরার|ফাইল ম্যানেজার)\s*(?:খুলে দাও|খোলো|চালু করো))$/i, app: null },
+    { re: /^(?:টাস্ক ম্যানেজার|স্নিপিং টুল|পেইন্ট)\s*(?:খুলে দাও|খোলো|চালু করো)$/i, app: null }
   ];
   for (const item of appPatterns) {
     if (!item.re.test(text)) continue;
-    const app = item.app || (text.includes('নোটপ্যাড') ? 'notepad' : text.includes('ক্যালকুলেটর') ? 'calculator' : 'file-explorer');
+    const app = item.app || (text.includes('নোটপ্যাড') ? 'notepad' : text.includes('ক্যালকুলেটর') ? 'calculator' : text.includes('টাস্ক ম্যানেজার') ? 'task-manager' : text.includes('স্নিপিং টুল') ? 'snipping-tool' : text.includes('পেইন্ট') ? 'paint' : 'file-explorer');
     return { intent: 'open-app', app, confidence: 0.99 };
   }
 
