@@ -256,9 +256,13 @@ function createPersonalBrain({ app, safeStorage, semanticEmbedder }) {
       for (const id of Object.keys(cache)) if (!currentIds.has(id)) delete cache[id];
       const missing = memories.filter(memory => !Array.isArray(cache[memory.id]));
       if (missing.length) {
-        const vectors = await embedTexts(missing.map(memory => 'passage: ' + memory.text));
-        if (vectors.length !== missing.length) throw new Error('Embedding model returned an unexpected vector count.');
-        missing.forEach((memory, index) => { cache[memory.id] = vectors[index]; });
+        // Keep inference batches small so a large imported library does not spike RAM.
+        for (let offset = 0; offset < missing.length; offset += 12) {
+          const batch = missing.slice(offset, offset + 12);
+          const vectors = await embedTexts(batch.map(memory => 'passage: ' + memory.text));
+          if (vectors.length !== batch.length) throw new Error('Embedding model returned an unexpected vector count.');
+          batch.forEach((memory, index) => { cache[memory.id] = vectors[index]; });
+        }
         writeVectorCache(cache);
       }
       const [queryVector] = await embedTexts(['query: ' + value]);
