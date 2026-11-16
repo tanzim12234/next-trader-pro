@@ -115,6 +115,15 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <div id="skillPreview" class="chat" aria-live="polite">Select a skill to inspect its Markdown instructions. Treat downloaded content as untrusted.</div>
 </section>
 <section class="panel"><h2>Chat with NEXT</h2><div id="chat" class="chat">NEXT AI প্রস্তুত। API key যোগ করে প্রশ্ন করো।</div><textarea id="prompt" rows="3" placeholder="বাংলা বা English-এ লিখো…"></textarea><button id="send">Send</button> <button id="saveConversation" disabled>Save conversation to Personal Brain</button><span id="conversationState" class="hint">Chat is not stored unless you choose Save.</span></section>
+<section class="panel"><h2>AI Code Lab · Self-Improvement</h2>
+<p class="hint">NEXT-কে কোড উন্নত করার নির্দেশ দাও। এটি আলাদা draft তৈরি করবে; অ্যাপের আসল ফাইল নিজে থেকে বদলাবে না এবং generated code কখনো স্বয়ংক্রিয়ভাবে execute হবে না। JavaScript/JSON syntax check করা যাবে।</p>
+<textarea id="codeGoal" rows="2" maxlength="2000" placeholder="কী code feature বা improvement তৈরি করতে হবে?"></textarea>
+<div class="row"><select id="codeLanguage" aria-label="Code language"><option value="javascript">JavaScript</option><option value="json">JSON</option><option value="markdown">Markdown</option><option value="text">Plain text</option></select><button id="generateCode">Generate improvement draft</button></div>
+<textarea id="codeSource" rows="5" maxlength="50000" placeholder="Optional: existing code paste করো, NEXT সেটি review করে উন্নত draft তৈরি করবে।"></textarea>
+<div id="codeExplanation" class="hint">Generated code এখানে review করতে পারবে।</div>
+<textarea id="codeProposal" rows="12" maxlength="100000" placeholder="Generated code proposal…"></textarea>
+<div class="row"><button id="validateCode">Validate syntax</button><button id="saveCodeProposal">Save draft as file</button><span id="codeLabState" class="hint">Code Lab ready · No code is executed.</span></div>
+</section>
 <section class="panel"><h2>Automatic Learning · Personal Brain</h2>
 <p class="hint">NEXT কথোপকথন থেকে ব্যবহারকারীর স্পষ্টভাবে বলা স্থায়ী, non-sensitive তথ্য স্বয়ংক্রিয়ভাবে encrypted Personal Brain-এ শেখে। একবারের প্রশ্ন, অস্থায়ী তথ্য, secret ও sensitive তথ্য সংরক্ষণ করা হয় না। চাইলে শেষ কথোপকথন আবার পরীক্ষা করতে পারো।</p>
 <button id="reviewLearning" disabled>Recheck last conversation</button> <span id="learningState" class="hint">প্রথমে NEXT-এর সঙ্গে কথা বলো।</span>
