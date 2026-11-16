@@ -40,5 +40,9 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true
     }
+  },
+  "dependencies": {
+    "mammoth": "^1.9.1",
+    "pdf-parse": "^1.1.1"
   }
-}
+}\n
