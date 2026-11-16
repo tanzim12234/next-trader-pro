@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
  * Encrypted local long-term memory. Stable, non-sensitive facts may be learned automatically;
  * secrets and sensitive personal data are filtered before automatic ingestion.
  */
-function createPersonalBrain({ app, safeStorage }) {
+function createPersonalBrain({ app, safeStorage, semanticEmbedder }) {
   const file = () => path.join(app.getPath('userData'), 'personal-brain.enc');
   function load() {
     if (!safeStorage.isEncryptionAvailable()) throw new Error('Secure storage is unavailable.');
@@ -198,6 +198,93 @@ function createPersonalBrain({ app, safeStorage }) {
       .map(([id]) => byId.get(id))
       .filter(Boolean);
   }
+
+  const embeddingModel = 'Xenova/multilingual-e5-small';
+  const vectorFile = () => path.join(app.getPath('userData'), 'personal-brain-vectors.enc');
+  let extractorPromise = null;
+
+  function readVectorCache() {
+    try {
+      const decoded = safeStorage.decryptString(fs.readFileSync(vectorFile()));
+      const parsed = JSON.parse(decoded);
+      return parsed.model === embeddingModel && parsed.vectors && typeof parsed.vectors === 'object'
+        ? parsed.vectors : {};
+    } catch (err) {
+      if (err.code !== 'ENOENT') console.warn('Semantic vector cache will be rebuilt:', err.message);
+      return {};
+    }
+  }
+  function writeVectorCache(vectors) {
+    if (!safeStorage.isEncryptionAvailable()) throw new Error('Secure storage is unavailable.');
+    const target = vectorFile();
+    const tmp = target + '.tmp';
+    fs.writeFileSync(tmp, safeStorage.encryptString(JSON.stringify({ model: embeddingModel, vectors })), { mode: 0o600 });
+    fs.renameSync(tmp, target);
+  }
+  async function embedTexts(texts) {
+    if (!texts.length) return [];
+    if (typeof semanticEmbedder === 'function') return semanticEmbedder(texts);
+    if (!extractorPromise) {
+      extractorPromise = (async () => {
+        const { pipeline, env, LogLevel } = await import('@huggingface/transformers');
+        env.cacheDir = path.join(app.getPath('userData'), 'semantic-model-cache');
+        env.useFSCache = true;
+        env.allowRemoteModels = true;
+        env.logLevel = LogLevel.ERROR;
+        return pipeline('feature-extraction', embeddingModel, { dtype: 'q8' });
+      })().catch(error => {
+        extractorPromise = null;
+        throw error;
+      });
+    }
+    const extractor = await extractorPromise;
+    const output = await extractor(texts, { pooling: 'mean', normalize: true });
+    return output.tolist();
+  }
+  function cosineSimilarity(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length || !a.length) return -1;
+    let dot = 0;
+    for (let i = 0; i < a.length; i++) dot += Number(a[i]) * Number(b[i]);
+    return Number.isFinite(dot) ? dot : -1;
+  }
+  async function semanticSearch(query, memories) {
+    const value = String(query || '').trim();
+    if (!value || !memories.length) return [];
+    try {
+      const cache = readVectorCache();
+      const currentIds = new Set(memories.map(memory => memory.id));
+      for (const id of Object.keys(cache)) if (!currentIds.has(id)) delete cache[id];
+      const missing = memories.filter(memory => !Array.isArray(cache[memory.id]));
+      if (missing.length) {
+        const vectors = await embedTexts(missing.map(memory => 'passage: ' + memory.text));
+        if (vectors.length !== missing.length) throw new Error('Embedding model returned an unexpected vector count.');
+        missing.forEach((memory, index) => { cache[memory.id] = vectors[index]; });
+        writeVectorCache(cache);
+      }
+      const [queryVector] = await embedTexts(['query: ' + value]);
+      if (!queryVector) throw new Error('Embedding model returned no query vector.');
+      const lexical = new Map(rank(value, memories).map((memory, index) => [memory.id, index]));
+      return memories.map(memory => ({
+        memory,
+        similarity: cosineSimilarity(queryVector, cache[memory.id]),
+        lexicalRank: lexical.has(memory.id) ? lexical.get(memory.id) : 9999
+      }))
+        .filter(item => item.similarity >= 0.20)
+        .sort((a, b) => (b.similarity + (b.lexicalRank < 9999 ? 0.04 / (1 + b.lexicalRank) : 0))
+          - (a.similarity + (a.lexicalRank < 9999 ? 0.04 / (1 + a.lexicalRank) : 0)))
+        .slice(0, 20)
+        .map(item => item.memory);
+    } catch (error) {
+      console.warn('Local semantic search unavailable; using lexical fallback:', error.message);
+      return rank(value, memories).slice(0, 20);
+    }
+  }
+  async function search(query = '') {
+    const memories = load().memories;
+    const value = String(query).trim();
+    return (value ? await semanticSearch(value, memories) : memories).slice(0, 100);
+  }
+
   function list(query = '') {
     const memories = load().memories;
     const q = String(query).trim();
@@ -243,9 +330,9 @@ function createPersonalBrain({ app, safeStorage }) {
     return { deleted: before - data.memories.length };
   }
   function clear() { save({ memories: [] }); return { cleared: true }; }
-  function context(query) {
+  async function context(query) {
     const memories = load().memories;
-    const direct = rank(query, memories).slice(0, 5);
+    const direct = (await semanticSearch(query, memories)).slice(0, 5);
     if (!direct.length) return '';
     // Expand only from terms in directly matched memories; unrelated memories never enter context.
     const ids = new Set(direct.map(m => m.id));
@@ -261,6 +348,6 @@ function createPersonalBrain({ app, safeStorage }) {
     return lines.join('\n').slice(0, 6000);
   }
   function graph() { return buildKnowledgeGraph(load().memories); }
-  return { remember, ingest, list, forget, clear, context, graph };
+  return { remember, ingest, list, search, forget, clear, context, graph };
 }
 module.exports = { createPersonalBrain };
