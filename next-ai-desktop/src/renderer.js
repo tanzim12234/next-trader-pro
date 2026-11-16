@@ -814,3 +814,12 @@ $('searchSkills').onclick=async()=>{
 $('refreshSkills').onclick=refreshSkillLibrary;
 $('clearActiveSkill').onclick=()=>{selectedSkillId=null;$('activeSkillState').textContent='No skill reference selected.';void refreshSkillLibrary();};
 refreshSkillLibrary();
+
+
+// Start hands-free wake-word listening automatically when the desktop UI is ready.
+// Electron/Windows may still request microphone permission on first launch.
+window.addEventListener('DOMContentLoaded', () => {
+ setTimeout(() => {
+  if (typeof startVoice === 'function' && !listening) startVoice();
+ }, 1400);
+}, { once: true });
