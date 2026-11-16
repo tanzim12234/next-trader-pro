@@ -18,6 +18,36 @@ function setCoreState(state, activity){
  if(act&&activity)act.textContent=activity.toUpperCase().replace(/\s+/g,' ').slice(0,30);
 }
 
+let updateAvailable=false;
+if($('checkForUpdates'))$('checkForUpdates').onclick=async()=>{
+ const button=$('checkForUpdates'),state=$('updateState');
+ button.disabled=true;state.textContent='Checking signed GitHub release…';
+ $('downloadUpdate').disabled=true;$('installUpdate').disabled=true;updateAvailable=false;
+ try{
+  const result=await window.nextAI.checkForUpdates();
+  if(result.available){
+   updateAvailable=true;
+   state.textContent='Verified update available · v'+result.latestVersion+' · '+Math.ceil(result.size/1024/1024)+' MB. Download only after verification.';
+   $('downloadUpdate').disabled=false;
+  }else state.textContent=result.reason||('Current version '+result.currentVersion+' · '+result.latestVersion);
+ }catch(error){state.textContent='Secure update check failed: '+error.message;}
+ finally{button.disabled=false;}
+};
+if($('downloadUpdate'))$('downloadUpdate').onclick=async()=>{
+ const button=$('downloadUpdate');button.disabled=true;$('updateState').textContent='Downloading and verifying installer integrity…';
+ try{
+  const result=await window.nextAI.downloadUpdate();
+  $('updateState').textContent='Installer verified and staged · version '+result.version+' · '+Math.ceil(result.size/1024/1024)+' MB. Installation still requires confirmation.';
+  $('installUpdate').disabled=false;
+ }catch(error){$('updateState').textContent='Update download failed: '+error.message;button.disabled=false;}
+};
+if($('installUpdate'))$('installUpdate').onclick=async()=>{
+ const button=$('installUpdate');button.disabled=true;$('updateState').textContent='Waiting for Windows confirmation…';
+ try{
+  const result=await window.nextAI.installUpdate();
+  $('updateState').textContent=result.cancelled?'Installation cancelled.':'Verified installer launched. NEXT AI is closing.';
+ }catch(error){$('updateState').textContent='Update installation failed: '+error.message;button.disabled=false;}
+};
 if($('analyzeLatestError'))$('analyzeLatestError').onclick=async()=>{
  const button=$('analyzeLatestError'),box=$('aiErrorAnalysis');
  button.disabled=true;box.textContent='NEXT AI is analyzing the latest recorded error…';
