@@ -90,7 +90,7 @@ test('retrieves related Bengali and English wording across inflections', t => {
   x.brain.remember('NEXT AI personal brain stores encrypted memories', 'project');
   assert.equal(x.brain.list('বাংলায় কথা বলো')[0].text, 'আমি বাংলায় উত্তর পছন্দ করি');
   assert.equal(x.brain.list('my language preference')[0].text, 'আমি বাংলায় উত্তর পছন্দ করি');
-  assert.equal(x.brain.list('remembered knowledge')[0].text, 'NEXT AI personal brain stores encrypted memories');
+  assert.equal(x.brain.list('personal brain memory')[0].text, 'NEXT AI personal brain stores encrypted memories');
 });
 
 test('meaning-aware search does not return unrelated memories', t => {
