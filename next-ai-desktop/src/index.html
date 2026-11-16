@@ -51,7 +51,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <div class="core-wrap" aria-hidden="true"><div class="core-ring r1"></div><div class="core-ring r2"></div><div class="core-ring r3"></div><div class="core-ring r4"></div><div class="core-orbit"></div><div class="core-center"><span>N</span></div><div class="core-caption">N E X T · C O R E</div></div>
 <div class="hud-column">
 <div class="hud-card"><div class="hud-label">Cognitive engine</div><div class="hud-value" id="hudEngine">READY TO CONNECT</div><div class="hud-sub">REASONING · PLANNING · LEARNING</div></div>
-<div class="hud-card"><div class="hud-label">Environment</div><div class="hud-value" id="hudEnvironment">WINDOWS DESKTOP</div><div class="hud-sub">DEVICE CONTROL · PERMISSION BASED</div></div>
+<div class="hud-card"><div class="hud-label">Environment</div><div class="hud-value" id="hudEnvironment">WINDOWS DESKTOP</div><div class="hud-sub">VOICE COMMANDS · DIRECT CONTROL</div></div>
 <div class="hud-card"><div class="hud-label">Activity stream</div><div class="hud-value" id="hudActivity">AWAITING INPUT</div><div class="hud-sub">LIVE STATUS VISUALIZATION</div></div>
 </div>
 <div class="stage-footer"><span>NEXT AI // HOLOGRAPHIC INTERFACE</span><span>VISUAL CORE · ANIMATED HUD</span></div>
@@ -86,7 +86,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <button id="runResearch">Research the web</button> <span id="researchState" class="hint">Gemini API key প্রয়োজন।</span>
 <div id="researchAnswer" class="chat" aria-live="polite"></div><div id="researchSources" class="memory-list"></div><h2>Multitasking · Parallel research (up to 3)</h2><textarea id="batchQueries" rows="3" placeholder="প্রতি লাইনে একটি research question লিখো (সর্বোচ্চ ৩টি)"></textarea><button id="runBatchResearch">Run parallel research</button><div id="batchResearchResults" class="memory-list"></div></section>
 <section class="panel"><h2>Autonomous Task Execution · Approval Required</h2>
-<p class="hint">NEXT কাজের পরিকল্পনা প্রস্তাব করবে। তুমি Execute চাপার পরই অনুমোদিত ধাপগুলো চলবে। Website খোলার আগে আলাদা confirmation আসবে। Shell command, file deletion, install বা account action অনুমোদিত নয়।</p>
+<p class="hint">Text task-এর জন্য Execute চাপলে একবার approval লাগবে। Voice command দিলে allowlist-এর safe action সরাসরি চলবে—প্রতিটি ধাপে আলাদা permission নয়। Shell command, file deletion, install বা account action অনুমোদিত নয়।</p>
 <textarea id="taskGoal" rows="2" maxlength="1500" placeholder="কী কাজ করাতে চাও? যেমন: Notepad খোলো এবং YouTube-এ AI tutorial খুঁজে দাও"></textarea>
 <div class="row"><button id="planTask">Create task plan</button><button id="executeTask" disabled>Approve & execute plan</button></div>
 <div id="taskState" class="hint">No task plan yet.</div><div id="taskPlanList" class="memory-list"></div></section>
@@ -101,7 +101,7 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <div class="row"><button id="browserOpen">Open website</button><button id="browserBack">Back</button><button id="browserForward">Forward</button><button id="browserReload">Reload</button></div>
 <div id="browserState" class="hint">Browser closed.</div></section>
 \n<section class="panel"><h2>Smart Home · Home Assistant</h2>
-<p class="hint">তোমার নিজের Home Assistant server-এর URL ও long-lived access token encrypted local settings-এ থাকবে। Public server হলে HTTPS আবশ্যক। প্রতিটি device action-এর আগে Windows confirmation আসবে; camera/microphone access এই connector দেয় না।</p>
+<p class="hint">তোমার Home Assistant token encrypted local settings-এ থাকবে। Voice command-এর light, switch, temperature ও media action সরাসরি চলবে। Door lock/unlock-এর মতো security action-এ confirmation থাকবে।</p>
 <input id="homeUrl" maxlength="500" placeholder="http://192.168.1.20:8123 অথবা https://ha.example.com">
 <input id="homeToken" type="password" autocomplete="off" maxlength="4096" placeholder="Home Assistant long-lived access token">
 <div class="row"><button id="homeConnect">Connect securely</button><button id="homeRefresh">Refresh devices</button></div>
@@ -111,5 +111,5 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <p class="hint">NEXT কথোপকথন থেকে ব্যবহারকারীর স্পষ্টভাবে বলা স্থায়ী, non-sensitive তথ্য স্বয়ংক্রিয়ভাবে encrypted Personal Brain-এ শেখে। একবারের প্রশ্ন, অস্থায়ী তথ্য, secret ও sensitive তথ্য সংরক্ষণ করা হয় না। চাইলে শেষ কথোপকথন আবার পরীক্ষা করতে পারো।</p>
 <button id="reviewLearning" disabled>Recheck last conversation</button> <span id="learningState" class="hint">প্রথমে NEXT-এর সঙ্গে কথা বলো।</span>
 <div id="learningSuggestions" class="memory-list" aria-live="polite"></div></section>
-<section class="panel"><h2>Windows quick actions</h2><div class="row"><button id="yt">Open YouTube</button><button id="play">Play / Pause</button><button id="openNotepad">Notepad</button><button id="openCalculator">Calculator</button><button id="openExplorer">File Explorer</button><button id="openTaskManager">Task Manager</button><button id="openSnippingTool">Snipping Tool</button><button id="openPaint">Paint</button></div><p class="hint">Voice beta: “Hey NEXT, open YouTube”, “Hey NEXT, search lo-fi music”, “Hey NEXT, play music”, অথবা “Hey NEXT, write Hello”. Text paste করার আগে confirmation আসবে।</p><div class="row"><select id="voiceLanguage" aria-label="Voice recognition language"><option value="bn-BD">বাংলা (Bangladesh)</option><option value="en-US">English (US)</option></select><button id="voice">Start voice listening</button><span id="voiceState" class="hint">Voice not started</span></div></section>
+<section class="panel"><h2>Windows quick actions</h2><div class="row"><button id="yt">Open YouTube</button><button id="play">Play / Pause</button><button id="openNotepad">Notepad</button><button id="openCalculator">Calculator</button><button id="openExplorer">File Explorer</button><button id="openTaskManager">Task Manager</button><button id="openSnippingTool">Snipping Tool</button><button id="openPaint">Paint</button></div><p class="hint">Voice command দেওয়ার পর safe action সরাসরি হবে: “Hey NEXT, open Task Manager”, “Hey NEXT, search lo-fi music”, “Hey NEXT, play music”, অথবা “Hey NEXT, write Hello”. আলাদা confirmation লাগবে না।</p><div class="row"><select id="voiceLanguage" aria-label="Voice recognition language"><option value="bn-BD">বাংলা (Bangladesh)</option><option value="en-US">English (US)</option></select><button id="voice">Start voice listening</button><span id="voiceState" class="hint">Voice not started</span></div></section>
 <script src="renderer.js"></script></main></body></html>
