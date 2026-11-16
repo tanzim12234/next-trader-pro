@@ -10,6 +10,8 @@ const { classifyVoiceCommand, classifyVoiceConfirmation } = require('./command-r
 const { createHomeAssistantClient, validateServiceCall } = require('./home-assistant.cjs');
 const { analyzeData } = require('./data-analysis.cjs');
 const { createBackupManager } = require('./backup-manager.cjs');
+const { createSystemMonitor } = require('./system-monitor.cjs');
+const systemMonitor = createSystemMonitor();
 const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.enc'), safeStorage);
 const brain = createPersonalBrain({ app, safeStorage });
 const backupManager = createBackupManager(app.getPath('userData'));
@@ -320,7 +322,7 @@ ipcMain.handle('backup:restore', async (_e, id) => {
 
 ipcMain.handle('data:analyze', (_e, input) => analyzeData(input?.content, input?.format || 'auto'));
 
-ipcMain.handle('system:stats', () => {
+ipcMain.handle('system:stats', async () => {
   const cpuTimes = os.cpus().reduce((sum, cpu) => {
     for (const value of Object.values(cpu.times)) sum.total += value;
     sum.idle += cpu.times.idle;
@@ -335,6 +337,7 @@ ipcMain.handle('system:stats', () => {
   previousCpuSnapshot = cpuTimes;
   const totalMemory = os.totalmem();
   const freeMemory = os.freemem();
+  const extended = await systemMonitor.getExtendedStats();
   return {
     cpuPercent,
     memoryPercent: Math.round(((totalMemory - freeMemory) / totalMemory) * 100),
@@ -343,7 +346,8 @@ ipcMain.handle('system:stats', () => {
     uptimeSeconds: os.uptime(),
     platform: process.platform,
     arch: process.arch,
-    cpuCores: os.cpus().length
+    cpuCores: os.cpus().length,
+    ...extended
   };
 });
 
