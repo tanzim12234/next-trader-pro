@@ -8,7 +8,7 @@ const WINDOWS_METRICS_SCRIPT = [
   '$batteries = @(Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | ForEach-Object { [pscustomobject]@{ percent=$_.EstimatedChargeRemaining; status=$_.BatteryStatus } })',
   '$networks = @(Get-NetAdapterStatistics -ErrorAction SilentlyContinue | ForEach-Object { [pscustomobject]@{ name=$_.Name; receivedBytes=[double]$_.ReceivedBytes; sentBytes=[double]$_.SentBytes } })',
   '$gpus = @(Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | ForEach-Object { [pscustomobject]@{ name=$_.Name } })',
-  '$gpuPercent = $null; try { $gpuSamples = (Get-Counter -Counter "\GPU Engine(*)\Utilization Percentage" -ErrorAction Stop).CounterSamples | Where-Object { $_.InstanceName -match "engtype_3D" }; if (@($gpuSamples).Count -gt 0) { $gpuPercent = [math]::Min(100,[math]::Round((($gpuSamples | Measure-Object -Property CookedValue -Sum).Sum),0)) } } catch { $gpuPercent = $null }',
+  '$gpuPercent = $null; try { $gpuSamples = (Get-Counter -Counter "\\GPU Engine(*)\\Utilization Percentage" -ErrorAction Stop).CounterSamples | Where-Object { $_.InstanceName -match "engtype_3D" }; if (@($gpuSamples).Count -gt 0) { $gpuPercent = [math]::Min(100,[math]::Round((($gpuSamples | Measure-Object -Property CookedValue -Sum).Sum),0)) } } catch { $gpuPercent = $null }',
   '[pscustomobject]@{ disks=$disks; batteries=$batteries; networks=$networks; gpus=$gpus; gpuPercent=$gpuPercent } | ConvertTo-Json -Compress -Depth 4'
 ].join('; ');
 
