@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { classifyVoiceCommand, normalizeVoiceText } = require('../src/command-router.cjs');
+const { classifyVoiceCommand, classifyVoiceConfirmation, normalizeVoiceText } = require('../src/command-router.cjs');
 
 test('normalizes punctuation and whitespace without losing Bangla text', () => {
   assert.equal(normalizeVoiceText('  হেই   নেক্সট!  '), 'হেই নেক্সট');
@@ -28,6 +28,11 @@ test('limits user-provided command payloads and rejects unknown commands', () =>
   assert.equal(classifyVoiceCommand('delete all files'), null);
 });
 
+test('recognizes spoken yes/no confirmations in English and Bangla', () => {
+  for (const phrase of ['yes', 'yes sure', 'sure', 'go ahead', 'হ্যাঁ', 'হ্যাঁ নিশ্চিত', 'জি করুন']) assert.equal(classifyVoiceConfirmation(phrase), 'yes', phrase);
+  for (const phrase of ['no', 'nope', 'cancel', 'না', 'বাতিল', 'করো না']) assert.equal(classifyVoiceConfirmation(phrase), 'no', phrase);
+  assert.equal(classifyVoiceConfirmation('maybe later'), null);
+});
 test('recognizes English and Bangla smart-home voice intents',()=>{
   const on=classifyVoiceCommand('turn on living room light');
   assert.equal(on.intent,'home-control');assert.equal(on.service,'turn_on');assert.equal(on.deviceQuery,'living room light');
