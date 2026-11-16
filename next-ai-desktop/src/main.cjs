@@ -498,7 +498,7 @@ ipcMain.handle('ai:batch-research', async (_e, input) => {
     const candidate = data.candidates?.[0];
     const answer = candidate?.content?.parts?.map(part => part.text || '').join('').trim() || 'No answer returned.';
     const sources = (candidate?.groundingMetadata?.groundingChunks || []).map(chunk => chunk.web)
-      .filter(item => item && typeof item.uri === 'string' && /^https?:\\/\\//i.test(item.uri))
+      .filter(item => item && typeof item.uri === 'string' && /^https?:\/\//i.test(item.uri))
       .slice(0, 5).map(item => ({ title: String(item.title || item.uri).slice(0, 180), url: item.uri }));
     return { query, answer, sources };
   }));
