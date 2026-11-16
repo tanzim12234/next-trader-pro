@@ -489,6 +489,7 @@ async function refreshSystemStats(){
  try{
   const s=await window.nextAI.getSystemStats();
   $('systemCpu').textContent=s.cpuPercent===null?'Sampling…':s.cpuPercent+'%';if($('hudSystem'))$('hudSystem').textContent='CPU '+(s.cpuPercent===null?'--':s.cpuPercent+'%')+' · RAM '+s.memoryPercent+'%';
+  if($('hudGpu'))$('hudGpu').textContent='GPU '+(s.gpuPercent===null?'UNAVAILABLE':s.gpuPercent+'%')+(s.gpus?.length?' · '+s.gpus.map(g=>g.name).join(' / ').slice(0,52):' · DEVICE NOT REPORTED');
   const used=(s.totalMemoryBytes-s.freeMemoryBytes)/1073741824;
   const total=s.totalMemoryBytes/1073741824;
   $('systemMemory').textContent=s.memoryPercent+'% · '+used.toFixed(1)+' / '+total.toFixed(1)+' GB';if($('hudActivity')&&(!stage||(!stage.classList.contains('listening')&&!stage.classList.contains('thinking')&&!stage.classList.contains('speaking'))))setHudActivity('SYSTEM TELEMETRY LIVE');
@@ -497,6 +498,7 @@ async function refreshSystemStats(){
   if($('systemBattery')){const b=s.batteries?.find(x=>x.percent!==null);$('systemBattery').textContent=b?b.percent+'% · '+(b.status===3?'Full':([2,6,7,8,9].includes(b.status)?'Charging':'On battery')):'No battery detected';}
   if($('systemNetwork')){const now=Date.now();let received=0,sent=0;if(networkSnapshot&&s.networks?.length){const elapsed=Math.max(1,(now-networkSnapshot.time)/1000);for(const n of s.networks){const prev=networkSnapshot.adapters[n.name];if(prev){received+=Math.max(0,n.receivedBytes-prev.receivedBytes)/elapsed;sent+=Math.max(0,n.sentBytes-prev.sentBytes)/elapsed;}}$('systemNetwork').textContent='↓ '+(received/1024).toFixed(1)+' KB/s · ↑ '+(sent/1024).toFixed(1)+' KB/s';}else $('systemNetwork').textContent=s.detailsAvailable?'Sampling…':'Unavailable';networkSnapshot={time:now,adapters:Object.fromEntries((s.networks||[]).map(n=>[n.name,{receivedBytes:n.receivedBytes,sentBytes:n.sentBytes}]))};}
   if($('systemNetworkDetails'))$('systemNetworkDetails').textContent=s.networks?.length?s.networks.map(n=>n.name).join(' · '):'No active adapter statistics';
+  if($('hudPower')){const battery=s.batteries?.find(x=>x.percent!==null);const networkText=s.detailsAvailable&&s.networks?.length?'NET '+s.networks.length+' ADAPTER(S)':'NET UNAVAILABLE';$('hudPower').textContent=(battery?'BAT '+battery.percent+'%':'BATTERY N/A')+' · '+networkText;}
   const hours=Math.floor(s.uptimeSeconds/3600),minutes=Math.floor((s.uptimeSeconds%3600)/60);
   $('systemUptime').textContent=hours+'h '+minutes+'m';
   $('systemState').textContent=s.platform+' · '+s.arch+' · '+s.cpuCores+' CPU cores'+(s.detailsAvailable?' · Extended telemetry active':' · Extended telemetry unavailable')+' · Updated '+new Date().toLocaleTimeString();
