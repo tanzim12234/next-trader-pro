@@ -267,7 +267,24 @@ $('clearMemory').onclick=async()=>{
  catch(e){$('memoryState').textContent=e.message;}
 };
 $('memorySearch').addEventListener('input',()=>refreshMemories($('memorySearch').value));
+$('refreshBrainGraph').onclick=refreshBrainGraph;
+async function refreshBrainGraph(){
+ try{
+  const graph=await window.nextAI.getBrainGraph();
+  const box=$('brainGraphList');box.innerHTML='';
+  $('brainGraphState').textContent=graph.nodes.length+' nodes · '+graph.edges.length+' topic connections · generated locally.';
+  if(!graph.edges.length){box.textContent='আরও সম্পর্কিত জ্ঞান শেখালে এখানে সংযোগ দেখা যাবে।';return;}
+  const labels=new Map(graph.nodes.map(node=>[node.id,node.label]));
+  for(const edge of graph.edges.slice(0,30)){
+   const row=document.createElement('div');row.className='memory-item';
+   const label=document.createElement('span');
+   label.textContent=(labels.get(edge.source)||'Memory').slice(0,72)+'  ↔  '+(labels.get(edge.target)||'Memory').slice(0,72)+' · '+edge.topics.join(', ');
+   row.append(label);box.append(row);
+  }
+ }catch(e){$('brainGraphState').textContent='Knowledge graph unavailable: '+e.message;}
+}
 refreshMemories();
+refreshBrainGraph();
 
 $('reviewLearning').onclick=async()=>{
  if(!lastExchange)return;
