@@ -144,7 +144,7 @@ ipcMain.handle('files:extract-learning-file', async () => {
         if (worker) await worker.terminate();
       }
     }
-    extracted = pageTexts.join('\\n\\n');
+    extracted = pageTexts.join('\n\n');
     note = 'PDF page-by-page extraction · ' + maxPages + ' page(s) processed'
       + (ocrPages ? ' · OCR on ' + ocrPages + ' scanned page(s)' : '')
       + (maxPages < pageCount ? ' · first 10 pages only' : '');
