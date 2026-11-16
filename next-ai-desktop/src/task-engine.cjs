@@ -2,7 +2,10 @@
 const APPS = Object.freeze({
   notepad: { label: 'Notepad', command: 'notepad.exe' },
   calculator: { label: 'Calculator', command: 'calc.exe' },
-  'file-explorer': { label: 'File Explorer', command: 'explorer.exe' }
+  'file-explorer': { label: 'File Explorer', command: 'explorer.exe' },
+  'task-manager': { label: 'Task Manager', command: 'taskmgr.exe' },
+  'snipping-tool': { label: 'Snipping Tool', command: 'SnippingTool.exe' },
+  paint: { label: 'Paint', command: 'mspaint.exe' }
 });
 function validateTaskStep(action) {
   if (!action || typeof action !== 'object' || Array.isArray(action)) throw new Error('Invalid task action.');
