@@ -15,7 +15,7 @@ function safeTarget(root, relativePath) {
   if (typeof relativePath !== 'string' || !relativePath || relativePath.length > 240) {
     throw new Error('Invalid patch path.');
   }
-  if (relativePath.includes('\') || path.posix.isAbsolute(relativePath) || /^[a-zA-Z]:/.test(relativePath)) {
+  if (relativePath.includes('\\') || path.posix.isAbsolute(relativePath) || /^[a-zA-Z]:/.test(relativePath)) {
     throw new Error('Absolute paths and Windows separators are not allowed.');
   }
   const parts = relativePath.split('/');
