@@ -68,7 +68,7 @@ async function executeVoiceTaskPlan(plan,goal){
   await saveTaskRun(goal,'failed',completed,plan.steps.length);
   speak('I stopped because an action failed.');
  }finally{
-  $('executeTask').disabled=!pendingTaskPlan?.steps?.length;
+  $('executeTask').disabled=true;
   $('planTask').disabled=false;
  }
 }
