@@ -102,6 +102,9 @@ $('play').onclick=()=>window.nextAI.runAction({type:'media',command:'playpause'}
 $('openNotepad').onclick=()=>window.nextAI.runAction({type:'open-app',app:'notepad'});
 $('openCalculator').onclick=()=>window.nextAI.runAction({type:'open-app',app:'calculator'});
 $('openExplorer').onclick=()=>window.nextAI.runAction({type:'open-app',app:'file-explorer'});
+$('openTaskManager').onclick=()=>window.nextAI.runAction({type:'open-app',app:'task-manager'});
+$('openSnippingTool').onclick=()=>window.nextAI.runAction({type:'open-app',app:'snipping-tool'});
+$('openPaint').onclick=()=>window.nextAI.runAction({type:'open-app',app:'paint'});
 function speak(text){if(!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text||''));u.lang=$('voiceLanguage')?.value||'bn-BD';u.onstart=()=>setCoreState('speaking','Voice output active');u.onend=()=>setCoreState('', 'Awaiting input');u.onerror=()=>setCoreState('', 'Voice output unavailable');speechSynthesis.speak(u);}
 async function runVoiceCommand(raw){
  let text=raw.trim().toLowerCase();
