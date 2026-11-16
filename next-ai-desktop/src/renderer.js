@@ -27,6 +27,19 @@ if($('analyzeLatestError'))$('analyzeLatestError').onclick=async()=>{
  }catch(error){box.textContent='AI analysis unavailable: '+error.message;}
  finally{button.disabled=false;}
 };
+if($('createRepairDraft'))$('createRepairDraft').onclick=async()=>{
+ const button=$('createRepairDraft');
+ button.disabled=true;$('aiErrorAnalysis').textContent='NEXT AI is analyzing the latest error and drafting a repair…';
+ try{
+  const proposal=await window.nextAI.createRepairProposal({path:$('patchTargetPath').value.trim()});
+  $('codeLanguage').value='javascript';
+  $('codeProposal').value=proposal.content;
+  $('codeExplanation').textContent='REPAIR PROPOSAL · '+proposal.path+'\n'+proposal.explanation+'\n\nReview required. Validate, stage and approve separately.';
+  $('codeLabState').textContent='Repair draft created · not applied · not executed.';
+  $('aiErrorAnalysis').textContent='Repair proposal prepared for '+proposal.path+'. Review the full diff before applying.';
+ }catch(error){$('aiErrorAnalysis').textContent='Repair proposal unavailable: '+error.message;}
+ finally{button.disabled=false;}
+};
 if($('generateFeatureProposal'))$('generateFeatureProposal').onclick=async()=>{
  const button=$('generateFeatureProposal');
  button.disabled=true;$('codeLabState').textContent='NEXT AI is designing a reviewable feature proposal…';
