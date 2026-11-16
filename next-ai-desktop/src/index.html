@@ -67,11 +67,11 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 <p class="hint">Personal Brain, API settings এবং task history-এর encrypted local snapshot তৈরি হবে। Backup একই Windows user account-এ restore করা যাবে। Restore করার আগে বর্তমান data-র rollback snapshot তৈরি হয় এবং confirmation লাগে।</p>
 <button id="createBackup">Create encrypted backup</button> <span id="backupState" class="hint">No backup action yet.</span><div id="backupList" class="memory-list"></div></section>
 <section class="panel"><h2>Personal Brain · Long-term Memory</h2>
-<p class="hint">শুধু তুমি স্পষ্টভাবে Save করলে তথ্য encrypted local storage-এ থাকবে। NEXT প্রাসঙ্গিক saved memory chat-এর সময় ব্যবহার করবে।</p>
+<p class="hint">প্রাসঙ্গিক স্থায়ী তথ্য স্বয়ংক্রিয়ভাবে শেখে; API key, পাসওয়ার্ড ও সংবেদনশীল তথ্য সংরক্ষণ করে না। সব স্মৃতি encrypted local storage-এ থাকে। NEXT chat-এর সময় প্রাসঙ্গিক স্মৃতি ব্যবহার করে।</p>
 <input id="memoryText" maxlength="1000" placeholder="যেমন: আমার পছন্দের ভাষা বাংলা">
 <input id="memorySearch" type="search" placeholder="Search saved memories…">
 <div class="row"><button id="remember">Remember this</button><button id="refreshMemory">Refresh memories</button><button id="clearMemory">Clear all</button></div>
-<div id="memoryState" class="hint"></div><div id="memoryList" class="memory-list">No saved memories.</div></section>
+<div id="memoryState" class="hint"></div><div id="memoryList" class="memory-list">No saved memories.</div><div class="row"><button id="refreshBrainGraph">Refresh knowledge connections</button><span id="brainGraphState" class="hint">Connections are generated locally from saved topics.</span></div><div id="brainGraphList" class="memory-list"></div></section>
 <section class="panel"><h2>Teach NEXT · Knowledge Ingestion</h2>
 <p class="hint">নিজের নোট, PDF, DOCX বা ছবি থেকে শেখাও। ফাইল নির্বাচন করলেই OCR / text extraction শেষে NEXT স্বয়ংক্রিয়ভাবে encrypted Personal Brain-এ শেখা তথ্য সংরক্ষণ করবে—আলাদা Save চাপতে হবে না। প্রথমবার বাংলা + English ভাষার ডেটা download হতে পারে। সর্বোচ্চ 50,000 characters প্রতি lesson।</p>
 <div class="row"><button id="importLearningFile">Import PDF / DOCX / Image</button><span id="documentImportState" class="hint">বাংলা + English OCR চালু · text review করে Teach NEXT চাপো।</span></div>
