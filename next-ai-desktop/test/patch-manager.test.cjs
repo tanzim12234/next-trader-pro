@@ -29,7 +29,7 @@ test('creates review-only patch and requires explicit approval to apply', () => 
   assert.equal(proposal.status, 'review-required');
   assert.match(proposal.files[0].diff, /^--- a\/src\/app\.cjs/m);
   assert.match(proposal.files[0].diff, /-module\.exports = 1/);
-  assert.match(proposal.files[0].diff, /\\+module\\.exports = 2/);
+  assert.match(proposal.files[0].diff, /\+module\.exports = 2/);
   assert.throws(() => applyPatchProposal({ root, workspace, id: proposal.id, approved: false }), /approval/);
   assert.match(fs.readFileSync(path.join(root, 'src/app.cjs'), 'utf8'), /= 1/);
   const applied = applyPatchProposal({ root, workspace, id: proposal.id, approved: true });
