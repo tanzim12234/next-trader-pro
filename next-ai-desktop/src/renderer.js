@@ -103,9 +103,11 @@ async function refreshSelfHealing(){
   const status=await window.nextAI.getSelfHealingStatus();
   count.textContent=String(status.errorsRecorded||0);
   state.textContent=status.errorsRecorded?'MONITORING · '+status.errorsRecorded+' EVENT(S)':'SELF-HEALING ONLINE';
-  details.textContent=status.lastError
-   ? 'Last event: '+status.lastError.source+' · '+status.lastError.message+' · Log: '+status.logPath
-   : 'No runtime errors recorded. Automatic diagnostics are active.';
+  details.textContent=(status.lastError
+   ? 'Last event: '+status.lastError.source+' · '+status.lastError.message
+   : 'No runtime errors recorded.')
+   +(status.latestAnalysis?' · AI diagnosis: '+status.latestAnalysis.message:'')
+   +' · Log: '+status.logPath;
  }catch(error){state.textContent='DIAGNOSTICS UNAVAILABLE';details.textContent=error.message;}
 }
 async function runSelfHealingDiagnostics(){
