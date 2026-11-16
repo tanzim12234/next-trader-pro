@@ -49,7 +49,7 @@ function createSelfHealing(options = {}) {
         try { return JSON.parse(line); } catch { return null; }
       }).filter(Boolean);
     } catch {}
-    const actualErrors = entries.filter(entry => entry.source !== 'diagnostics' && entry.code !== 'DIAGNOSTICS_OK');
+    const actualErrors = entries.filter(entry => entry.source !== 'diagnostics' && entry.source !== 'ai-analysis' && entry.code !== 'DIAGNOSTICS_OK');
     return {
       enabled: true,
       errorsRecorded: actualErrors.length,
