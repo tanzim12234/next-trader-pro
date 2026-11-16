@@ -134,7 +134,7 @@ ipcMain.handle('files:extract-learning-file', async () => {
             pageText = (recognized.data.text || '').trim();
             ocrPages++;
           }
-          if (pageText) pageTexts.push('[Page ' + pageNumber + ']\\n' + pageText);
+          if (pageText) pageTexts.push('[Page ' + pageNumber + ']\n' + pageText);
         } finally {
           page.cleanup();
         }
