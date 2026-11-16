@@ -263,7 +263,7 @@ async function runVoiceCommand(raw){
 }
 function startVoice(){
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(!SR){if(pendingVoiceConfirmation){pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}}$('voiceState').textContent='Speech recognition is not available in this Electron build. Sensitive action cancelled; use a supported microphone.';return;}
+ if(!SR){if(pendingVoiceConfirmation){pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}}dictationMode=false;const button=$('voiceTyping');if(button){button.textContent='Start voice typing';button.setAttribute('aria-pressed','false');}$('voiceState').textContent='Speech recognition is not available in this Electron build. Sensitive action cancelled; use a supported microphone.';return;}
  recognition=new SR();recognition.lang=$('voiceLanguage')?.value||'bn-BD';recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=1;
  recognition.onstart=()=>{$('voiceState').textContent='Listening for “Hey NEXT”…';setCoreState('listening','Wake word detection active');};
  recognition.onresult=async ev=>{
@@ -298,7 +298,7 @@ function startVoice(){
  recognition.onend=()=>{if(listening){$('voiceState').textContent='Reconnecting voice recognition…';setTimeout(()=>{if(!listening||!recognition)return;try{recognition.start();}catch(e){$('voiceState').textContent='Voice restart failed: '+e.message;}},450);}else {$('voiceState').textContent='Voice stopped';setCoreState('', 'Voice standby');}};
  listening=true;
  try{recognition.start();$('voice').textContent='Stop voice listening';}
- catch(e){listening=false;if(pendingVoiceConfirmation){pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}}$('voice').textContent='Start voice listening';$('voiceState').textContent='Could not start microphone: '+e.message+' Sensitive action cancelled.';}
+ catch(e){listening=false;dictationMode=false;const button=$('voiceTyping');if(button){button.textContent='Start voice typing';button.setAttribute('aria-pressed','false');}if(pendingVoiceConfirmation){pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}}$('voice').textContent='Start voice listening';$('voiceState').textContent='Could not start microphone: '+e.message+' Sensitive action cancelled.';}
 }
 function stopVoice(){listening=false;awaitingCommand=false;dictationMode=false;const dictationButton=$('voiceTyping');if(dictationButton){dictationButton.textContent='Start voice typing';dictationButton.setAttribute('aria-pressed','false');}pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}if(recognition)recognition.stop();if('speechSynthesis'in window)speechSynthesis.cancel();$('voice').textContent='Start voice listening';}
 $('voice').onclick=()=>listening?stopVoice():startVoice();
