@@ -7,6 +7,12 @@ const crypto = require('node:crypto');
 const MAX_SKILL_BYTES = 32 * 1024;
 const OWNER_REPO = /^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/;
 const SAFE_ID = /^[a-z0-9][a-z0-9._-]{0,100}$/i;
+function isValidRepoName(value) {
+  if (typeof value !== 'string' || !OWNER_REPO.test(value)) return false;
+  const [owner, repo] = value.split('/');
+  return owner !== '.' && owner !== '..' && repo !== '.' && repo !== '..' &&
+    !owner.startsWith('.') && !repo.startsWith('.') && !owner.endsWith('.') && !repo.endsWith('.');
+}
 
 function createSkillManager({ app, fetchImpl = globalThis.fetch }) {
   const root = () => path.join(app.getPath('userData'), 'skills');
@@ -33,10 +39,10 @@ function createSkillManager({ app, fetchImpl = globalThis.fetch }) {
     return (Array.isArray(data.items) ? data.items : []).slice(0, 10).map(repo => ({
       fullName: repo.full_name, description: String(repo.description || '').slice(0, 240),
       stars: Number(repo.stargazers_count) || 0, url: repo.html_url, defaultBranch: repo.default_branch
-    })).filter(item => typeof item.fullName === 'string' && OWNER_REPO.test(item.fullName));
+    })).filter(item => isValidRepoName(item.fullName));
   }
   async function installFromGitHub(fullName, skillPath = 'SKILL.md') {
-    if (typeof fullName !== 'string' || !OWNER_REPO.test(fullName)) throw new Error('Use a GitHub repository in owner/repo format.');
+    if (!isValidRepoName(fullName)) throw new Error('Use a GitHub repository in owner/repo format.');
     if (typeof skillPath !== 'string' || skillPath.length > 180 || skillPath.startsWith('/') || skillPath.split('/').some(part => !part || part === '.' || part === '..') || !/\.md$/i.test(skillPath)) {
       throw new Error('Only a Markdown skill file with a safe repository path can be installed.');
     }
