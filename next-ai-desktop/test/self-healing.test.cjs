@@ -43,3 +43,15 @@ test('diagnostics report missing files and unavailable secure storage without mo
   assert.equal(report.checks.filter(check => !check.ok).length, 4);
   assert.equal(report.recommendedActions.length, 4);
 });
+
+test('diagnostic logs redact common provider API key formats and analysis events are not treated as new failures', () => {
+  const { selfHealing } = fixture();
+  selfHealing.recordError({ source: 'renderer', message: 'token AIza123456789012345678901234567890 gsk_abcdefghijklmnopqrstuvwxyz123456', code: 'WINDOW_ERROR' });
+  selfHealing.recordError({ source: 'ai-analysis', message: 'Analysis complete', code: 'ANALYSIS_COMPLETE' });
+  const status = selfHealing.getStatus();
+  assert.equal(status.errorsRecorded, 1);
+  assert.equal(status.lastError.source, 'renderer');
+  const log = fs.readFileSync(status.logPath, 'utf8');
+  assert.doesNotMatch(log, /AIza|gsk_/);
+  assert.match(log, /REDACTED_API_KEY/);
+});
