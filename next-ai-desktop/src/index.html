@@ -31,6 +31,40 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 .core-center{width:32%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 36% 30%,#f0ffff 0,#83f5ff 9%,#1b91b9 30%,#07506e 56%,#031724 75%);box-shadow:0 0 22px #37dfff,0 0 65px #00bce866,inset 0 0 22px #cfffff88;animation:coreBreath 3.5s ease-in-out infinite}
 .core-center span{font:900 22px system-ui;letter-spacing:.12em;color:#eaffff;text-shadow:0 0 15px #fff}
 .core-caption{position:absolute;bottom:-19px;text-align:center;font:10px ui-monospace,monospace;letter-spacing:.22em;color:#83eaff}
+
+/* Cinematic JARVIS-style holographic layers */
+.jarvis-stage{min-height:520px;grid-template-columns:minmax(190px,1fr) minmax(290px,420px) minmax(190px,1fr);border-color:#2aa9c0;background:radial-gradient(ellipse at 50% 48%,rgba(8,91,116,.48),rgba(2,17,29,.96) 54%,#01070d 100%);box-shadow:0 0 70px #00c9ef22,inset 0 0 80px #00c9ef12}
+.jarvis-stage:before{opacity:.75;background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(80,220,255,.055) 3px),linear-gradient(90deg,transparent 49.8%,rgba(72,222,255,.07) 50%,transparent 50.2%);background-size:auto,100% 100%}
+.hud-reticle{position:absolute;inset:16px;z-index:1;pointer-events:none;border:1px solid #48dff51c;border-radius:14px}
+.hud-reticle:before,.hud-reticle:after{content:"";position:absolute;width:58px;height:58px;border-color:#62edff;border-style:solid;opacity:.72}
+.hud-reticle:before{top:-1px;left:-1px;border-width:2px 0 0 2px}
+.hud-reticle:after{right:-1px;bottom:-1px;border-width:0 2px 2px 0}
+.hud-topline{position:absolute;top:25px;left:34px;right:34px;z-index:2;display:flex;justify-content:space-between;color:#69eaff;font:9px ui-monospace,monospace;letter-spacing:.22em;text-shadow:0 0 12px #20dfff}
+.hud-topline b{font-weight:600;color:#c4fbff}
+.core-wrap{width:min(100%,390px);filter:drop-shadow(0 0 22px #00dfff22)}
+.core-wrap:before{content:"";position:absolute;inset:-5%;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(95,238,255,.8) 0deg 0.45deg,transparent .55deg 7.5deg);mask:radial-gradient(circle,transparent 67%,#000 68% 69%,transparent 70%);animation:coreSpin 48s linear infinite}
+.core-wrap:after{content:"";position:absolute;inset:7%;border:1px solid #6ceeff55;border-radius:50%;box-shadow:0 0 24px #00dfff1b,inset 0 0 24px #00dfff13;animation:corePulse 4s ease-in-out infinite}
+.core-ring.r1{inset:0;border:1px solid #5deaff66;border-style:dashed;animation-duration:34s}
+.core-ring.r2{inset:9%;border-width:2px;border-color:#45eaffaa;animation-duration:18s}
+.core-ring.r3{inset:18%;border-style:dotted;animation-duration:11s}
+.core-ring.r4{inset:27%;border-color:#b4fbff99;box-shadow:0 0 25px #37eaff55,inset 0 0 22px #37eaff22}
+.core-orbit{inset:-2%;border-top-color:#d8ffff;border-bottom-color:#39b9e8;animation:orbitSpin3d 7s linear infinite}
+.core-orbit:after{width:12px;height:12px;box-shadow:0 0 24px 8px #29dfff}
+.core-center{width:29%;box-shadow:0 0 28px #37dfff,0 0 90px #00bce899,inset 0 0 28px #cfffffbb}
+.core-center span{font-size:30px;text-shadow:0 0 22px #fff,0 0 42px #4deaff}
+.core-caption{bottom:-28px;font-size:11px;text-shadow:0 0 12px #36dfff}
+.core-grid{position:absolute;inset:23%;border-radius:50%;background:repeating-conic-gradient(from 0deg,transparent 0deg 29deg,#74edff45 30deg 30.5deg);mask:radial-gradient(circle,transparent 0 46%,#000 47% 48%,transparent 49%);animation:coreSpin 60s linear infinite reverse}
+.core-latitude{position:absolute;inset:12% 0;border:1px solid #6deaff66;border-radius:50%;transform:rotateX(72deg);box-shadow:0 0 18px #00dfff18}
+.core-latitude.two{transform:rotateY(72deg)}
+.core-pulse{position:absolute;inset:34%;border-radius:50%;border:1px solid #c7ffff99;box-shadow:0 0 25px #36dfff66;animation:corePulse 2.2s ease-in-out infinite}
+.hud-card{border-color:#258ba0;background:linear-gradient(135deg,rgba(5,38,54,.78),rgba(2,15,26,.72));box-shadow:inset 0 0 24px #00c9ef12,0 0 18px #00c9ef0b}
+.hud-card:before{content:"";display:block;width:26px;height:2px;background:#69efff;box-shadow:0 0 10px #31dfff;margin-bottom:8px}
+.hud-label{letter-spacing:.24em}
+.hud-value{font-size:13px;text-shadow:0 0 14px #4bdcf499}
+.stage-footer{color:#67c9dc}
+@keyframes orbitSpin3d{from{transform:rotateX(67deg) rotateZ(0deg)}to{transform:rotateX(67deg) rotateZ(360deg)}}
+@media(max-width:760px){.jarvis-stage{min-height:760px;grid-template-columns:1fr;gap:18px;padding:54px 16px 48px}.core-wrap{grid-row:1;width:min(68vw,290px)}.hud-column{grid-template-columns:1fr 1fr}.hud-topline{left:24px;right:24px;top:22px}.hud-reticle{inset:10px}}
+
 .waveform{height:42px;display:flex;align-items:center;gap:3px;overflow:hidden;margin-top:9px}
 .waveform i{display:block;width:3px;height:10%;min-height:4px;border-radius:4px;background:#5ceaff;box-shadow:0 0 8px #39dfff;animation:wave 1s ease-in-out infinite alternate}
 .waveform i:nth-child(3n){animation-delay:-.4s}.waveform i:nth-child(4n){animation-delay:-.7s}.waveform i:nth-child(5n){animation-delay:-.2s}
@@ -43,12 +77,13 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 @media(prefers-reduced-motion:reduce){.jarvis-stage:before,.jarvis-stage:after,.core-ring,.core-orbit,.core-center,.waveform i{animation:none!important}}
 
 </style></head><body><main><section class="jarvis-stage" id="jarvisStage" aria-label="NEXT AI holographic system visualizer">
+<div class="hud-reticle" aria-hidden="true"></div><div class="hud-topline"><b>NEXT AI // J.A.R.V.I.S. MODE</b><span>HOLOGRAPHIC SYSTEM <span style="color:#8bffdc">● ONLINE</span></span></div>
 <div class="hud-column">
 <div class="hud-card"><div class="hud-label">System diagnostics</div><div class="hud-value" id="hudSystem">INITIALIZING</div><div class="hud-sub">LOCAL CORE · SECURE SESSION</div></div>
 <div class="hud-card"><div class="hud-label">Personal brain</div><div class="hud-value" id="hudMemory">MEMORY STANDBY</div><div class="hud-sub">LONG-TERM MEMORY MODULE</div></div>
 <div class="hud-card"><div class="hud-label">Voice interface</div><div class="hud-value" id="hudVoice">VOICE OFFLINE</div><div class="waveform" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
 </div>
-<div class="core-wrap" aria-hidden="true"><div class="core-ring r1"></div><div class="core-ring r2"></div><div class="core-ring r3"></div><div class="core-ring r4"></div><div class="core-orbit"></div><div class="core-center"><span>N</span></div><div class="core-caption">N E X T · C O R E</div></div>
+<div class="core-wrap" aria-hidden="true"><div class="core-grid"></div><div class="core-latitude"></div><div class="core-latitude two"></div><div class="core-pulse"></div><div class="core-ring r1"></div><div class="core-ring r2"></div><div class="core-ring r3"></div><div class="core-ring r4"></div><div class="core-orbit"></div><div class="core-center"><span>N</span></div><div class="core-caption">N E X T · C O R E</div></div>
 <div class="hud-column">
 <div class="hud-card"><div class="hud-label">Cognitive engine</div><div class="hud-value" id="hudEngine">READY TO CONNECT</div><div class="hud-sub">REASONING · PLANNING · LEARNING</div></div>
 <div class="hud-card"><div class="hud-label">Environment</div><div class="hud-value" id="hudEnvironment">WINDOWS DESKTOP</div><div class="hud-sub">VOICE COMMANDS · DIRECT CONTROL</div></div>
