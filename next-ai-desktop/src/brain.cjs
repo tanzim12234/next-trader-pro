@@ -46,36 +46,97 @@ function createPersonalBrain({ app, safeStorage }) {
   }
 
   const stopWords = new Set([
-    'the','and','for','with','that','this','what','when','where','which','who','whom','how','are','was','were','you','your','about','from','have','has','had','will','would','could','should','can',
-    'আমার','তোমার','তুমি','আমি','এটা','ওটা','কি','কী','কেন','কিভাবে','হবে','হয়','হয়','করো','করতে','একটা','এবং','অথবা','জন্য','থেকে','নিয়ে','নিয়ে'
+    'the','and','for','with','that','this','what','when','where','which','who','whom','how','are','was','were','you','your','about','from','have','has','had','will','would','could','should','can','does','did','not','but','into','then',
+    'আমার','তোমার','তুমি','আমি','এটা','ওটা','কি','কী','কেন','কিভাবে','হবে','হয়','হয়','করো','করতে','একটা','এবং','অথবা','জন্য','থেকে','নিয়ে','নিয়ে','হলো','হল','আছে','আছি','ছিল'
   ]);
-  function tokens(value) {
-    return [...new Set(String(value || '').toLocaleLowerCase()
-      .split(/[^a-z0-9\u0980-\u09ff]+/u)
-      .filter(word => word.length > 1 && !stopWords.has(word)))];
+
+  // Small bilingual concept map improves retrieval without sending private memories to an embedding API.
+  const conceptGroups = [
+    ['বাংলা','বাংলায়','বাংলায়','bangla','bengali'],
+    ['মেমরি','মেমোরি','স্মৃতি','মনে','memory','memories'],
+    ['শেখা','শিখে','শিখতে','শেখাও','learning','learn','learnt'],
+    ['পছন্দ','পছন্দের','ভালোবাসা','preference','prefer','favorite','favourite'],
+    ['প্রকল্প','প্রজেক্ট','project'],
+    ['ট্রেডিং','trading','ব্যবসা','trade'],
+    ['কাজ','কর্ম','workflow','work','task'],
+    ['কথা','বল','ভাষা','language','speak','speaking']
+  ];
+  const conceptMap = new Map();
+  for (const group of conceptGroups) {
+    const normalized = group.map(value => value.toLocaleLowerCase());
+    for (const value of normalized) conceptMap.set(value, normalized);
   }
-  function scoreMemory(queryTerms, phrase, memory) {
-    const text = (memory.text || '').toLocaleLowerCase();
-    const category = (memory.category || '').toLocaleLowerCase();
+  const bnSuffixes = ['গুলো','গুলি','দেরকে','গুলোর','গুলিতে','গুলা','গুলোতে','দের','টির','টির','টিরও','টা','টি','তে','কে','রা','য়','য়ে','ের','র'];
+  function normalizeToken(word) {
+    let value = word.toLocaleLowerCase();
+    if (/^[a-z]+$/u.test(value)) {
+      if (value.length > 5 && value.endsWith('ies')) value = value.slice(0, -3) + 'y';
+      else if (value.length > 5 && value.endsWith('ing')) value = value.slice(0, -3);
+      else if (value.length > 4 && value.endsWith('ed')) value = value.slice(0, -2);
+      else if (value.length > 4 && value.endsWith('s') && !value.endsWith('ss')) value = value.slice(0, -1);
+    } else if (/[\u0980-\u09ff]/u.test(value)) {
+      for (const suffix of bnSuffixes) {
+        if (value.endsWith(suffix) && [...value].length - [...suffix].length >= 2) {
+          value = value.slice(0, -suffix.length);
+          break;
+        }
+      }
+    }
+    return value;
+  }
+  function tokens(value) {
+    return String(value || '').toLocaleLowerCase()
+      .split(/[^a-z0-9\u0980-\u09ff]+/u)
+      .map(normalizeToken)
+      .filter(word => word.length > 1 && !stopWords.has(word));
+  }
+  function expandTerms(terms) {
+    const expanded = new Set(terms);
+    for (const term of terms) {
+      const group = conceptMap.get(term);
+      if (group) for (const alias of group) expanded.add(normalizeToken(alias));
+    }
+    return [...expanded];
+  }
+  function scoreMemory(queryTerms, phrase, memory, corpus) {
+    const docTerms = tokens(memory.text);
+    const frequencies = new Map();
+    for (const term of docTerms) frequencies.set(term, (frequencies.get(term) || 0) + 1);
+    const categoryTerms = new Set(tokens(memory.category));
+    const averageLength = corpus.length
+      ? corpus.reduce((sum, item) => sum + tokens(item.text).length, 0) / corpus.length
+      : 1;
+    const docLength = docTerms.length || 1;
     let score = 0;
     let matched = 0;
     for (const term of queryTerms) {
-      if (text.includes(term)) { score += term.length > 4 ? 3 : 2; matched += 1; }
-      if (category.includes(term)) score += 1;
+      const tf = frequencies.get(term) || 0;
+      if (tf) {
+        matched += 1;
+        const df = corpus.reduce((count, item) => count + (tokens(item.text).includes(term) ? 1 : 0), 0);
+        const idf = Math.log(1 + (corpus.length - df + 0.5) / (df + 0.5));
+        const saturation = (tf * 2.2) / (tf + 1.2 * (0.25 + 0.75 * docLength / averageLength));
+        score += idf * saturation;
+      }
+      if (categoryTerms.has(term)) score += 0.35;
     }
-    if (phrase.length > 3 && text.includes(phrase)) score += 6;
-    // A small recency tie-breaker; it never makes an unrelated memory match.
+    const normalizedPhrase = tokens(phrase).join(' ');
+    const normalizedText = docTerms.join(' ');
+    if (normalizedPhrase.length > 3 && normalizedText.includes(normalizedPhrase)) score += 2.5;
+    // Exact unstemmed phrase and freshness are tie-breakers, never independent matches.
+    if (phrase.length > 3 && String(memory.text || '').toLocaleLowerCase().includes(phrase)) score += 1.5;
     const updated = Date.parse(memory.updatedAt || memory.createdAt || 0);
     const ageDays = Number.isFinite(updated) ? Math.max(0, (Date.now() - updated) / 86400000) : 365;
-    score += Math.max(0, 0.5 - ageDays / 3650);
+    score += Math.max(0, 0.15 - ageDays / 36500);
     return { score, matched };
   }
   function rank(query, memories) {
-    const terms = tokens(query);
-    if (!terms.length) return [];
+    const rawTerms = tokens(query);
+    if (!rawTerms.length) return [];
+    const queryTerms = expandTerms(rawTerms);
     const phrase = String(query).trim().toLocaleLowerCase();
     return memories.map((memory, index) => {
-      const result = scoreMemory(terms, phrase, memory);
+      const result = scoreMemory(queryTerms, phrase, memory, memories);
       return { memory, score: result.score, matched: result.matched, index };
     }).filter(item => item.matched > 0)
       .sort((a, b) => b.score - a.score || b.matched - a.matched || b.index - a.index)
