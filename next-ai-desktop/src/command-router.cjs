@@ -10,6 +10,9 @@ function classifyVoiceCommand(value) {
     .replace(/^(hey\s+next|হেই\s+নেক্সট|হে\s+নেক্সট)\s*[,،]?\s*/i, '').trim();
   if (!text || text.length > 2000) return null;
 
+  if (/^(?:system status|check system|system health|how is my pc|কম্পিউটারের অবস্থা বলো|সিস্টেম স্ট্যাটাস|সিস্টেমের অবস্থা বলো|পিসির অবস্থা বলো)$/i.test(text))
+    return { intent: 'system-status', confidence: 0.99 };
+
   const appPatterns = [
     { re: /^(?:open|launch|start)\s+(?:notepad|নোটপ্যাড)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'notepad' },
     { re: /^(?:open|launch|start)\s+(?:calculator|ক্যালকুলেটর)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'calculator' },
