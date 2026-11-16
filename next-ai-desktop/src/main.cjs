@@ -127,6 +127,10 @@ function createWindow() {
       contextIsolation: true, nodeIntegration: false, sandbox: true
     }
   });
+  // Allow microphone access only to NEXT AI's own renderer so startup voice can work.
+  win.webContents.session.setPermissionRequestHandler((requestingContents, permission, callback) => {
+    callback(requestingContents === win.webContents && permission === 'media');
+  });
   win.webContents.on('render-process-gone', (_event, details) => {
     recordRuntimeError({ source: 'renderer-process', message: 'Renderer process stopped: ' + (details?.reason || 'unknown'), code: details?.exitCode || '', stack: JSON.stringify(details || {}) });
     const now = Date.now();
