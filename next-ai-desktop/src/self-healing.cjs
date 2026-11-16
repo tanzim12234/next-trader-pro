@@ -50,10 +50,12 @@ function createSelfHealing(options = {}) {
       }).filter(Boolean);
     } catch {}
     const actualErrors = entries.filter(entry => entry.source !== 'diagnostics' && entry.source !== 'ai-analysis' && entry.code !== 'DIAGNOSTICS_OK');
+    const analyses = entries.filter(entry => entry.source === 'ai-analysis');
     return {
       enabled: true,
       errorsRecorded: actualErrors.length,
       lastError: actualErrors.length ? actualErrors[actualErrors.length - 1] : null,
+      latestAnalysis: analyses.length ? analyses[analyses.length - 1] : null,
       recentErrors: actualErrors.slice(-20),
       logPath
     };
