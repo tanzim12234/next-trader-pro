@@ -39,7 +39,7 @@ jobs:
           node --check test/semantic-runtime-smoke.cjs
       - name: Test Personal Brain
         run: npm test
-      - name: Test real local semantic model on Windows
+      - name: Test local semantic model and fallback on Windows
         run: node test/semantic-runtime-smoke.cjs
         timeout-minutes: 20
       - name: Report signing configuration
