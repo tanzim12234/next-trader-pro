@@ -13,6 +13,7 @@ const { createBackupManager } = require('./backup-manager.cjs');
 const { createSystemMonitor } = require('./system-monitor.cjs');
 const { createSkillManager } = require('./skill-manager.cjs');
 const { validateCode } = require('./code-lab.cjs');
+const { createPatchProposal, applyPatchProposal, rollbackPatchProposal } = require('./patch-manager.cjs');
 const systemMonitor = createSystemMonitor();
 const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.enc'), safeStorage);
 const brain = createPersonalBrain({ app, safeStorage });
@@ -25,6 +26,7 @@ let selectedFolder = null;
 let currentFolder = null;
 let previousCpuSnapshot = null;
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.enc');
+const patchWorkspace = () => path.join(app.getPath('userData'), 'patch-proposals');
 
 function readSettings() {
   try {
@@ -686,6 +688,45 @@ ipcMain.handle('ai:code-assist', async (_e, input) => {
   };
 });
 ipcMain.handle('code:validate', (_e, input) => validateCode(input));
+
+ipcMain.handle('patch:create', (_e, input) => {
+  if (!selectedFolder) throw new Error('আগে File Manager থেকে project folder নির্বাচন করো।');
+  if (!input || typeof input.path !== 'string' || typeof input.content !== 'string') throw new Error('Patch path and code are required.');
+  return createPatchProposal({
+    root: selectedFolder,
+    workspace: patchWorkspace(),
+    changes: [{ path: input.path, content: input.content }]
+  });
+});
+ipcMain.handle('patch:apply', async (_e, input) => {
+  if (!selectedFolder) throw new Error('আগে project folder নির্বাচন করো।');
+  if (typeof input?.id !== 'string') throw new Error('Patch proposal ID is required.');
+  const choice = await require('electron').dialog.showMessageBox(win, {
+    type: 'warning',
+    buttons: ['Apply reviewed patch', 'Cancel'],
+    defaultId: 1,
+    cancelId: 1,
+    message: 'এই patch কি নির্বাচিত project-এর আসল source file পরিবর্তন করবে?',
+    detail: 'ফাইল পরিবর্তনের আগে diff review করো। NEXT code execute করবে না এবং test চালানো হয়নি। Apply করার আগে backup রাখো।'
+  });
+  if (choice.response !== 0) return { cancelled: true };
+  return applyPatchProposal({ root: selectedFolder, workspace: patchWorkspace(), id: input.id, approved: true });
+});
+ipcMain.handle('patch:rollback', async (_e, input) => {
+  if (!selectedFolder) throw new Error('আগে project folder নির্বাচন করো।');
+  if (typeof input?.id !== 'string') throw new Error('Patch proposal ID is required.');
+  const choice = await require('electron').dialog.showMessageBox(win, {
+    type: 'warning',
+    buttons: ['Rollback patch', 'Cancel'],
+    defaultId: 1,
+    cancelId: 1,
+    message: 'Patch-এর আগের version কি ফিরিয়ে আনবে?',
+    detail: 'শুধু patch apply হওয়ার পর থেকে ফাইল অপরিবর্তিত থাকলে rollback হবে।'
+  });
+  if (choice.response !== 0) return { cancelled: true };
+  return rollbackPatchProposal({ root: selectedFolder, workspace: patchWorkspace(), id: input.id });
+});
+
 
 ipcMain.handle('action:run', async (_e, action) => {
   if (!action || typeof action.type !== 'string') throw new Error('Invalid action.');
