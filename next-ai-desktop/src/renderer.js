@@ -158,6 +158,16 @@ async function runVoiceCommand(raw){
  try{
   const routed=await window.nextAI.classifyVoice(raw);
   if(routed){
+   if(routed.intent==='system-status'){
+    const s=await window.nextAI.getSystemStats();
+    const parts=['CPU '+(s.cpuPercent===null?'sampling':s.cpuPercent+' percent'),'memory '+s.memoryPercent+' percent'];
+    if(s.disks?.length){const d=s.disks[0];parts.push('drive '+d.name+' '+Math.round((d.sizeBytes-d.freeBytes)/d.sizeBytes*100)+' percent used');}
+    if(s.batteries?.some(b=>b.percent!==null)){const b=s.batteries.find(x=>x.percent!==null);parts.push('battery '+b.percent+' percent');}
+    if(s.networks?.length)parts.push(s.networks.length+' network adapter statistics available');
+    speak('Current system status. '+parts.join('. ')+'.');
+    $('voiceState').textContent='Read current local system metrics.';
+    return;
+   }
    if(routed.intent==='home-control'){
     const entities=await window.nextAI.listHomeEntities();
     const wanted=routed.deviceQuery.toLocaleLowerCase('en-US').trim();
