@@ -88,7 +88,7 @@ function readProposal(workspace, id) {
   const base = path.resolve(workspace);
   const file = path.resolve(base, id, 'proposal.json');
   if (!file.startsWith(base + path.sep)) throw new Error('Invalid proposal location.');
-  const record = JSON.parse(fs.readFileFileSync ? fs.readFileFileSync(file, 'utf8') : fs.readFileSync(file, 'utf8'));
+  const record = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (record.id !== id || !Array.isArray(record.files)) throw new Error('Proposal record is invalid.');
   return { base, file, record };
 }
