@@ -161,20 +161,27 @@ function createPersonalBrain({ app, safeStorage }) {
     if (typeof text !== 'string' || !text.trim()) throw new Error('Knowledge text is required.');
     if (text.length > 50000) throw new Error('Knowledge text must be 50,000 characters or less.');
     const normalized = text.replace(/\r\n/g, '\n').trim();
-    // Split at paragraph/sentence boundaries, then cap each searchable memory at 900 chars.
-    const units = normalized.split(/\n{2,}|(?<=[.!?।])\s+/u).map(part => part.trim()).filter(Boolean);
+    // Keep paragraph boundaries as separate memory chunks; combine sentences only within a paragraph.
+    const paragraphs = normalized.split(/\n{2,}/u).map(part => part.trim()).filter(Boolean);
     const chunks = [];
-    let current = '';
-    for (const unit of units) {
-      if (unit.length > 900) {
-        if (current) { chunks.push(current); current = ''; }
-        for (let i = 0; i < unit.length; i += 900) chunks.push(unit.slice(i, i + 900));
-        continue;
+    for (const paragraph of paragraphs) {
+      const units = paragraph.split(/(?<=[.!?।])\s+/u).map(part => part.trim()).filter(Boolean);
+      let current = '';
+      for (const unit of units) {
+        if (unit.length > 900) {
+          if (current) { chunks.push(current); current = ''; }
+          for (let i = 0; i < unit.length; i += 900) chunks.push(unit.slice(i, i + 900));
+          continue;
+        }
+        if (current && (current.length + unit.length + 1) > 900) {
+          chunks.push(current);
+          current = unit;
+        } else {
+          current = current ? current + '\n' + unit : unit;
+        }
       }
-      if (current && (current.length + unit.length + 1) > 900) { chunks.push(current); current = unit; }
-      else current = current ? current + '\n' + unit : unit;
+      if (current) chunks.push(current);
     }
-    if (current) chunks.push(current);
     if (chunks.length > 60) throw new Error('This lesson creates too many chunks (maximum 60).');
     const saved = chunks.map((chunk, index) => remember(
       chunks.length > 1 ? '[Lesson ' + (index + 1) + '/' + chunks.length + '] ' + chunk : chunk,
