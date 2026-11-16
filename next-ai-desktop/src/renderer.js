@@ -19,6 +19,16 @@ function setCoreState(state, activity){
 }
 
 let updateAvailable=false;
+if($('checkForUpdates'))void (async()=>{
+ try{
+  const result=await window.nextAI.checkForUpdates();
+  if(result.available){
+   updateAvailable=true;
+   $('updateState').textContent='Signed update available · v'+result.latestVersion+' · '+Math.ceil(result.size/1024/1024)+' MB.';
+   $('downloadUpdate').disabled=false;
+  }else $('updateState').textContent=result.reason||('Current version '+result.currentVersion+' · '+result.latestVersion);
+ }catch(error){$('updateState').textContent='Automatic update check unavailable: '+error.message;}
+})();
 if($('checkForUpdates'))$('checkForUpdates').onclick=async()=>{
  const button=$('checkForUpdates'),state=$('updateState');
  button.disabled=true;state.textContent='Checking signed GitHub release…';
