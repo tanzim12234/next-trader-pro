@@ -64,36 +64,85 @@ ipcMain.handle('files:open-text', async () => {
 });
 ipcMain.handle('files:extract-learning-file', async () => {
   const result = await require('electron').dialog.showOpenDialog(win, {
-    title: 'Choose a PDF or Word document to teach NEXT',
+    title: 'Choose a document or image to teach NEXT',
     properties: ['openFile'],
-    filters: [{ name: 'Learning documents', extensions: ['pdf', 'docx'] }]
+    filters: [{ name: 'Learning documents and images', extensions: ['pdf', 'docx', 'png', 'jpg', 'jpeg', 'webp', 'bmp', 'tif', 'tiff'] }]
   });
   if (result.canceled || !result.filePaths[0]) return { cancelled: true };
   const filePath = result.filePaths[0];
   const stat = await fs.promises.stat(filePath);
-  if (!stat.isFile() || stat.size > 15 * 1024 * 1024) throw new Error('শুধু 15 MB পর্যন্ত PDF বা DOCX নেওয়া যাবে।');
+  if (!stat.isFile() || stat.size > 15 * 1024 * 1024) throw new Error('শুধু 15 MB পর্যন্ত PDF, DOCX বা image নেওয়া যাবে।');
   const extension = path.extname(filePath).toLowerCase();
+  const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tif', '.tiff'];
   let extracted = '';
-  if (extension === '.pdf') {
-    const pdfParse = require('pdf-parse');
-    const parsed = await pdfParse(await fs.promises.readFile(filePath), { max: 100 });
-    extracted = parsed.text || '';
-  } else if (extension === '.docx') {
+  let note = '';
+  if (extension === '.docx') {
     const mammoth = require('mammoth');
     const parsed = await mammoth.extractRawText({ path: filePath });
     extracted = parsed.value || '';
-  } else {
-    throw new Error('Unsupported document format.');
+    note = 'DOCX text extraction';
+  } else if (extension === '.pdf') {
+    const pdfParse = require('pdf-parse');
+    const parsed = await pdfParse(await fs.promises.readFile(filePath), { max: 100 });
+    extracted = (parsed.text || '').trim();
+    note = 'PDF text extraction';
+  } else if (!imageExtensions.includes(extension)) {
+    throw new Error('Unsupported document or image format.');
+  }
+
+  // Use local OCR when the selected file is an image or the PDF has no usable text layer.
+  if (imageExtensions.includes(extension) || (extension === '.pdf' && extracted.replace(/\s/g, '').length < 80)) {
+    const { createWorker } = require('tesseract.js');
+    let worker;
+    try {
+      worker = await createWorker('eng+ben', 1, {
+        langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+        cachePath: path.join(app.getPath('userData'), 'ocr-language-cache'),
+        gzip: true,
+        logger: () => {}
+      });
+      if (imageExtensions.includes(extension)) {
+        const result = await worker.recognize(filePath);
+        extracted = result.data.text || '';
+      } else {
+        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+        const canvasModule = require('@napi-rs/canvas');
+        const bytes = await fs.promises.readFile(filePath);
+        const document = await pdfjs.getDocument({ data: new Uint8Array(bytes), useSystemFonts: true, isEvalSupported: false }).promise;
+        const pageTexts = [];
+        const maxPages = Math.min(document.numPages, 10);
+        for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
+          const page = await document.getPage(pageNumber);
+          const baseViewport = page.getViewport({ scale: 1 });
+          const scale = Math.min(1.5, 1800 / Math.max(baseViewport.width, baseViewport.height));
+          const viewport = page.getViewport({ scale });
+          const canvas = canvasModule.createCanvas(Math.max(1, Math.ceil(viewport.width)), Math.max(1, Math.ceil(viewport.height)));
+          const context = canvas.getContext('2d');
+          await page.render({ canvasContext: context, viewport }).promise;
+          const recognized = await worker.recognize(canvas.toBuffer('image/png'));
+          const pageText = (recognized.data.text || '').trim();
+          if (pageText) pageTexts.push('[Page ' + pageNumber + ']\n' + pageText);
+          page.cleanup();
+        }
+        await document.destroy();
+        const ocrText = pageTexts.join('\n\n');
+        if (ocrText.length > extracted.length) extracted = ocrText;
+        note = 'PDF local OCR · ' + maxPages + ' page(s) processed' + (maxPages < document.numPages ? ' · first 10 pages only' : '');
+      }
+    } finally {
+      if (worker) await worker.terminate();
+    }
+    if (imageExtensions.includes(extension)) note = 'Local OCR · Bengali + English';
   }
   extracted = extracted.replace(/\r\n/g, '\n').trim();
-  if (!extracted) throw new Error('এই ফাইলে পড়ার মতো text পাওয়া যায়নি। Scanned PDF হলে OCR প্রয়োজন হতে পারে।');
+  if (!extracted) throw new Error('এই ফাইল থেকে text পড়া যায়নি। পরিষ্কার ছবি বা PDF দিয়ে আবার চেষ্টা করো।');
   const limit = 50000;
   return {
     name: path.basename(filePath),
     text: extracted.slice(0, limit),
     characters: extracted.length,
     truncated: extracted.length > limit,
-    note: extension === '.pdf' ? 'PDF text extraction' : 'DOCX text extraction'
+    note
   };
 });
 ipcMain.handle('files:save-text', async (_e, input) => {
