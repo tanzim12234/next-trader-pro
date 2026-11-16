@@ -293,14 +293,14 @@ function startVoice(){
   const messages={ 'not-allowed':'Microphone permission denied. Allow microphone access in Windows settings.', 'service-not-allowed':'Speech recognition service is blocked in this environment.', 'audio-capture':'No working microphone was found.', 'network':'Speech recognition needs an internet connection.' };
   if(pendingVoiceConfirmation&&['not-allowed','service-not-allowed','audio-capture'].includes(ev.error)){pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}}
   $('voiceState').textContent=messages[ev.error]||('Voice error: '+ev.error);
-  if(['not-allowed','service-not-allowed','audio-capture'].includes(ev.error)){listening=false;$('voice').textContent='Start voice listening';setCoreState('', 'Voice unavailable');}
+  if(['not-allowed','service-not-allowed','audio-capture'].includes(ev.error)){listening=false;dictationMode=false;const button=$('voiceTyping');if(button){button.textContent='Start voice typing';button.setAttribute('aria-pressed','false');}$('voice').textContent='Start voice listening';setCoreState('', 'Voice unavailable');}
  };
  recognition.onend=()=>{if(listening){$('voiceState').textContent='Reconnecting voice recognition…';setTimeout(()=>{if(!listening||!recognition)return;try{recognition.start();}catch(e){$('voiceState').textContent='Voice restart failed: '+e.message;}},450);}else {$('voiceState').textContent='Voice stopped';setCoreState('', 'Voice standby');}};
  listening=true;
  try{recognition.start();$('voice').textContent='Stop voice listening';}
  catch(e){listening=false;if(pendingVoiceConfirmation){pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}}$('voice').textContent='Start voice listening';$('voiceState').textContent='Could not start microphone: '+e.message+' Sensitive action cancelled.';}
 }
-function stopVoice(){listening=false;awaitingCommand=false;pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}if(recognition)recognition.stop();if('speechSynthesis'in window)speechSynthesis.cancel();$('voice').textContent='Start voice listening';}
+function stopVoice(){listening=false;awaitingCommand=false;dictationMode=false;const dictationButton=$('voiceTyping');if(dictationButton){dictationButton.textContent='Start voice typing';dictationButton.setAttribute('aria-pressed','false');}pendingVoiceConfirmation=null;if(pendingVoiceCancel){pendingVoiceCancel();pendingVoiceCancel=null;}if(recognition)recognition.stop();if('speechSynthesis'in window)speechSynthesis.cancel();$('voice').textContent='Start voice listening';}
 $('voice').onclick=()=>listening?stopVoice():startVoice();
 $('voiceTyping').onclick=()=>setDictationMode(!dictationMode);
 refresh();
