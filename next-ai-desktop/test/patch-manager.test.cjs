@@ -48,7 +48,7 @@ test('rolls back only when applied files have not changed again', () => {
   assert.match(fs.readFileSync(path.join(root, 'src/app.cjs'), 'utf8'), /module.exports = 1/);
 });
 
-test('rejects traversal, unsupported files, symlinks, and stale source', () => {
+test('rejects traversal, unsupported files, and stale source', () => {
   const { root, workspace } = fixture();
   assert.throws(() => createPatchProposal({ root, workspace, changes: [{ path: '../secret.txt', content: 'x' }] }), /traversal|approved/);
   assert.throws(() => createPatchProposal({ root, workspace, changes: [{ path: 'src/app.exe', content: 'x' }] }), /approved/);
