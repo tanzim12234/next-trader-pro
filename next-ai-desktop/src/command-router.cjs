@@ -13,6 +13,19 @@ function classifyVoiceCommand(value) {
   if (/^(?:system status|check system|system health|how is my pc|কম্পিউটারের অবস্থা বলো|সিস্টেম স্ট্যাটাস|সিস্টেমের অবস্থা বলো|পিসির অবস্থা বলো)$/i.test(text))
     return { intent: 'system-status', confidence: 0.99 };
 
+  if (/^(?:start|begin|enable) voice typing|^voice typing start|^ভয়েস টাইপিং (?:চালু|শুরু) করো|^কথা লিখে দাও শুরু করো$/i.test(text))
+    return { intent: 'voice-typing-start', confidence: 0.99 };
+  if (/^(?:stop|end|disable) voice typing|^voice typing stop|^ভয়েস টাইপিং (?:বন্ধ|থামাও) করো|^কথা লেখা বন্ধ করো$/i.test(text))
+    return { intent: 'voice-typing-stop', confidence: 0.99 };
+  if (/^(?:lock|lock my|lock the) (?:laptop|computer|pc|screen)|^(?:ল্যাপটপ|কম্পিউটার) লক করো$/i.test(text))
+    return { intent: 'lock-laptop', confidence: 0.99 };
+  if (/^(?:shut ?down|power off|turn off) (?:my )?(?:laptop|computer|pc)|^(?:ল্যাপটপ|কম্পিউটার) বন্ধ করো$/i.test(text))
+    return { intent: 'shutdown-laptop', confidence: 0.99 };
+  if (/^(?:unlock|unlock my) (?:laptop|computer|pc)|^(?:ল্যাপটপ|কম্পিউটার) আনলক করো$/i.test(text))
+    return { intent: 'unlock-laptop-guidance', confidence: 0.99 };
+  if (/^(?:power on|turn on|wake) (?:my )?(?:laptop|computer|pc)|^(?:ল্যাপটপ|কম্পিউটার) চালু করো$/i.test(text))
+    return { intent: 'power-on-guidance', confidence: 0.99 };
+
   const appPatterns = [
     { re: /^(?:open|launch|start)\s+(?:notepad|নোটপ্যাড)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'notepad' },
     { re: /^(?:open|launch|start)\s+(?:calculator|ক্যালকুলেটর)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'calculator' },
