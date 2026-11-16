@@ -96,6 +96,31 @@ function createPersonalBrain({ app, safeStorage }) {
     const q = String(query).trim();
     return (q ? rank(q, memories) : memories).slice(0, 100);
   }
+  function ingest(text, category = 'knowledge') {
+    if (typeof text !== 'string' || !text.trim()) throw new Error('Knowledge text is required.');
+    if (text.length > 50000) throw new Error('Knowledge text must be 50,000 characters or less.');
+    const normalized = text.replace(/\\r\\n/g, '\\n').trim();
+    // Split at paragraph/sentence boundaries, then cap each searchable memory at 900 chars.
+    const units = normalized.split(/\\n{2,}|(?<=[.!?।])\\s+/u).map(part => part.trim()).filter(Boolean);
+    const chunks = [];
+    let current = '';
+    for (const unit of units) {
+      if (unit.length > 900) {
+        if (current) { chunks.push(current); current = ''; }
+        for (let i = 0; i < unit.length; i += 900) chunks.push(unit.slice(i, i + 900));
+        continue;
+      }
+      if (current && (current.length + unit.length + 1) > 900) { chunks.push(current); current = unit; }
+      else current = current ? current + '\\n' + unit : unit;
+    }
+    if (current) chunks.push(current);
+    if (chunks.length > 60) throw new Error('This lesson creates too many chunks (maximum 60).');
+    const saved = chunks.map((chunk, index) => remember(
+      chunks.length > 1 ? '[Lesson ' + (index + 1) + '/' + chunks.length + '] ' + chunk : chunk,
+      String(category || 'knowledge').slice(0, 40)
+    ));
+    return { saved: saved.length, memories: saved };
+  }
   function forget(id) {
     const data = load();
     const before = data.memories.length;
@@ -121,6 +146,6 @@ function createPersonalBrain({ app, safeStorage }) {
     }
     return lines.join('\n').slice(0, 6000);
   }
-  return { remember, list, forget, clear, context };
+  return { remember, ingest, list, forget, clear, context };
 }
 module.exports = { createPersonalBrain };
