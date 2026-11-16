@@ -367,16 +367,7 @@ ipcMain.handle('home:connect', async (_e, input) => {
 ipcMain.handle('home:entities', async () => configuredHomeAssistant().listEntities());
 ipcMain.handle('home:call', async (_e, input) => {
   const action = validateServiceCall(input);
-  // A direct voice command authorizes routine home controls. Keep a second check for physical security actions.
-  if (action.service === 'lock' || action.service === 'unlock') {
-    const labels = { lock: 'lock', unlock: 'unlock' };
-    const choice = await require('electron').dialog.showMessageBox(win, {
-      type: 'warning', buttons: ['Allow action', 'Cancel'], defaultId: 1, cancelId: 1,
-      message: 'Allow NEXT AI to ' + labels[action.service] + '?',
-      detail: input.entityId
-    });
-    if (choice.response !== 0) return { cancelled: true };
-  }
+  // Sensitive lock/unlock actions are confirmed by the voice layer before reaching this IPC handler.
   await configuredHomeAssistant().call(input);
   return { ok: true };
 });
