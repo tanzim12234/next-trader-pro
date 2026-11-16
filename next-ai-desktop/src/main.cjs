@@ -599,6 +599,10 @@ ipcMain.handle('brain:remember', (_e, input) => {
   if (!input || typeof input.text !== 'string') throw new Error('Memory text is required.');
   return brain.remember(input.text, input.category || 'general');
 });
+ipcMain.handle('brain:ingest', (_e, input) => {
+  if (!input || typeof input.text !== 'string') throw new Error('Knowledge text is required.');
+  return brain.ingest(input.text, input.category || 'knowledge');
+});
 ipcMain.handle('brain:forget', (_e, id) => {
   if (typeof id !== 'string') throw new Error('Memory id is required.');
   return brain.forget(id);
