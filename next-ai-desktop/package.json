@@ -39,7 +39,12 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true
-    }
+    },
+    "asarUnpack": [
+      "node_modules/tesseract.js/**/*",
+      "node_modules/tesseract.js-core/**/*",
+      "node_modules/@napi-rs/canvas/**/*"
+    ]
   },
   "dependencies": {
     "mammoth": "^1.9.1",
