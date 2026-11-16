@@ -11,10 +11,12 @@ const { createHomeAssistantClient, validateServiceCall } = require('./home-assis
 const { analyzeData } = require('./data-analysis.cjs');
 const { createBackupManager } = require('./backup-manager.cjs');
 const { createSystemMonitor } = require('./system-monitor.cjs');
+const { createSkillManager } = require('./skill-manager.cjs');
 const systemMonitor = createSystemMonitor();
 const taskStore = createTaskStore(path.join(app.getPath('userData'), 'task-history.enc'), safeStorage);
 const brain = createPersonalBrain({ app, safeStorage });
 const backupManager = createBackupManager(app.getPath('userData'));
+const skillManager = createSkillManager({ app });
 
 let win;
 let browserWin = null;
@@ -725,3 +727,13 @@ ipcMain.handle('brain:clear', async () => {
 
 ipcMain.handle('task:history-list', () => taskStore.list());
 ipcMain.handle('task:history-add', (_e, entry) => taskStore.add(entry));
+
+
+ipcMain.handle('skills:search', async (_e, query) => skillManager.searchGitHub(query, 8));
+ipcMain.handle('skills:install', async (_e, input) => {
+  if (!input || typeof input.repo !== 'string') throw new Error('GitHub repository is required.');
+  return skillManager.installFromGitHub(input.repo, input.path || 'SKILL.md');
+});
+ipcMain.handle('skills:list', () => skillManager.list());
+ipcMain.handle('skills:read', (_e, id) => skillManager.getContext(id));
+ipcMain.handle('skills:remove', (_e, id) => skillManager.remove(id));
