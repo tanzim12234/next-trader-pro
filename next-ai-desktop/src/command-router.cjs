@@ -68,7 +68,7 @@ function classifyVoiceCommand(value) {
 }
 
 function classifyVoiceConfirmation(phrase) {
-  const value = normalizeVoiceText(phrase).replace(/[.!?।！？]+$/g, '').trim();
+  const value = normalizeVoiceText(phrase).replace(/[,.!?;:।！？]+/g, ' ').replace(/\s+/g, ' ').trim();
   if (/^(?:yes(?:\s+(?:sure|please|confirm|do it|go ahead))?|sure|confirm|confirmed|do it|go ahead|হ্যাঁ(?:\s+(?:নিশ্চিত|করো|করুন|ঠিক আছে))?|জি(?:\s+(?:হ্যাঁ|করুন))?|ঠিক আছে|নিশ্চিত|করো|করুন)$/i.test(value)) return 'yes';
   if (/^(?:no|nope|cancel|stop|don't|do not|না|নাহ|বাতিল|থামাও|করো না)$/i.test(value)) return 'no';
   return null;
