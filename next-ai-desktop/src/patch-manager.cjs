@@ -27,6 +27,8 @@ function safeTarget(root, relativePath) {
   const base = path.resolve(root);
   const target = path.resolve(base, ...parts);
   if (!target.startsWith(base + path.sep)) throw new Error('Patch path escapes the selected project.');
+  const realTarget = fs.realpathSync(target);
+  if (!realTarget.startsWith(base + path.sep)) throw new Error('Symlinked patch targets outside the selected project are not allowed.');
   return target;
 }
 
