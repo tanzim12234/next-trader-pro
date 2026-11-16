@@ -14,6 +14,9 @@ function classifyVoiceCommand(value) {
     { re: /^(?:open|launch|start)\s+(?:notepad|নোটপ্যাড)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'notepad' },
     { re: /^(?:open|launch|start)\s+(?:calculator|ক্যালকুলেটর)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'calculator' },
     { re: /^(?:open|launch|start)\s+(?:file explorer|explorer|ফাইল এক্সপ্লোরার|ফাইল ম্যানেজার)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'file-explorer' },
+    { re: /^(?:open|launch|start)\s+(?:task manager|টাস্ক ম্যানেজার)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'task-manager' },
+    { re: /^(?:open|launch|start)\s+(?:snipping tool|snippingtool|স্নিপিং টুল)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'snipping-tool' },
+    { re: /^(?:open|launch|start)\s+(?:paint|পেইন্ট)(?:\s*(?:please|খোলো|চালু করো))?$/i, app: 'paint' },
     { re: /^(?:(?:নোটপ্যাড|ক্যালকুলেটর|ফাইল এক্সপ্লোরার|ফাইল ম্যানেজার)\s*(?:খুলে দাও|খোলো|চালু করো))$/i, app: null }
   ];
   for (const item of appPatterns) {
