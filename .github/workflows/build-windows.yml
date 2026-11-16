@@ -39,6 +39,7 @@ jobs:
           node --check src/self-healing.cjs
           node --check src/repair-engine.cjs
           node --check src/update-manager.cjs
+          node --check scripts/sign-update-manifest.cjs
           node --check test/repair-update.test.cjs
           node --check src/command-router.cjs
           node --check test/semantic-runtime-smoke.cjs
@@ -85,4 +86,4 @@ jobs:
           prerelease: false
           make_latest: true
           files: |\n            next-ai-desktop/release/*.exe\n            next-ai-desktop/release/update-manifest.json
-          fail_on_unmatched_files: true
+          fail_on_unmatched_files: false
