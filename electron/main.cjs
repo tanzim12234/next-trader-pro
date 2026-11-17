@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain } = require("electron");
+const { app, BrowserWindow, shell, ipcMain, safeStorage } = require("electron");\nconst fs = require("node:fs");\nconst path = require("node:path");
 const { execFile } = require("node:child_process");
 
 const APP_ALLOWLIST = {
@@ -38,6 +38,27 @@ ipcMain.handle("next:open-app", async (_event, name) => {
       resolve(error ? { ok: false, error: "Could not open that app." } : { ok: true })
     );
   });
+});
+
+ipcMain.handle("next:save-api-key", async (_event, key) => {
+  if (typeof key !== "string" || key.trim().length < 20 || key.trim().length > 512) return { ok: false, error: "Invalid API key length." };
+  if (!safeStorage.isEncryptionAvailable()) return { ok: false, error: "OS secure storage is unavailable on this device." };
+  try {
+    const encrypted = safeStorage.encryptString(key.trim());
+    fs.writeFileSync(path.join(app.getPath("userData"), "provider-api-key.enc"), encrypted, { mode: 0o600 });
+    return { ok: true };
+  } catch { return { ok: false, error: "Could not securely store the API key." }; }
+});
+ipcMain.handle("next:get-api-key", async () => {
+  try {
+    const file = path.join(app.getPath("userData"), "provider-api-key.enc");
+    if (!safeStorage.isEncryptionAvailable() || !fs.existsSync(file)) return "";
+    return safeStorage.decryptString(fs.readFileSync(file));
+  } catch { return ""; }
+});
+ipcMain.handle("next:delete-api-key", async () => {
+  try { fs.rmSync(path.join(app.getPath("userData"), "provider-api-key.enc"), { force: true }); return { ok: true }; }
+  catch { return { ok: false, error: "Could not remove the saved API key." }; }
 });
 
 ipcMain.handle("next:speak", async (_event, text) => {
