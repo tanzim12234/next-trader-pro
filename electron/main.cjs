@@ -1,4 +1,5 @@
-const { app, BrowserWindow, shell, ipcMain, safeStorage } = require("electron");\nconst fs = require("node:fs");\nconst path = require("node:path");
+const { app, BrowserWindow, shell, ipcMain, safeStorage, session } = require("electron");
+const fs = require("node:fs");\nconst path = require("node:path");
 const { execFile } = require("node:child_process");
 
 const APP_ALLOWLIST = {
@@ -75,6 +76,14 @@ ipcMain.handle("next:speak", async (_event, text) => {
 });
 
 app.whenReady().then(() => {
+  const trustedOrigin = "https://next-trader-ai.vercel.app";
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    const origin = details?.requestingUrl || webContents.getURL();
+    callback(permission === "media" && origin.startsWith(trustedOrigin));
+  });
+  session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+    return permission === "media" && String(requestingOrigin || "").startsWith(trustedOrigin);
+  });
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
