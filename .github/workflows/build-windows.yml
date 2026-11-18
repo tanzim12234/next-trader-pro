@@ -41,6 +41,7 @@ jobs:
           node --check src/brain.cjs
           node --check src/renderer.js
           node --check src/voice-recovery.js
+          node --check src/telemetry-format.js
           node --check src/skill-manager.cjs
           node --check src/code-lab.cjs
           node --check src/system-monitor.cjs
@@ -50,6 +51,7 @@ jobs:
           node --check scripts/sign-update-manifest.cjs
           node --check test/repair-update.test.cjs
           node --check test/voice-recovery.test.cjs
+          node --check test/telemetry-format.test.cjs
           node --check src/command-router.cjs
           node --check test/semantic-runtime-smoke.cjs
       - name: Test Personal Brain
@@ -85,6 +87,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Publish public GitHub release
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: next-ai-desktop-v${{ env.APP_VERSION }}

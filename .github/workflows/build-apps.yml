@@ -17,7 +17,7 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - run: npm run desktop:win
+      - run: npm run desktop:win -- --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: NEXT-AI-Windows-EXE
