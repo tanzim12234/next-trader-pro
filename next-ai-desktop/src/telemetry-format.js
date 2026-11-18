@@ -3,6 +3,7 @@
  function formatRate(bytesPerSecond){
   const value=Number(bytesPerSecond);
   if(!Number.isFinite(value)||value<0)return 'N/A';
+  if(value<1024)return Math.round(value)+' B/s';
   if(value>=1024*1024)return (value/(1024*1024)).toFixed(1)+' MB/s';
   return (value/1024).toFixed(1)+' KB/s';
  }

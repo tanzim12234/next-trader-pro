@@ -3,8 +3,8 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const telemetry=require('../src/telemetry-format.js');
 
-test('formats network throughput in KB/s and MB/s',()=>{
- assert.equal(telemetry.formatRate(512),'0.5 KB/s');
+test('formats network throughput using B/s, KB/s and MB/s units',()=>{
+ assert.equal(telemetry.formatRate(512),'512 B/s');
  assert.equal(telemetry.formatRate(1024),'1.0 KB/s');
  assert.equal(telemetry.formatRate(1048576),'1.0 MB/s');
 });
@@ -22,8 +22,12 @@ test('shows sampling state until a network delta is available',()=>{
  assert.equal(telemetry.formatHudPower({batteryPercent:86,networkAvailable:true,networkSampling:true}),'BAT 86% · NET SAMPLING');
 });
 
+test('shows battery full state',()=>{
+ assert.equal(telemetry.formatHudPower({batteryPercent:100,batteryStatus:3,networkAvailable:false}),'BAT 100% FULL · NET UNAVAILABLE');
+});
+
 test('shows live receive and send rates plus battery charge state',()=>{
- assert.equal(telemetry.formatHudPower({batteryPercent:75,batteryStatus:6,networkAvailable:true,networkSampling:false,receivedBytesPerSecond:1048576,sentBytesPerSecond:512}),'BAT 75% CHARGING · NET ↓1.0 MB/s ↑0.5 KB/s');
+ assert.equal(telemetry.formatHudPower({batteryPercent:75,batteryStatus:6,networkAvailable:true,networkSampling:false,receivedBytesPerSecond:1048576,sentBytesPerSecond:512}),'BAT 75% CHARGING · NET ↓1.0 MB/s ↑512 B/s');
 });
 
 test('clamps battery percentage to the valid range',()=>{

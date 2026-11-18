@@ -50,7 +50,8 @@ export default async function handler(req, res) {
       return json(res, 400, { error: "ছবি PNG, JPEG বা WebP হতে হবে এবং 3.5MB-এর মধ্যে রাখতে হবে।" });
     }
 
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const suppliedGeminiKey = typeof req.body?.providerApiKey === 'string' ? req.body.providerApiKey.trim() : '';
+    const geminiKey = suppliedGeminiKey.length >= 20 && suppliedGeminiKey.length <= 512 ? suppliedGeminiKey : process.env.GEMINI_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
     if (webSearch && !geminiKey) return json(res, 503, { error: "Web search চালাতে Gemini API key প্রয়োজন। Vercel Environment Variables-এ GEMINI_API_KEY যোগ করতে হবে।" });
     if (!geminiKey && !openaiKey) {
