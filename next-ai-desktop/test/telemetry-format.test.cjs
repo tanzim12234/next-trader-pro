@@ -34,3 +34,20 @@ test('clamps battery percentage to the valid range',()=>{
  assert.equal(telemetry.formatHudPower({batteryPercent:140,networkAvailable:false}),'BAT 100% · NET UNAVAILABLE');
  assert.equal(telemetry.formatHudPower({batteryPercent:-4,networkAvailable:false}),'BAT 0% · NET UNAVAILABLE');
 });
+
+test('maps Windows battery status codes without treating unknown as charging',()=>{
+ assert.equal(telemetry.formatBatteryStatus(2),'Unknown');
+ assert.equal(telemetry.formatBatteryStatus(3),'Fully charged');
+ assert.equal(telemetry.formatBatteryStatus(4),'Low');
+ assert.equal(telemetry.formatBatteryStatus(5),'Critical');
+ assert.equal(telemetry.formatBatteryStatus(6),'Charging');
+ assert.equal(telemetry.formatBatteryStatus(11),'Partially charged');
+ assert.equal(telemetry.formatBatteryStatus(null),'State unavailable');
+ assert.equal(telemetry.formatBatteryStatus(99),'Unknown status (99)');
+});
+
+test('shows low, critical and partially charged states in the HUD',()=>{
+ assert.equal(telemetry.formatHudPower({batteryPercent:20,batteryStatus:4,networkAvailable:false}),'BAT 20% LOW · NET UNAVAILABLE');
+ assert.equal(telemetry.formatHudPower({batteryPercent:5,batteryStatus:5,networkAvailable:false}),'BAT 5% CRITICAL · NET UNAVAILABLE');
+ assert.equal(telemetry.formatHudPower({batteryPercent:50,batteryStatus:11,networkAvailable:false}),'BAT 50% PARTIAL · NET UNAVAILABLE');
+});
