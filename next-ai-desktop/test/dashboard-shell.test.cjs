@@ -21,3 +21,13 @@ test('retains live CPU, RAM, GPU, battery and network telemetry fields',()=>{
  assert.match(html,/id="hudPower"/);
  assert.match(html,/prefers-reduced-motion:reduce/);
 });
+
+const renderer=fs.readFileSync(path.join(__dirname,'../src/renderer.js'),'utf8');
+
+test('clears stale HUD telemetry and network sampling baseline after a polling failure',()=>{
+ assert.match(renderer,/catch\(e\)\{\s*networkSnapshot=null;/);
+ assert.match(renderer,/formatHudUnavailable\(\)/);
+ assert.match(renderer,/textContent=unavailable\.system/);
+ assert.match(renderer,/textContent=unavailable\.gpu/);
+ assert.match(renderer,/textContent=unavailable\.power/);
+});
