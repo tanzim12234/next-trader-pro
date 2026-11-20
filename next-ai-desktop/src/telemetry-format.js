@@ -47,7 +47,14 @@
   }
   return battery+' · '+network;
  }
- const api=Object.freeze({formatRate,formatBatteryStatus,formatHudPower});
+ function formatHudUnavailable(){
+  return Object.freeze({
+   system:'CPU UNAVAILABLE · RAM UNAVAILABLE',
+   gpu:'GPU UNAVAILABLE · DEVICE NOT REPORTED',
+   power:'BATTERY N/A · NET UNAVAILABLE'
+  });
+ }
+ const api=Object.freeze({formatRate,formatBatteryStatus,formatHudPower,formatHudUnavailable});
  if(typeof module==='object'&&module.exports)module.exports=api;
  else root.NextTelemetryFormat=api;
 })(typeof window!=='undefined'?window:globalThis);

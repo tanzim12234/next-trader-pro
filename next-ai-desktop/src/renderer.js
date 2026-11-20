@@ -620,7 +620,21 @@ async function refreshSystemStats(){
   const cpuForecast=cpuSlope===null||s.cpuPercent===null?null:Math.max(0,Math.min(100,s.cpuPercent+cpuSlope*300));
   const warnings=[];if(s.memoryPercent>=90)warnings.push('High memory use now');if(s.cpuPercent>=95)warnings.push('High CPU use now');if(memForecast>=95)warnings.push('Memory may reach critical level within ~5 min');
   $('systemPrediction').textContent=(memForecast===null?'Collecting trend samples…':'5-min estimate · RAM '+memForecast.toFixed(1)+'%'+(cpuForecast===null?'':' · CPU '+cpuForecast.toFixed(1)+'%'))+(warnings.length?' · ALERT: '+warnings.join('; '):' · No critical threshold detected');
- }catch(e){$('systemState').textContent='Monitoring unavailable: '+e.message;}
+ }catch(e){
+  networkSnapshot=null;
+  const unavailable=window.NextTelemetryFormat.formatHudUnavailable();
+  if($('systemCpu'))$('systemCpu').textContent='Unavailable';
+  if($('systemMemory'))$('systemMemory').textContent='Unavailable';
+  if($('systemBattery'))$('systemBattery').textContent='Unavailable';
+  if($('systemNetwork'))$('systemNetwork').textContent='Unavailable';
+  if($('systemDisk'))$('systemDisk').textContent='Unavailable';
+  if($('systemDiskDetails'))$('systemDiskDetails').textContent='Unavailable';
+  if($('systemUptime'))$('systemUptime').textContent='Unavailable';
+  if($('hudSystem'))$('hudSystem').textContent=unavailable.system;
+  if($('hudGpu'))$('hudGpu').textContent=unavailable.gpu;
+  if($('hudPower'))$('hudPower').textContent=unavailable.power;
+  if($('systemState'))$('systemState').textContent='Monitoring unavailable: '+e.message;
+ }
  finally{systemStatsBusy=false;}
 }
 refreshSystemStats();

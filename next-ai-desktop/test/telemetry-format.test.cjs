@@ -51,3 +51,11 @@ test('shows low, critical and partially charged states in the HUD',()=>{
  assert.equal(telemetry.formatHudPower({batteryPercent:5,batteryStatus:5,networkAvailable:false}),'BAT 5% CRITICAL · NET UNAVAILABLE');
  assert.equal(telemetry.formatHudPower({batteryPercent:50,batteryStatus:11,networkAvailable:false}),'BAT 50% PARTIAL · NET UNAVAILABLE');
 });
+
+test('formats explicit unavailable labels for a failed system telemetry poll',()=>{
+ assert.deepEqual(telemetry.formatHudUnavailable(),{
+  system:'CPU UNAVAILABLE · RAM UNAVAILABLE',
+  gpu:'GPU UNAVAILABLE · DEVICE NOT REPORTED',
+  power:'BATTERY N/A · NET UNAVAILABLE'
+ });
+});
